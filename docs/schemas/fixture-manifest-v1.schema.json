@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/fixture-manifest-v1.schema.json",
+  "title": "P0 deterministic fixture manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "fixture_id", "profile", "seed", "generator",
+    "totals", "entries_sha256", "entries", "feature_coverage", "constraints"
+  ],
+  "properties": {
+    "schema_version": {"const": "fixture-manifest-v1"},
+    "fixture_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "profile": {"enum": ["tiny", "edge-case", "representative-small", "representative-large"]},
+    "seed": {"type": "string", "minLength": 1},
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "git_commit", "sha256", "version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "bytes"],
+      "properties": {
+        "files": {"type": "integer", "minimum": 1},
+        "bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "entries_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relative_path", "size_bytes", "sha256", "content_class", "features"],
+        "properties": {
+          "relative_path": {"type": "string", "minLength": 1},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "content_class": {"enum": ["markdown", "image", "pdf", "canvas", "c", "python", "unsupported", "other-supported"]},
+          "features": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "empty", "frontmatter", "heading", "wikilink", "chinese-content", "attachment-reference",
+                "chinese-path", "emoji-path", "space-path", "deep-path", "invalid-canvas", "unsupported-extension"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "feature_coverage": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "markdown", "image", "pdf", "canvas", "c", "python", "empty-file", "unsupported-extension",
+          "reparse-point", "path-escape", "case-collision", "scan-mutation", "read-failure", "non-empty-target",
+          "space-path", "emoji-path", "chinese-path", "deep-path", "invalid-canvas"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_files", "max_files", "min_bytes", "max_bytes", "validation_errors", "verdict"],
+      "properties": {
+        "min_files": {"type": "integer", "minimum": 1},
+        "max_files": {"type": "integer", "minimum": 1},
+        "min_bytes": {"type": "integer", "minimum": 0},
+        "max_bytes": {"type": "integer", "minimum": 0},
+        "validation_errors": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "verdict": {"enum": ["pass", "fail"]}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"profile": {"const": "tiny"}}},
+      "then": {
+        "properties": {
+          "totals": {
+            "properties": {
+              "files": {"minimum": 20, "maximum": 50},
+              "bytes": {"maximum": 5242880}
+            }
+          },
+          "constraints": {
+            "properties": {
+              "min_files": {"const": 20}, "max_files": {"const": 50},
+              "min_bytes": {"const": 0}, "max_bytes": {"const": 5242880}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"profile": {"const": "representative-small"}}},
+      "then": {
+        "properties": {
+          "totals": {
+            "properties": {
+              "files": {"const": 10000},
+              "bytes": {"minimum": 127506842, "maximum": 140928614}
+            }
+          },
+          "constraints": {
+            "properties": {
+              "min_files": {"const": 10000}, "max_files": {"const": 10000},
+              "min_bytes": {"const": 127506842}, "max_bytes": {"const": 140928614}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"profile": {"const": "representative-large"}}},
+      "then": {
+        "properties": {
+          "totals": {
+            "properties": {
+              "files": {"const": 10000},
+              "bytes": {"minimum": 1020054733, "maximum": 1127428915}
+            }
+          },
+          "constraints": {
+            "properties": {
+              "min_files": {"const": 10000}, "max_files": {"const": 10000},
+              "min_bytes": {"const": 1020054733}, "max_bytes": {"const": 1127428915}
+            }
+          }
+        }
+      }
+    }
+  ]
+}

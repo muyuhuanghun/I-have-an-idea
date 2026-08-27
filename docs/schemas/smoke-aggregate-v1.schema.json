@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/smoke-aggregate-v1.schema.json",
+  "title": "P0 crypto smoke aggregate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "candidate", "suite_id", "source_reports", "environment_verdicts", "cross_env_verdict"],
+  "properties": {
+    "schema_version": {"const": "smoke-aggregate-v1"},
+    "candidate": {"type": "string", "minLength": 1},
+    "suite_id": {"type": "integer", "minimum": 0, "maximum": 255},
+    "source_reports": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["environment_id", "path", "sha256", "schema_valid"],
+        "properties": {
+          "environment_id": {"enum": ["windows-node-cli", "windows-obsidian", "android-obsidian"]},
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "schema_valid": {"type": "boolean"}
+        }
+      }
+    },
+    "environment_verdicts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["windows-node-cli", "windows-obsidian", "android-obsidian"],
+      "properties": {
+        "windows-node-cli": {"enum": ["pass", "fail", "incomplete", "invalid"]},
+        "windows-obsidian": {"enum": ["pass", "fail", "incomplete", "invalid"]},
+        "android-obsidian": {"enum": ["pass", "fail", "incomplete", "invalid"]}
+      }
+    },
+    "cross_env_verdict": {"enum": ["cross_env_pass", "cross_env_fail", "cross_env_incomplete", "cross_env_invalid"]}
+  }
+}

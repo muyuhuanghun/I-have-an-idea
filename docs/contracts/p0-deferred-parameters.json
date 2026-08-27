@@ -1,0 +1,245 @@
+{
+  "schema_version": "p0-deferred-parameters-v1",
+  "status": "authoritative_open_item_registry",
+  "owners": [
+    {"id": "OWNER-P0", "name": "项目开发者", "accountability": "P0 协议、实现与证据"},
+    {"id": "OWNER-PRODUCT", "name": "产品 owner（当前由项目开发者承担）", "accountability": "P1 及以后产品范围和 UX 决策"},
+    {"id": "OWNER-SECURITY", "name": "安全 owner（当前由项目开发者承担，独立审计不可自授予）", "accountability": "威胁边界、密码代际和供应链门禁"}
+  ],
+  "parameters": [
+    {
+      "id": "DP-001",
+      "name": "生产密码候选实现及精确版本",
+      "owner": "OWNER-P0",
+      "phase": "Phase 1 crypto smoke",
+      "status": "open",
+      "close_artifact": "docs/decisions/0013-p0-crypto-suite-selection.md + lockfile + smoke-aggregate-v1 reports",
+      "hard_stop": "三环境 cross_env_pass 和 artifact hash 未齐备时，不得选择默认库或开始生产协议编码"
+    },
+    {
+      "id": "DP-002",
+      "name": "AEAD suite_id、算法及 key/nonce/tag 字节长度",
+      "owner": "OWNER-SECURITY",
+      "phase": "Phase 1 crypto smoke",
+      "status": "open",
+      "close_artifact": "docs/decisions/0013-p0-crypto-suite-selection.md 中的 suite registry v1",
+      "hard_stop": "suite registry 未冻结时，不得生成正式 Object Envelope、AAD、Manifest 或 Recovery File"
+    },
+    {
+      "id": "DP-003",
+      "name": "对象密钥 wrap 算法、wrap key length 和 wrapped bytes 合同",
+      "owner": "OWNER-SECURITY",
+      "phase": "Phase 1 crypto smoke，最迟 Phase 3 前",
+      "status": "open",
+      "close_artifact": "docs/decisions/0013-p0-crypto-suite-selection.md + wrap KAT vectors",
+      "hard_stop": "wrap KAT、坏材料拒绝和三环境结果未通过时，不得实现 Manifest object-key 包装"
+    },
+    {
+      "id": "DP-004",
+      "name": "算法级 KAT 的精确 key/nonce/AAD/plaintext/ciphertext/tag 字节",
+      "owner": "OWNER-SECURITY",
+      "phase": "Phase 1 crypto smoke",
+      "status": "open",
+      "close_artifact": "fixtures/crypto-vectors/manifest.json 及其 hash-bound 二进制向量",
+      "hard_stop": "至少 14 个 required 向量及来源未固定时，smoke 报告只能是 incomplete，不得用于选型"
+    },
+    {
+      "id": "DP-005",
+      "name": "Android 真机、Obsidian、插件和设备签名精确身份",
+      "owner": "OWNER-P0",
+      "phase": "Phase 1 crypto smoke",
+      "status": "open",
+      "close_artifact": "android-obsidian smoke-report-v1 + 已验证 device_binding",
+      "hard_stop": "模拟器、截图、缺签名或 hash 不匹配的报告不得进入 cross_env_pass"
+    },
+    {
+      "id": "DP-006",
+      "name": "Tiny fixture 的精确文件清单和固定 seed",
+      "owner": "OWNER-P0",
+      "phase": "Phase 2 fixture",
+      "status": "open",
+      "close_artifact": "fixtures/tiny/ + fixture-manifest-v1.json",
+      "hard_stop": "20-50 文件、<=5 MiB 和必需内容类别未通过 schema 时，不得作为 smoke/ACC fixture"
+    },
+    {
+      "id": "DP-007",
+      "name": "Edge-case fixture 的精确恶意输入与期望错误码",
+      "owner": "OWNER-P0",
+      "phase": "Phase 2 fixture",
+      "status": "open",
+      "close_artifact": "fixtures/edge-cases/ + fixture-manifest-v1.json + case oracle manifest",
+      "hard_stop": "任一必需场景缺失或无稳定错误码时，对应负面 ACC 保持 untested"
+    },
+    {
+      "id": "DP-008",
+      "name": "Representative small/large fixture 的精确分布、seed 和 manifest hash",
+      "owner": "OWNER-P0",
+      "phase": "Phase 2 fixture/performance",
+      "status": "open",
+      "close_artifact": "两个 fixture-manifest-v1 报告（10,000 files；约 128 MiB 与约 1 GiB）",
+      "hard_stop": "文件数、字节范围、内容覆盖或 hash 不满足 schema 时，不得运行 ACC-26/29/30"
+    },
+    {
+      "id": "DP-009",
+      "name": "Fixture generator 版本、源码 hash 和确定性算法",
+      "owner": "OWNER-P0",
+      "phase": "Phase 2 fixture",
+      "status": "open",
+      "close_artifact": "提交到 Git 的 generator + 两次生成 hash 一致报告",
+      "hard_stop": "同 seed 同 commit 不能生成相同 entries_sha256 时，停止所有性能比较"
+    },
+    {
+      "id": "DP-010",
+      "name": "性能测量主机、工具、采样间隔、power plan 和冷/热缓存运行清单",
+      "owner": "OWNER-P0",
+      "phase": "Phase 2 baseline，Phase 6 复核",
+      "status": "open",
+      "close_artifact": "首份 schema-valid perf-report-v1 baseline",
+      "hard_stop": "环境字段、idle RSS、<=100 ms 采样或 cache_state 缺失时，报告无效且不得比较"
+    },
+    {
+      "id": "DP-011",
+      "name": "512 MiB peak RSS 门槛的一次性调整（可选）",
+      "owner": "OWNER-P0",
+      "phase": "首次可靠 Phase 2 baseline 后，Phase 6 前",
+      "status": "conditional",
+      "close_artifact": "docs/decisions/performance-threshold-adjustment-v1.md 或明确的 no-adjustment 记录",
+      "hard_stop": "无基线、无理由、无 owner 签字或 adjustment_count > 1 时，不得放宽阈值，ACC-31 失败"
+    },
+    {
+      "id": "DP-012",
+      "name": "流式 chunk size、最大并发数和队列上限",
+      "owner": "OWNER-P0",
+      "phase": "Phase 2 scanner/encryptor，最迟 ACC-30 前",
+      "status": "open",
+      "close_artifact": "版本化 runtime-limits.json + perf-report-v1 bounded-memory comparison",
+      "hard_stop": "数值未绑定报告或 peak RSS growth >128 MiB 时，不得关闭 ACC-30"
+    },
+    {
+      "id": "DP-013",
+      "name": "P1 外部解锁秘密或继续 bearer-secret 的迁移决策",
+      "owner": "OWNER-SECURITY",
+      "phase": "P1-alpha 账号/多设备设计前",
+      "status": "deferred",
+      "close_artifact": "新 ADR，连同 INV-11、恢复输入和格式迁移修订",
+      "hard_stop": "未出新 ADR 前，不得声称 P0 recovery file 有独立静态保护，也不得静默改变 INV-11"
+    },
+    {
+      "id": "DP-014",
+      "name": "Stage 7 localhost HTTP 的网络观察、日志和传输边界",
+      "owner": "OWNER-SECURITY",
+      "phase": "Stage 7 HTTP ObjectStore",
+      "status": "deferred",
+      "close_artifact": "HTTP threat-model delta + THR-02 ACC 扩展 + 抓包/日志 evidence schema",
+      "hard_stop": "未关闭前不得把 Directory ObjectStore 的 ACC-32/33 证据外推为网络传输安全证据"
+    },
+    {
+      "id": "DP-015",
+      "name": "P1 mutable head、状态序号、设备签名和分叉证明",
+      "owner": "OWNER-SECURITY",
+      "phase": "P1-alpha state protocol",
+      "status": "deferred",
+      "close_artifact": "state-protocol ADR + threat/invariant/ACC delta",
+      "hard_stop": "未关闭前不得实现或宣称 latest pointer、状态连续性、反回滚或设备签名"
+    },
+    {
+      "id": "DP-016",
+      "name": "中心托管、自托管或并行模式",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-alpha deployment planning",
+      "status": "deferred",
+      "close_artifact": "deployment ADR 和迁移/运维成本表",
+      "hard_stop": "未裁决前不得承诺部署形态或迁移兼容性"
+    },
+    {
+      "id": "DP-017",
+      "name": "账号认证、2FA、Passkey 和账号删除",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-alpha account design",
+      "status": "deferred",
+      "close_artifact": "account-lifecycle ADR + abuse/recovery threat delta",
+      "hard_stop": "未裁决前不得实现真实账号或声称账号恢复可恢复域"
+    },
+    {
+      "id": "DP-018",
+      "name": "Proposal key 的审核者分发方式",
+      "owner": "OWNER-SECURITY",
+      "phase": "P1-beta team proposal design",
+      "status": "deferred",
+      "close_artifact": "proposal-key-distribution ADR + revocation tests",
+      "hard_stop": "未关闭前不得实现团队 Proposal E2EE"
+    },
+    {
+      "id": "DP-019",
+      "name": "紧急治理恢复的精确范围和签名建议权限",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-beta/P1-release governance",
+      "status": "deferred",
+      "close_artifact": "governance-recovery ADR + role/approval matrix",
+      "hard_stop": "未关闭前不得赋予管理员绕过正常审核的治理恢复权限"
+    },
+    {
+      "id": "DP-020",
+      "name": "签名更新、可验证构建和供应链边界",
+      "owner": "OWNER-SECURITY",
+      "phase": "生产发布前",
+      "status": "deferred",
+      "close_artifact": "supply-chain threat model + reproducible-build/signing evidence",
+      "hard_stop": "未关闭前 THR-05 供应链攻击保持 out-of-scope，禁止声称已缓解"
+    },
+    {
+      "id": "DP-021",
+      "name": "主存储与备份物理删除 SLA",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-release deletion design",
+      "status": "deferred",
+      "close_artifact": "deletion SLA/ADR + provider evidence",
+      "hard_stop": "未关闭前不得承诺物理删除时限"
+    },
+    {
+      "id": "DP-022",
+      "name": "自托管迁移与密文导出格式",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-release portability",
+      "status": "deferred",
+      "close_artifact": "versioned export format ADR + roundtrip migration evidence",
+      "hard_stop": "未关闭前不得承诺无损自托管迁移"
+    },
+    {
+      "id": "DP-023",
+      "name": "风险、文件大小、Proposal 和暂存额度阈值",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-beta quota/risk calibration",
+      "status": "deferred",
+      "close_artifact": "calibration report + quota/risk ADR",
+      "hard_stop": "无观测数据和误报/漏报成本前不得把暂定数值写成安全阈值"
+    },
+    {
+      "id": "DP-024",
+      "name": "移动端电量和真实多设备压力阈值",
+      "owner": "OWNER-P0",
+      "phase": "P1-alpha mobile validation",
+      "status": "deferred",
+      "close_artifact": "device-bound energy/stress reports + acceptance thresholds ADR",
+      "hard_stop": "无真机报告前不得承诺后台、电量或多设备规模能力"
+    },
+    {
+      "id": "DP-025",
+      "name": "团队 group epoch、成员加入退出与旧代际读取边界",
+      "owner": "OWNER-SECURITY",
+      "phase": "P1-beta team key lifecycle",
+      "status": "deferred",
+      "close_artifact": "group-key-lifecycle ADR + join/revoke/old-epoch acceptance evidence",
+      "hard_stop": "未关闭前不得实现真实团队成员加密、撤销或声称退出成员失去已下载历史"
+    },
+    {
+      "id": "DP-026",
+      "name": "设备安全存储和移动端正式密钥保护",
+      "owner": "OWNER-SECURITY",
+      "phase": "P1-alpha mobile key lifecycle",
+      "status": "deferred",
+      "close_artifact": "mobile-keystore ADR + device-loss/migration/backup evidence",
+      "hard_stop": "未关闭前 Android 仅限兼容性 smoke，不得保存正式域密钥或承诺设备级静态保护"
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/perf-report-v1.schema.json",
+  "title": "P0 performance report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "purpose", "run_id", "timestamp_utc", "git_commit", "fixture",
+    "environment", "cache_state", "measurement", "phases", "process", "thresholds",
+    "bounded_memory_comparison", "verdict", "raw_artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": "perf-report-v1"},
+    "purpose": {"enum": ["baseline", "p0-r1"]},
+    "run_id": {"type": "string", "format": "uuid"},
+    "timestamp_utc": {"type": "string", "format": "date-time"},
+    "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture_id", "profile", "total_files", "total_bytes", "manifest_sha256", "generator_sha256"],
+      "properties": {
+        "fixture_id": {"type": "string", "minLength": 1},
+        "profile": {"enum": ["representative-small", "representative-large"]},
+        "total_files": {"type": "integer", "minimum": 1},
+        "total_bytes": {"type": "integer", "minimum": 0},
+        "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "generator_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "os_name", "os_version", "os_build", "cpu_model", "cpu_cores_physical", "cpu_cores_logical",
+        "cpu_base_frequency_mhz", "ram_total_bytes", "storage_model", "storage_type", "filesystem",
+        "node_version", "v8_version", "pnpm_version", "lockfile_sha256", "power_plan"
+      ],
+      "properties": {
+        "os_name": {"type": "string", "minLength": 1},
+        "os_version": {"type": "string", "minLength": 1},
+        "os_build": {"type": "string", "minLength": 1},
+        "cpu_model": {"type": "string", "minLength": 1},
+        "cpu_cores_physical": {"type": "integer", "minimum": 1},
+        "cpu_cores_logical": {"type": "integer", "minimum": 1},
+        "cpu_base_frequency_mhz": {"type": "number", "exclusiveMinimum": 0},
+        "ram_total_bytes": {"type": "integer", "minimum": 1},
+        "storage_model": {"type": "string", "minLength": 1},
+        "storage_type": {"enum": ["hdd", "sata-ssd", "nvme-ssd", "other"]},
+        "filesystem": {"const": "NTFS"},
+        "node_version": {"type": "string", "minLength": 1},
+        "v8_version": {"type": "string", "minLength": 1},
+        "pnpm_version": {"type": "string", "minLength": 1},
+        "lockfile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "power_plan": {"type": "string", "minLength": 1}
+      }
+    },
+    "cache_state": {"enum": ["cold", "warm"]},
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clock", "rss_source", "rss_sample_interval_ms", "setup_excluded", "idle_rss_bytes"],
+      "properties": {
+        "clock": {"enum": ["performance.now", "process.hrtime.bigint"]},
+        "rss_source": {"const": "process.memoryUsage.rss"},
+        "rss_sample_interval_ms": {"type": "integer", "minimum": 1, "maximum": 100},
+        "setup_excluded": {"const": true},
+        "idle_rss_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "phases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scan", "encrypt", "restore_fresh_process", "restore_verify", "total"],
+      "properties": {
+        "scan": {"$ref": "#/$defs/phase"},
+        "encrypt": {"$ref": "#/$defs/phase"},
+        "restore_fresh_process": {"$ref": "#/$defs/phase"},
+        "restore_verify": {"$ref": "#/$defs/phase"},
+        "total": {"$ref": "#/$defs/phase"}
+      }
+    },
+    "process": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exit_code", "timed_out", "uncaught_error"],
+      "properties": {
+        "exit_code": {"type": "integer"},
+        "timed_out": {"type": "boolean"},
+        "uncaught_error": {"type": ["string", "null"]}
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "peak_rss_limit_bytes", "min_fixture_byte_growth_ratio", "max_peak_rss_growth_bytes",
+        "adjustment_count", "adjustment_record_path", "adjustment_record_sha256"
+      ],
+      "properties": {
+        "peak_rss_limit_bytes": {"type": "integer", "minimum": 1},
+        "min_fixture_byte_growth_ratio": {"const": 7.5},
+        "max_peak_rss_growth_bytes": {"const": 134217728},
+        "adjustment_count": {"type": "integer", "minimum": 0, "maximum": 1},
+        "adjustment_record_path": {"type": ["string", "null"]},
+        "adjustment_record_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "bounded_memory_comparison": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "small_run_id", "small_report_sha256", "small_total_bytes", "small_peak_rss_bytes",
+            "large_total_bytes", "large_peak_rss_bytes", "fixture_byte_growth_ratio",
+            "peak_rss_growth_bytes", "same_environment", "same_file_count", "passed"
+          ],
+          "properties": {
+            "small_run_id": {"type": "string", "format": "uuid"},
+            "small_report_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "small_total_bytes": {"type": "integer", "minimum": 1},
+            "small_peak_rss_bytes": {"type": "integer", "minimum": 0},
+            "large_total_bytes": {"type": "integer", "minimum": 1},
+            "large_peak_rss_bytes": {"type": "integer", "minimum": 0},
+            "fixture_byte_growth_ratio": {"type": "number", "minimum": 7.5},
+            "peak_rss_growth_bytes": {"type": "integer"},
+            "same_environment": {"const": true},
+            "same_file_count": {"const": true},
+            "passed": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixture_within_profile", "roundtrip_completed", "bytes_verified", "peak_rss_within_limit",
+        "rss_growth_within_limit", "adjustments_within_policy", "schema_valid", "overall"
+      ],
+      "properties": {
+        "fixture_within_profile": {"type": "boolean"},
+        "roundtrip_completed": {"type": "boolean"},
+        "bytes_verified": {"type": "boolean"},
+        "peak_rss_within_limit": {"type": "boolean"},
+        "rss_growth_within_limit": {"type": "boolean"},
+        "adjustments_within_policy": {"type": "boolean"},
+        "schema_valid": {"type": "boolean"},
+        "overall": {"enum": ["pass", "fail", "incomplete"]}
+      }
+    },
+    "raw_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration_ms", "peak_rss_bytes", "files_processed", "bytes_processed", "throughput_bytes_per_sec"],
+      "properties": {
+        "duration_ms": {"type": "number", "minimum": 0},
+        "peak_rss_bytes": {"type": "integer", "minimum": 0},
+        "files_processed": {"type": "integer", "minimum": 0},
+        "bytes_processed": {"type": "integer", "minimum": 0},
+        "throughput_bytes_per_sec": {"type": "number", "minimum": 0}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"purpose": {"const": "p0-r1"}}},
+      "then": {
+        "properties": {
+          "fixture": {
+            "properties": {
+              "profile": {"const": "representative-large"},
+              "total_files": {"const": 10000},
+              "total_bytes": {"minimum": 1020054733, "maximum": 1127428915}
+            }
+          },
+          "bounded_memory_comparison": {"type": "object"}
+        }
+      }
+    }
+  ]
+}

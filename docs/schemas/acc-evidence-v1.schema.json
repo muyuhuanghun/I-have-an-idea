@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/acc-evidence-v1.schema.json",
+  "title": "P0 ACC evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "acc_id",
+    "run_id",
+    "timestamp_utc",
+    "git_commit",
+    "status",
+    "checks",
+    "observed_error_codes",
+    "side_effects",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": "acc-evidence-v1"},
+    "acc_id": {"type": "string", "pattern": "^ACC-(0[1-9]|[12][0-9]|3[0-7])$"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "timestamp_utc": {"type": "string", "format": "date-time"},
+    "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "status": {"enum": ["passed", "failed", "untested", "incomplete"]},
+    "checks": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["passed", "expected", "actual"],
+        "properties": {
+          "passed": {"type": "boolean"},
+          "expected": {},
+          "actual": {},
+          "detail": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "observed_error_codes": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+      "uniqueItems": true
+    },
+    "side_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_vault_modified",
+        "partial_plaintext_returned",
+        "partial_success_reported",
+        "write_outside_target",
+        "undeclared_persistent_state_used"
+      ],
+      "properties": {
+        "source_vault_modified": {"type": "boolean"},
+        "partial_plaintext_returned": {"type": "boolean"},
+        "partial_success_reported": {"type": "boolean"},
+        "write_outside_target": {"type": "boolean"},
+        "undeclared_persistent_state_used": {"type": "boolean"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  }
+}

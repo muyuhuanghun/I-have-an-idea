@@ -1,0 +1,126 @@
+{
+  "schema_version": "p0-wire-contract-v1",
+  "status": "frozen_design_contract_not_implemented",
+  "protocol_version": 1,
+  "encoding": {
+    "unsigned_integer_byte_order": "big-endian",
+    "string_encoding": "utf-8-strict",
+    "string_termination": "length-prefixed-no-nul",
+    "trailing_bytes": "reject",
+    "object_store_key": "base64url-rfc4648-no-padding"
+  },
+  "constants": {
+    "domain_id_length_bytes": 32,
+    "snapshot_id_length_bytes": 32,
+    "object_id_length_bytes": 16,
+    "object_store_key_length_chars": 22,
+    "recovery_root_length_bytes": 32,
+    "hmac_sha256_tag_length_bytes": 32,
+    "recovery_file_length_bytes": 167,
+    "recovery_hmac_covered_length_bytes": 135,
+    "object_envelope_header_length_bytes": 19,
+    "object_aad_length_bytes": 101
+  },
+  "hkdf_sha256": [
+    {
+      "output": "domain_data_root",
+      "ikm": "recovery_root",
+      "salt": "domain_id",
+      "info_ascii": "ekd-v1/domain-data-root",
+      "length_bytes": 32
+    },
+    {
+      "output": "recovery_file_integrity_key",
+      "ikm": "recovery_root",
+      "salt": "domain_id",
+      "info_ascii": "ekd-v1/recovery-file-integrity",
+      "length_bytes": 32
+    },
+    {
+      "output": "manifest_key",
+      "ikm": "domain_data_root",
+      "salt": "domain_id",
+      "info_ascii": "ekd-v1/manifest-key",
+      "length_bytes": "suite.aead_key_length_bytes"
+    },
+    {
+      "output": "object_wrap_key",
+      "ikm": "domain_data_root",
+      "salt": "domain_id",
+      "info_ascii": "ekd-v1/object-wrap-key",
+      "length_bytes": "suite.wrap_key_length_bytes"
+    }
+  ],
+  "recovery_file_v1": {
+    "magic_ascii": "EKDR",
+    "fields": [
+      {"name": "magic", "offset": 0, "length": 4},
+      {"name": "recovery_format_version", "offset": 4, "length": 1, "value": 1},
+      {"name": "protocol_version", "offset": 5, "length": 1, "value": 1},
+      {"name": "domain_id", "offset": 6, "length": 32},
+      {"name": "suite_id", "offset": 38, "length": 1},
+      {"name": "recovery_root", "offset": 39, "length": 32},
+      {"name": "snapshot_id", "offset": 71, "length": 32},
+      {"name": "manifest_object_id", "offset": 103, "length": 16},
+      {"name": "non_secret_fingerprint", "offset": 119, "length": 16},
+      {"name": "integrity_tag", "offset": 135, "length": 32}
+    ],
+    "fingerprint": "trunc16(sha256(ascii(ekd-v1/recovery-fingerprint)||domain_id))",
+    "integrity": "hmac-sha256(recovery_file_integrity_key,file[0:135])"
+  },
+  "object_envelope_v1": {
+    "magic_ascii": "EKDO",
+    "fields": [
+      {"name": "magic", "type": "fixed", "length": 4},
+      {"name": "object_format_version", "type": "u8", "value": 1},
+      {"name": "protocol_version", "type": "u8", "value": 1},
+      {"name": "suite_id", "type": "u8"},
+      {"name": "nonce_length", "type": "u16be"},
+      {"name": "ciphertext_length", "type": "u64be"},
+      {"name": "tag_length", "type": "u16be"},
+      {"name": "nonce", "type": "bytes", "length_from": "nonce_length"},
+      {"name": "ciphertext", "type": "bytes", "length_from": "ciphertext_length"},
+      {"name": "tag", "type": "bytes", "length_from": "tag_length"}
+    ]
+  },
+  "object_aad_v1": {
+    "magic_ascii": "EKDA",
+    "fields": [
+      {"name": "magic", "type": "fixed", "length": 4},
+      {"name": "aad_format_version", "type": "u8", "value": 1},
+      {"name": "object_format_version", "type": "u8", "value": 1},
+      {"name": "protocol_version", "type": "u8", "value": 1},
+      {"name": "suite_id", "type": "u8"},
+      {"name": "object_type", "type": "u8", "values": {"file": 0, "manifest": 1}},
+      {"name": "domain_id", "type": "bytes", "length": 32},
+      {"name": "object_id", "type": "bytes", "length": 16},
+      {"name": "snapshot_id", "type": "bytes", "length": 32},
+      {"name": "nonce_length", "type": "u16be"},
+      {"name": "ciphertext_length", "type": "u64be"},
+      {"name": "tag_length", "type": "u16be"}
+    ]
+  },
+  "manifest_plaintext_v1": {
+    "magic_ascii": "EKDM",
+    "entry_sort": "strict-ascending-relative_path_utf8-bytes",
+    "fields": [
+      {"name": "magic", "type": "fixed", "length": 4},
+      {"name": "manifest_format_version", "type": "u8", "value": 1},
+      {"name": "domain_id", "type": "bytes", "length": 32},
+      {"name": "snapshot_id", "type": "bytes", "length": 32},
+      {"name": "parent_snapshot_id", "type": "bytes", "length": 32},
+      {"name": "content_policy_version", "type": "u8"},
+      {"name": "suite_id", "type": "u8"},
+      {"name": "entry_count", "type": "u32be"},
+      {"name": "entries", "type": "array", "count_from": "entry_count"}
+    ],
+    "entry_fields": [
+      {"name": "relative_path_length", "type": "u32be"},
+      {"name": "relative_path_utf8", "type": "utf8-strict", "length_from": "relative_path_length"},
+      {"name": "object_id", "type": "bytes", "length": 16},
+      {"name": "plaintext_size", "type": "u64be"},
+      {"name": "wrapped_key_length", "type": "u16be"},
+      {"name": "wrapped_object_key", "type": "bytes", "length_from": "wrapped_key_length"}
+    ]
+  }
+}

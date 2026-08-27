@@ -178,7 +178,7 @@ v0.2 自检曾声称：
 | 密钥图与对象替换 | FAIL — blocker | Manifest Key 与 Object Wrap Key 需要用途隔离 | 必须冻结 canonical HKDF 标签、完整 Manifest 认证和 object-ID/AAD binding，并增加 wrong-ID substitution 测试 |
 | 三环境 crypto smoke | PARTIAL — plan only | 已定义候选与 Windows CLI/Desktop/Android 三环境 | Phase 0 仍缺候选×套件×环境矩阵、KAT、RandomSource 失败路径及环境/报告 schema；精确版本、lockfile、产物 hash 与 Android 报告属于获授权后的 Phase 1 证据，在产生前不得选默认候选 |
 | Fixture / 性能 | PARTIAL — plan only | 有候选规模与暂定阈值 | 生成器、分布、种子、环境清单、测量方法和基线报告均不存在 |
-| 验收矩阵 | PARTIAL — catalog only | 37 项均有自然语言方法/证据路径，且全部 untested | 缺稳定错误码、副作用 oracle、THR→INV→ACC→evidence 追踪；所有 required/in-scope untested 必须阻止 P0-R1 关闭 |
+| 验收矩阵 | PARTIAL — catalog only | 37 项均有自然语言方法/证据路径，全部 untested；THR→INV→ACC→oracle→evidence 追踪表已建立（threat-traceability.md，Repair 4） | 错误码 oracle 已建立但实施代码未写；所有 required/in-scope untested 必须阻止 P0-R1 关闭 |
 | 实现与运行证据 | NOT STARTED | 仓库无 `packages/`、fixture、脚本、lockfile 或测试报告 | 文档不能升级为“实现完成”“测试通过”或“P0-R1 accepted” |
 
 当前权威裁决：
@@ -195,6 +195,6 @@ P0_R1_NOT_TESTED
 1. ~~以补充 ADR 明确恢复文件是 bearer secret 还是引入外部解锁密钥，并同步 INV-11、范围和安全声明~~ **已完成（ADR-0005，Repair 1）**；算法参数仍待 smoke 后冻结
 2. ~~冻结恢复文件 canonical serialization/完整性覆盖、完整 Manifest 认证、HKDF 用途标签和 object-ID/AAD binding~~ **已关闭（ADR-0006/0007，Repair 2+3）**
 3. 把 crypto smoke 改造成 `candidate × algorithm suite × environment` 的可复现合同，Phase 0 冻结 KAT、环境清单/报告 schema、错误码及版本/lockfile/产物哈希的采集规则；精确运行版本、lockfile、bundle hash 和 Android 报告在 Phase 1 获授权执行时产生；
-4. 建立 `THR-* → INV-* → ACC-* → oracle → evidence` 追踪，保证每个范围内安全要求有可自动判定的正面/负面测试；
+4. ~~建立 `THR-* → INV-* → ACC-* → oracle → evidence` 追踪~~ **已关闭（threat-traceability.md，Repair 4）**：5 个 THR、16 个 ATR、22 个规范错误码、ACC oracle 全部建立
 5. 统一复核 README、执行计划、ADR、协议、威胁模型和验收矩阵，无相互矛盾或 stale PASS 后，才能重新裁决 Phase 0；
 6. 本轮仅授权文档更新；不得自动创建工程骨架、运行密码实现、进入 Phase 1、提交或推送。

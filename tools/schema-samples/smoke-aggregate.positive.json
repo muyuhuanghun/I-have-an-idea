@@ -1,0 +1,16 @@
+{
+  "schema_version": "smoke-aggregate-v1",
+  "candidate": "candidate-aes-gcm-v1",
+  "suite_id": 1,
+  "source_reports": [
+    {"environment_id": "windows-node-cli", "path": "artifacts/smoke-reports/cli.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000020", "schema_valid": true},
+    {"environment_id": "windows-obsidian", "path": "artifacts/smoke-reports/obsidian.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000021", "schema_valid": true},
+    {"environment_id": "android-obsidian", "path": "artifacts/smoke-reports/android.json", "sha256": "0000000000000000000000000000000000000000000000000000000000000022", "schema_valid": true}
+  ],
+  "environment_verdicts": {
+    "windows-node-cli": "pass",
+    "windows-obsidian": "pass",
+    "android-obsidian": "pass"
+  },
+  "cross_env_verdict": "cross_env_pass"
+}

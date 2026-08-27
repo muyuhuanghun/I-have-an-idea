@@ -1,0 +1,76 @@
+{
+  "schema_version": "smoke-report-v1",
+  "run_id": "not-a-uuid",
+  "timestamp_utc": "yesterday",
+  "git_commit": "HEAD",
+  "candidate": {"name": "", "version": "", "package_integrity": "", "bundle_sha256": "not-hex"},
+  "algorithm_suite": {
+    "name": "",
+    "suite_id": 999,
+    "key_length_bytes": 8,
+    "nonce_length_bytes": 1,
+    "tag_length_bytes": 1,
+    "aad_contract": "made-up"
+  },
+  "environment": {
+    "id": "android-obsidian",
+    "os_name": "",
+    "os_version": "",
+    "runtime_name": "",
+    "runtime_version": "",
+    "device_model": null,
+    "architecture": "",
+    "lockfile_sha256": "not-hex",
+    "source_commit": "not-40-hex",
+    "bundle_sha256": "not-hex"
+  },
+  "test_vectors": {
+    "manifest_path": "",
+    "manifest_sha256": "not-hex",
+    "vector_count": 0,
+    "vectors_sha256": "not-hex"
+  },
+  "required_vector_counts": {
+    "aead_kat": 0,
+    "aead_tamper_ciphertext": 0,
+    "aead_tamper_tag": 0,
+    "aead_tamper_nonce": 0,
+    "aead_tamper_aad": 0,
+    "hkdf_kat": 0,
+    "hkdf_info_isolation": 0,
+    "random_roundtrip": 0,
+    "random_source_errors": 0,
+    "wrap_kat": 0,
+    "wrap_bad_material": 0
+  },
+  "vector_results": [
+    {"vector_id": "Bad_Id", "category": "made-up-category", "required": false, "status": "approved", "expected_sha256": "x", "actual_sha256": "y", "expected_error_codes": ["bad-code"], "actual_error_code": "bad-code", "duration_ms": -1.0, "peak_rss_bytes": -1}
+  ],
+  "process": {"exit_code": 0, "timed_out": false, "uncaught_error": "string-not-null-but-allowed-only-null"},
+  "aggregate": {
+    "total": 0,
+    "required_total": 13,
+    "passed": 0,
+    "failed": 0,
+    "error": 0,
+    "skipped": 0,
+    "required_passed": 99,
+    "verdict": "approved"
+  },
+  "environment_manifest": {
+    "recorded_at": "yesterday",
+    "items_sha256": "not-hex",
+    "items": [{"key": "", "value": "v"}]
+  },
+  "raw_artifacts": [],
+  "device_binding": {
+    "signature_algorithm": "",
+    "public_key_fingerprint": "",
+    "device_signature_base64url": "not-base64url!@#",
+    "run_id": "not-a-uuid",
+    "vector_manifest_sha256": "not-hex",
+    "plugin_bundle_sha256": "not-hex",
+    "verified": false
+  },
+  "smuggled": true
+}

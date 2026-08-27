@@ -1,0 +1,13 @@
+{
+  "schema_version": "smoke-aggregate-v1",
+  "candidate": "",
+  "suite_id": 300,
+  "source_reports": [
+    {"environment_id": "made-up-env", "path": "", "sha256": "not-hex", "schema_valid": false}
+  ],
+  "environment_verdicts": {
+    "windows-node-cli": "approved"
+  },
+  "cross_env_verdict": "yes",
+  "smuggled": true
+}

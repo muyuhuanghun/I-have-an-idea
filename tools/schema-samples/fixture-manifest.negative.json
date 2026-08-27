@@ -1,0 +1,28 @@
+{
+  "schema_version": "fixture-manifest-v1",
+  "fixture_id": "Bad-Fixture-Id",
+  "profile": "representative-large",
+  "seed": "",
+  "generator": {
+    "path": "",
+    "git_commit": "not-40-hex",
+    "sha256": "not-64-hex",
+    "version": ""
+  },
+  "totals": {
+    "files": 100,
+    "bytes": 50
+  },
+  "entries_sha256": "not-hex",
+  "entries": [
+    {
+      "relative_path": "",
+      "size_bytes": -1,
+      "sha256": "not-hex",
+      "content_class": "made-up-class",
+      "features": ["made-up-feature"]
+    }
+  ],
+  "feature_coverage": ["made-up-coverage"],
+  "smuggled": "field"
+}

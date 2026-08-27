@@ -1,0 +1,24 @@
+{
+  "schema_version": "acc-evidence-v1",
+  "acc_id": "ACC-01",
+  "run_id": "00000000-0000-4000-8000-000000000001",
+  "timestamp_utc": "2026-08-27T18:00:00Z",
+  "git_commit": "583a3a167258bbc223f5f2f78bf4ca04fd5fd847",
+  "status": "passed",
+  "checks": {
+    "schema_valid": {"passed": true, "expected": true, "actual": true, "detail": "schema validation succeeded"},
+    "forbidden_import_count_zero": {"passed": true, "expected": 0, "actual": 0, "detail": "no forbidden imports found"},
+    "core_build_exit_zero": {"passed": true, "expected": 0, "actual": 0, "detail": "core build succeeded"}
+  },
+  "observed_error_codes": [],
+  "side_effects": {
+    "source_vault_modified": false,
+    "partial_plaintext_returned": false,
+    "partial_success_reported": false,
+    "write_outside_target": false,
+    "undeclared_persistent_state_used": false
+  },
+  "artifacts": [
+    {"path": "schema-samples/acc-evidence.positive.json", "sha256": "3447d0e72d34143fecaa847ddd8795bbdfe4b1281a95873aeeeff25c8839a336"}
+  ]
+}

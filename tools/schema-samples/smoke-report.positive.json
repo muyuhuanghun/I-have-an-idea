@@ -1,0 +1,92 @@
+{
+  "schema_version": "smoke-report-v1",
+  "run_id": "00000000-0000-4000-8000-000000000020",
+  "timestamp_utc": "2026-08-27T20:00:00Z",
+  "git_commit": "583a3a167258bbc223f5f2f78bf4ca04fd5fd847",
+  "candidate": {
+    "name": "candidate-aes-gcm-v1",
+    "version": "1.0.0",
+    "package_integrity": "sha512-placeholder",
+    "bundle_sha256": "0000000000000000000000000000000000000000000000000000000000000030"
+  },
+  "algorithm_suite": {
+    "name": "AES-256-GCM",
+    "suite_id": 1,
+    "key_length_bytes": 32,
+    "nonce_length_bytes": 12,
+    "tag_length_bytes": 16,
+    "aad_contract": "ekd-object-aad-v1-101-bytes"
+  },
+  "environment": {
+    "id": "windows-node-cli",
+    "os_name": "Windows",
+    "os_version": "11",
+    "runtime_name": "node",
+    "runtime_version": "20.10.0",
+    "device_model": null,
+    "architecture": "x64",
+    "lockfile_sha256": "0000000000000000000000000000000000000000000000000000000000000031",
+    "source_commit": "583a3a167258bbc223f5f2f78bf4ca04fd5fd847",
+    "bundle_sha256": "0000000000000000000000000000000000000000000000000000000000000032"
+  },
+  "test_vectors": {
+    "manifest_path": "fixtures/crypto-vectors/manifest.json",
+    "manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000033",
+    "vector_count": 14,
+    "vectors_sha256": "0000000000000000000000000000000000000000000000000000000000000034"
+  },
+  "required_vector_counts": {
+    "aead_kat": 3,
+    "aead_tamper_ciphertext": 1,
+    "aead_tamper_tag": 1,
+    "aead_tamper_nonce": 1,
+    "aead_tamper_aad": 1,
+    "hkdf_kat": 2,
+    "hkdf_info_isolation": 1,
+    "random_roundtrip": 1,
+    "random_source_errors": 1,
+    "wrap_kat": 1,
+    "wrap_bad_material": 1
+  },
+  "vector_results": [
+    {"vector_id": "aead-kat-01", "category": "aead-kat", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000040", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000040", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "aead-kat-02", "category": "aead-kat", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000041", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000041", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "aead-kat-03", "category": "aead-kat", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000042", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000042", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "aead-tamper-ct-01", "category": "aead-tamper-ciphertext", "required": true, "status": "failed", "expected_sha256": null, "actual_sha256": null, "expected_error_codes": ["OBJECT_AEAD_FAILED"], "actual_error_code": "OBJECT_AEAD_FAILED", "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "aead-tamper-tag-01", "category": "aead-tamper-tag", "required": true, "status": "failed", "expected_sha256": null, "actual_sha256": null, "expected_error_codes": ["OBJECT_AEAD_FAILED"], "actual_error_code": "OBJECT_AEAD_FAILED", "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "aead-tamper-nonce-01", "category": "aead-tamper-nonce", "required": true, "status": "failed", "expected_sha256": null, "actual_sha256": null, "expected_error_codes": ["OBJECT_AEAD_FAILED"], "actual_error_code": "OBJECT_AEAD_FAILED", "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "aead-tamper-aad-01", "category": "aead-tamper-aad", "required": true, "status": "failed", "expected_sha256": null, "actual_sha256": null, "expected_error_codes": ["OBJECT_AAD_MISMATCH"], "actual_error_code": "OBJECT_AAD_MISMATCH", "duration_ms": 0.1, "peak_rss_bytes": 1000},
+    {"vector_id": "hkdf-kat-01", "category": "hkdf-kat", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000050", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000050", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.05, "peak_rss_bytes": 800},
+    {"vector_id": "hkdf-kat-02", "category": "hkdf-kat", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000051", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000051", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.05, "peak_rss_bytes": 800},
+    {"vector_id": "hkdf-info-iso-01", "category": "hkdf-info-isolation", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000052", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000052", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.05, "peak_rss_bytes": 800},
+    {"vector_id": "random-roundtrip-01", "category": "random-roundtrip", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000053", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000053", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.05, "peak_rss_bytes": 800},
+    {"vector_id": "random-source-errors-01", "category": "random-source-errors", "required": true, "status": "failed", "expected_sha256": null, "actual_sha256": null, "expected_error_codes": ["HONEST_CLAIM_VIOLATION"], "actual_error_code": "HONEST_CLAIM_VIOLATION", "duration_ms": 0.05, "peak_rss_bytes": 800},
+    {"vector_id": "wrap-kat-01", "category": "wrap-kat", "required": true, "status": "passed", "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000054", "actual_sha256": "0000000000000000000000000000000000000000000000000000000000000054", "expected_error_codes": [], "actual_error_code": null, "duration_ms": 0.05, "peak_rss_bytes": 800},
+    {"vector_id": "wrap-bad-material-01", "category": "wrap-bad-material", "required": true, "status": "failed", "expected_sha256": null, "actual_sha256": null, "expected_error_codes": ["OBJECT_AEAD_FAILED"], "actual_error_code": "OBJECT_AEAD_FAILED", "duration_ms": 0.05, "peak_rss_bytes": 800}
+  ],
+  "process": {"exit_code": 0, "timed_out": false, "uncaught_error": null},
+  "aggregate": {
+    "total": 14,
+    "required_total": 14,
+    "passed": 9,
+    "failed": 5,
+    "error": 0,
+    "skipped": 0,
+    "required_passed": 9,
+    "verdict": "pass"
+  },
+  "environment_manifest": {
+    "recorded_at": "2026-08-27T20:00:00Z",
+    "items_sha256": "0000000000000000000000000000000000000000000000000000000000000055",
+    "items": [
+      {"key": "os", "value": "Windows"},
+      {"key": "node", "value": "20.10.0"},
+      {"key": "v8", "value": "11.3"},
+      {"key": "arch", "value": "x64"}
+    ]
+  },
+  "raw_artifacts": [
+    {"path": "schema-samples/smoke-report.positive.json", "sha256": "275f22cc2567a7b5e8730a5a8f3fe107e140bfe6315ca64e0554b8d8630f749e"}
+  ],
+  "device_binding": null
+}

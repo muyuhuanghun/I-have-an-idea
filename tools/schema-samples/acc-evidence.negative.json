@@ -1,0 +1,18 @@
+{
+  "schema_version": "acc-evidence-v1",
+  "acc_id": "NOT-A-VALID-ID",
+  "run_id": "not-a-uuid",
+  "timestamp_utc": "yesterday",
+  "git_commit": "HEAD",
+  "status": "approved-by-magic",
+  "smuggled_marker": "leaked",
+  "checks": {},
+  "observed_error_codes": ["not-valid-error-code-format"],
+  "side_effects": {
+    "source_vault_modified": false,
+    "partial_plaintext_returned": false,
+    "partial_success_reported": false,
+    "write_outside_target": false
+  },
+  "artifacts": []
+}

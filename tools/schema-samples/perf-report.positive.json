@@ -1,0 +1,83 @@
+{
+  "schema_version": "perf-report-v1",
+  "purpose": "p0-r1",
+  "run_id": "00000000-0000-4000-8000-000000000010",
+  "timestamp_utc": "2026-08-27T19:00:00Z",
+  "git_commit": "583a3a167258bbc223f5f2f78bf4ca04fd5fd847",
+  "fixture": {
+    "fixture_id": "rep-large-001",
+    "profile": "representative-large",
+    "total_files": 10000,
+    "total_bytes": 1073741824,
+    "manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000010",
+    "generator_sha256": "0000000000000000000000000000000000000000000000000000000000000011"
+  },
+  "environment": {
+    "os_name": "Windows",
+    "os_version": "11",
+    "os_build": "22631.3007",
+    "cpu_model": "Sample CPU",
+    "cpu_cores_physical": 8,
+    "cpu_cores_logical": 16,
+    "cpu_base_frequency_mhz": 3000.0,
+    "ram_total_bytes": 34359738368,
+    "storage_model": "Sample NVMe",
+    "storage_type": "nvme-ssd",
+    "filesystem": "NTFS",
+    "node_version": "20.10.0",
+    "v8_version": "11.3",
+    "pnpm_version": "8.12.0",
+    "lockfile_sha256": "0000000000000000000000000000000000000000000000000000000000000012",
+    "power_plan": "balanced"
+  },
+  "cache_state": "cold",
+  "measurement": {
+    "clock": "performance.now",
+    "rss_source": "process.memoryUsage.rss",
+    "rss_sample_interval_ms": 50,
+    "setup_excluded": true,
+    "idle_rss_bytes": 12345
+  },
+  "phases": {
+    "scan": {"duration_ms": 10.0, "peak_rss_bytes": 100000, "files_processed": 10000, "bytes_processed": 1073741824, "throughput_bytes_per_sec": 107374182.4},
+    "encrypt": {"duration_ms": 30.0, "peak_rss_bytes": 200000, "files_processed": 10000, "bytes_processed": 1073741824, "throughput_bytes_per_sec": 35791394.1},
+    "restore_fresh_process": {"duration_ms": 25.0, "peak_rss_bytes": 150000, "files_processed": 10000, "bytes_processed": 1073741824, "throughput_bytes_per_sec": 42949672.96},
+    "restore_verify": {"duration_ms": 5.0, "peak_rss_bytes": 50000, "files_processed": 10000, "bytes_processed": 1073741824, "throughput_bytes_per_sec": 214748364.8},
+    "total": {"duration_ms": 70.0, "peak_rss_bytes": 200000, "files_processed": 10000, "bytes_processed": 1073741824, "throughput_bytes_per_sec": 15339168.91}
+  },
+  "process": {"exit_code": 0, "timed_out": false, "uncaught_error": null},
+  "thresholds": {
+    "peak_rss_limit_bytes": 536870912,
+    "min_fixture_byte_growth_ratio": 7.5,
+    "max_peak_rss_growth_bytes": 134217728,
+    "adjustment_count": 0,
+    "adjustment_record_path": null,
+    "adjustment_record_sha256": null
+  },
+  "bounded_memory_comparison": {
+    "small_run_id": "00000000-0000-4000-8000-000000000011",
+    "small_report_sha256": "0000000000000000000000000000000000000000000000000000000000000013",
+    "small_total_bytes": 134217728,
+    "small_peak_rss_bytes": 180000,
+    "large_total_bytes": 1073741824,
+    "large_peak_rss_bytes": 200000,
+    "fixture_byte_growth_ratio": 8.0,
+    "peak_rss_growth_bytes": 20000,
+    "same_environment": true,
+    "same_file_count": true,
+    "passed": true
+  },
+  "verdict": {
+    "fixture_within_profile": true,
+    "roundtrip_completed": true,
+    "bytes_verified": true,
+    "peak_rss_within_limit": true,
+    "rss_growth_within_limit": true,
+    "adjustments_within_policy": true,
+    "schema_valid": true,
+    "overall": "pass"
+  },
+  "raw_artifacts": [
+    {"path": "schema-samples/perf-report.positive.json", "sha256": "356523eb3418dc6428fe5f1baec783b2b90e748eb19afd2b0788110b6d26bf53"}
+  ]
+}

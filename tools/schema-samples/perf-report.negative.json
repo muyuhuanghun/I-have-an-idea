@@ -1,0 +1,66 @@
+{
+  "schema_version": "perf-report-v1",
+  "purpose": "p0-r1",
+  "run_id": "not-a-uuid",
+  "timestamp_utc": "2026-08-27",
+  "git_commit": "HEAD",
+  "fixture": {
+    "fixture_id": "tiny",
+    "profile": "tiny",
+    "total_files": 10,
+    "total_bytes": 50,
+    "manifest_sha256": "not-hex",
+    "generator_sha256": "not-hex"
+  },
+  "environment": {
+    "os_name": "",
+    "os_version": "",
+    "os_build": "",
+    "cpu_model": "",
+    "cpu_cores_physical": 0,
+    "cpu_cores_logical": 0,
+    "cpu_base_frequency_mhz": -1,
+    "ram_total_bytes": 0,
+    "storage_model": "",
+    "storage_type": "made-up",
+    "filesystem": "ext4",
+    "node_version": "",
+    "v8_version": "",
+    "pnpm_version": "",
+    "lockfile_sha256": "not-hex",
+    "power_plan": ""
+  },
+  "cache_state": "hot",
+  "measurement": {
+    "clock": "Date.now",
+    "rss_source": "os.totalmem",
+    "rss_sample_interval_ms": 200,
+    "setup_excluded": false,
+    "idle_rss_bytes": -1
+  },
+  "phases": {
+    "scan": {"duration_ms": -1.0, "peak_rss_bytes": -1, "files_processed": -1, "bytes_processed": -1, "throughput_bytes_per_sec": -1.0}
+  },
+  "process": {"exit_code": 1, "timed_out": true, "uncaught_error": "ignored"},
+  "thresholds": {
+    "peak_rss_limit_bytes": -1,
+    "min_fixture_byte_growth_ratio": 0.5,
+    "max_peak_rss_growth_bytes": 1,
+    "adjustment_count": 99,
+    "adjustment_record_path": "x",
+    "adjustment_record_sha256": "x"
+  },
+  "bounded_memory_comparison": null,
+  "verdict": {
+    "fixture_within_profile": false,
+    "roundtrip_completed": false,
+    "bytes_verified": false,
+    "peak_rss_within_limit": false,
+    "rss_growth_within_limit": false,
+    "adjustments_within_policy": false,
+    "schema_valid": false,
+    "overall": "approved-by-magic"
+  },
+  "raw_artifacts": [],
+  "smuggled": true
+}

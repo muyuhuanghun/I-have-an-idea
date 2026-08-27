@@ -1,0 +1,42 @@
+{
+  "schema_version": "fixture-manifest-v1",
+  "fixture_id": "rep-small-001",
+  "profile": "representative-small",
+  "seed": "fixture-seed-001",
+  "generator": {
+    "path": "tools/fixture-generator.ts",
+    "git_commit": "583a3a167258bbc223f5f2f78bf4ca04fd5fd847",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "version": "0.1.0"
+  },
+  "totals": {
+    "files": 10000,
+    "bytes": 134217728
+  },
+  "entries_sha256": "0000000000000000000000000000000000000000000000000000000000000001",
+  "entries": [
+    {
+      "relative_path": "notes/hello.md",
+      "size_bytes": 12,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000002",
+      "content_class": "markdown",
+      "features": ["frontmatter", "wikilink"]
+    },
+    {
+      "relative_path": "src/hello.c",
+      "size_bytes": 42,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000003",
+      "content_class": "c",
+      "features": []
+    }
+  ],
+  "feature_coverage": ["markdown", "c", "empty-file"],
+  "constraints": {
+    "min_files": 10000,
+    "max_files": 10000,
+    "min_bytes": 127506842,
+    "max_bytes": 140928614,
+    "validation_errors": [],
+    "verdict": "pass"
+  }
+}

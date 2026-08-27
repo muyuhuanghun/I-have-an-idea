@@ -177,7 +177,7 @@ v0.2 自检曾声称：
 | 整体替换/回滚 | 边界已诚实降级，仍待合同核对 | P0 无 freshness anchor、可信计数器或 latest head | 必须始终声明“只验证给定快照内部一致性”，不得声称完整反回滚 |
 | 密钥图与对象替换 | FAIL — blocker | Manifest Key 与 Object Wrap Key 需要用途隔离 | 必须冻结 canonical HKDF 标签、完整 Manifest 认证和 object-ID/AAD binding，并增加 wrong-ID substitution 测试 |
 | 三环境 crypto smoke | PARTIAL — plan only | 已定义候选与 Windows CLI/Desktop/Android 三环境 | Phase 0 仍缺候选×套件×环境矩阵、KAT、RandomSource 失败路径及环境/报告 schema；精确版本、lockfile、产物 hash 与 Android 报告属于获授权后的 Phase 1 证据，在产生前不得选默认候选 |
-| Fixture / 性能 | PARTIAL — plan only | 有候选规模与暂定阈值 | 生成器、分布、种子、环境清单、测量方法和基线报告均不存在 |
+| Fixture / 性能 | PARTIAL — plan only | 候选规模与暂定阈值已冻结；ADR-0009 冻结 Windows 路径规则；ADR-0010 冻结性能 schema 和采集方法 | 生成器、分布、种子和实测基线报告仍不存在（按设计不在 Phase 0 文档范围） |
 | 验收矩阵 | PARTIAL — catalog only | 37 项均有自然语言方法/证据路径，全部 untested；THR→INV→ACC→oracle→evidence 追踪表已建立（threat-traceability.md，Repair 4） | 错误码 oracle 已建立但实施代码未写；所有 required/in-scope untested 必须阻止 P0-R1 关闭 |
 | 实现与运行证据 | NOT STARTED | 仓库无 `packages/`、fixture、脚本、lockfile 或测试报告 | 文档不能升级为“实现完成”“测试通过”或“P0-R1 accepted” |
 

@@ -173,7 +173,7 @@ v0.2 自检曾声称：
 | README / 执行计划状态 | PASS（当前未提交 diff） | 已改为 Phase 0 REOPENED、Phase 1 未授权、P0-R1 未实现/未测试，并通过状态断言 | 当前树仍为 dirty；提交前不得写成 clean 或已发布 |
 | P0 内容范围 | PASS（当前未提交 diff） | P0 仅做 whole-file snapshot/encrypt/restore/byte verification；本地链接与状态词检查通过 | P1 同步、协调和冲突语义不得重新混入 P0 验收 |
 | Manifest 定位链 | PARTIAL | locator 解决 fresh-process “到哪里取 Manifest” | 恢复文件 canonical 完整性覆盖、完整 Manifest 认证、domain/snapshot/object-ID AAD 绑定及字节编码未冻结 |
-| 恢复根/恢复材料 | FAIL — blocker | 当前范围实际是高熵 bearer secret；没有口令、第二密钥、keystore 或远程密钥 | 补充 ADR 必须明确 bearer-secret 语义，或修改 INV-11/范围并定义外部解锁密钥；不能继续声称已有独立静态保护 |
+| 恢复根/恢复材料 | REPAIRED — Repair 1 完成 | ADR-0005 已冻结 P0 = bearer secret，完整性密钥自派生，INV-11 不变，诚实边界已声明 | 算法参数（HKDF salt/输出长度/完整性方案/恢复根位数）仍待 smoke test 后按 §6 冻结 |
 | 整体替换/回滚 | 边界已诚实降级，仍待合同核对 | P0 无 freshness anchor、可信计数器或 latest head | 必须始终声明“只验证给定快照内部一致性”，不得声称完整反回滚 |
 | 密钥图与对象替换 | FAIL — blocker | Manifest Key 与 Object Wrap Key 需要用途隔离 | 必须冻结 canonical HKDF 标签、完整 Manifest 认证和 object-ID/AAD binding，并增加 wrong-ID substitution 测试 |
 | 三环境 crypto smoke | PARTIAL — plan only | 已定义候选与 Windows CLI/Desktop/Android 三环境 | Phase 0 仍缺候选×套件×环境矩阵、KAT、RandomSource 失败路径及环境/报告 schema；精确版本、lockfile、产物 hash 与 Android 报告属于获授权后的 Phase 1 证据，在产生前不得选默认候选 |
@@ -192,7 +192,7 @@ P0_R1_NOT_TESTED
 
 ## 8. 重新关闭 Phase 0 的下一道门禁
 
-1. 以补充 ADR 明确恢复文件是 bearer secret 还是引入外部解锁密钥，并同步 INV-11、范围和安全声明；
+1. ~~以补充 ADR 明确恢复文件是 bearer secret 还是引入外部解锁密钥，并同步 INV-11、范围和安全声明~~ **已完成（ADR-0005，Repair 1）**；算法参数仍待 smoke 后冻结
 2. 冻结恢复文件 canonical serialization/完整性覆盖、完整 Manifest 认证、HKDF 用途标签和 object-ID/AAD binding；
 3. 把 crypto smoke 改造成 `candidate × algorithm suite × environment` 的可复现合同，Phase 0 冻结 KAT、环境清单/报告 schema、错误码及版本/lockfile/产物哈希的采集规则；精确运行版本、lockfile、bundle hash 和 Android 报告在 Phase 1 获授权执行时产生；
 4. 建立 `THR-* → INV-* → ACC-* → oracle → evidence` 追踪，保证每个范围内安全要求有可自动判定的正面/负面测试；

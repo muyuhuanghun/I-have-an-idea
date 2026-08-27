@@ -62,7 +62,17 @@ fresh-process 恢复链：
 - 从恢复文件自身携带的秘密派生完整性键，可以检测损坏或字段修改，但不能在没有外部锚点时证明攻击者没有整体替换恢复文件和配套 ObjectStore；
 - 生成后关闭句柄并重新读取只能证明磁盘文件可解析，不能替代完整 fresh-process 恢复演练。
 
-因此，本文档不再使用“恢复根已受保护”作为 Phase 0 已通过的证据。bearer-secret/外部解锁二选一及其安全声明必须在 Phase 0 补充 ADR 中先行裁决；具体算法和字节参数可按 §6.2 在获授权 smoke test 后冻结。
+### 2.4.1 Bearer secret 决策（已冻结）
+
+ADR-0005 裁决如下：
+
+- P0 选择 bearer secret 方案：恢复文件是完整秘密输入，无口令、无 keystore、无第二秘密；
+- 恢复文件完整性密钥从恢复根自身 HKDF 派生（info = recovery-file-integrity），属自我引用完整性；
+- INV-11 不变：fresh-process 只凭恢复文件和 ObjectStore；
+- 诚实边界：不检测合法旧恢复文件 + 匹配旧 ObjectStore 的整体替换，不提供快照新鲜度或反回滚；这些限制为 P0 OUT，在关闭报告中记为 known-limitation；
+- 方案 B（外部解锁秘密）推迟到 P1-alpha，引入时必须修订 INV-11 和恢复文件格式。
+
+算法参数（HKDF salt、输出长度、完整性方案选择、恢复根最终位数）仍按 §6 在 smoke test 后冻结。
 
 ### 2.5 生成与验证流程
 

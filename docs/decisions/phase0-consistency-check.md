@@ -193,7 +193,7 @@ P0_R1_NOT_TESTED
 ## 8. 重新关闭 Phase 0 的下一道门禁
 
 1. ~~以补充 ADR 明确恢复文件是 bearer secret 还是引入外部解锁密钥，并同步 INV-11、范围和安全声明~~ **已完成（ADR-0005，Repair 1）**；算法参数仍待 smoke 后冻结
-2. 冻结恢复文件 canonical serialization/完整性覆盖、完整 Manifest 认证、HKDF 用途标签和 object-ID/AAD binding；
+2. ~~冻结恢复文件 canonical serialization/完整性覆盖~~ **已关闭（ADR-0006，Repair 2）**；完整 Manifest 认证、HKDF 用途标签和 object-ID/AAD binding 仍待 Repair 3
 3. 把 crypto smoke 改造成 `candidate × algorithm suite × environment` 的可复现合同，Phase 0 冻结 KAT、环境清单/报告 schema、错误码及版本/lockfile/产物哈希的采集规则；精确运行版本、lockfile、bundle hash 和 Android 报告在 Phase 1 获授权执行时产生；
 4. 建立 `THR-* → INV-* → ACC-* → oracle → evidence` 追踪，保证每个范围内安全要求有可自动判定的正面/负面测试；
 5. 统一复核 README、执行计划、ADR、协议、威胁模型和验收矩阵，无相互矛盾或 stale PASS 后，才能重新裁决 Phase 0；

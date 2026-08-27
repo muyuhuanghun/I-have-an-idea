@@ -1,9 +1,11 @@
 # ADR-0007：完整 Manifest 认证与 Object-ID/AAD Binding 字节级合同
 
-- 状态：已接受（冻结 Phase 0 文档门禁项；少量长度参数待 smoke test）
+- 状态：**历史，Manifest/AAD 字节合同已被 ADR-0011 取代**
 - 日期：2026-08-27
 - 决策者：开发者
 - 相关文档：ADR-0002、ADR-0006、P0-recovery-and-object-format.md §3.2、§6.1
+
+> 历史边界：本文的 85 字节 AAD 从待解密 Manifest 取得 `snapshot_id`，形成循环依赖；NUL 终止路径和“object ID 16 字节仍待定”也已撤销。当前权威是 ADR-0011 和 `p0-wire-contract-v1.json`。下文只保留为问题演进记录，不得用于实现或 KAT。
 
 ## 背景
 
@@ -11,7 +13,7 @@ P0-recovery-and-object-format.md §6.1 要求：明确完整 canonical Manifest 
 
 未冻结 AAD 编码时，wrong-ID substitution 攻击无协议依据：把完整合法密文复制到错误对象 ID 并改写引用，AEAD 验证仍可能通过（因旧 AAD 与新 ID 不匹配，但若 AAD 不含 object_id 则攻击可通过）。本 ADR 冻结的 AAD 绑定使这种攻击在协议层被拒绝。
 
-## 决策
+## 历史决策（已取代）
 
 ### 1. 完整 Canonical Manifest 明文结构
 

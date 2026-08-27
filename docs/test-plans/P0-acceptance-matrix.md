@@ -1,13 +1,13 @@
 # P0 验收矩阵
 
-> 文档版本：v0.3
-> 状态：验收目录草案；37 项全部 untested，Phase 0 门禁重新打开
+> 文档版本：v1.0
+> 当前状态：37 项 stable ID 与机器 oracle 已冻结；37 项全部 `untested`
 > 日期：2026-08-27
-> 权威来源：执行计划 §19、§17、§11.3
+> 机器权威：`docs/contracts/p0-traceability-v1.json`、`docs/schemas/acc-evidence-v1.schema.json`
 
 ## 1. 职责
 
-定义 P0-R1 关闭所需的验收目录、状态语义和证据位置。当前 37 项均是自然语言测试合同；文中出现的 `pnpm` 命令、脚本名和证据路径是预期接口，不代表对应实现或报告已经存在。进入实现前仍须把要求、威胁/不变式、可自动判定 oracle、稳定错误码和副作用检查建立可追踪映射。
+定义 P0-R1 关闭所需的人类可读验收目录。每条 ACC 的覆盖类型、THR/INV 链、required checks、稳定错误码、禁止副作用和唯一证据路径已经进入机器 registry；本文中的命令仍是预期接口，不代表实现或报告存在。
 
 ## 2. 验收矩阵 Schema
 
@@ -17,15 +17,18 @@
 |---|---|
 | ID | 唯一标识，如 ACC-01 |
 | 要求 | 一句话描述验收内容 |
+| 覆盖类型 | security/architecture/correctness/performance/reporting/reproducibility/claims |
 | 来源 | 引用 README/执行计划/安全不变式/ADR 的条款 |
 | 测试类型 | 正面（happy path）或负面（fault injection） |
 | 测试方法 | 具体测试步骤、脚本路径和输入 fixture |
-| 错误判定 | 明确什么结果算失败（供测试自动判定） |
+| required checks | `acc-evidence-v1.checks` 中必须存在且 `passed=true` 的稳定 check ID |
+| 错误码组 | 每组至少出现一个规范错误码；缺失失败 |
+| 禁止副作用 | 对应 side-effect flag 必须显式为 false；缺失失败 |
 | 证据路径 | 测试报告输出文件的相对路径 |
 | 状态 | passed/failed/untested/known-limitation/out-of-scope |
 | 备注 | 已知限制或移出范围说明 |
 
-全部 ACC 的初始状态为 untested。只有真实执行并绑定证据后才能更新状态；文档存在、命令名存在或人工说明都不能替代测试通过。
+全部 ACC 的提交状态固定为 `untested`。缺字段、额外字段、错误类型、required check 缺项、错误码缺项或禁止副作用未显式记录都使 evidence 无效。只有 `python tools/verify_phase0_contracts.py --evidence-root artifacts` 对 37 份报告返回 0，才满足 registry oracle；文档存在、命令名存在或人工说明不能替代测试通过。
 
 ## 3. 验收要求清单
 
@@ -74,10 +77,10 @@
 - 状态：untested
 
 **ACC-06：恢复文件含全部必填字段**
-- 来源：恢复文件格式 §2.1
+- 来源：ADR-0011 §4、恢复文件格式 §2.3、INV-14
 - 测试类型：正面
-- 测试方法：解析恢复文件，验证 magic、格式版本、协议版本、域 ID、密码套件标识、恢复材料、完整性信息、非秘密指纹、Manifest 定位符全部存在且类型正确
-- 错误判定：缺少任何必填字段即失败
+- 测试方法：验证合法文件恰好 167 字节、字段偏移与 wire contract 一致；对每个固定字段分别构造截断/缺项变体，并增加尾随字节变体
+- 错误判定：合法文件有任一偏移/长度不符，或任一缺项/尾随变体未以 `RECOVERY_FIELD_MISSING`/`RECOVERY_TRUNCATED`/`RECOVERY_TRAILING_BYTES` 拒绝即失败
 - 证据路径：`artifacts/test-reports/acc-06-recovery-fields.json`
 - 状态：untested
 
@@ -92,24 +95,24 @@
 **ACC-08：错误恢复文件被拒绝**
 - 来源：执行计划 §19.13、INV-14
 - 测试类型：负面
-- 测试方法：使用损坏的恢复材料（替换为随机字节）尝试恢复快照。脚本：`pnpm test:acc-08-wrong-recovery`
-- 错误判定：恢复器返回错误而非部分恢复即通过；返回部分文件即失败
+- 测试方法：分别翻转 recovery root、Manifest locator、snapshot ID 和 fingerprint 的单个字节且不重算 HMAC，再尝试恢复。脚本：`pnpm test:acc-08-wrong-recovery`
+- 错误判定：每个变体都必须返回 `RECOVERY_INTEGRITY_FAILED`，不返回部分结构/明文且不写目标目录；缺任一子结果即失败
 - 证据路径：`artifacts/test-reports/acc-08-wrong-recovery.json`
 - 状态：untested
 
 **ACC-09：恢复文件截断被拒绝**
 - 来源：执行计划 §17、INV-14
 - 测试类型：负面
-- 测试方法：将恢复文件末尾截断 10% 字节后尝试恢复
-- 错误判定：恢复器返回完整性错误而非部分恢复即通过
+- 测试方法：对 167 字节恢复文件的每个可能截断长度（0..166）执行解析
+- 错误判定：全部变体返回 `RECOVERY_TRUNCATED` 且零输出；只测一个“截断 10%”样本不合格
 - 证据路径：`artifacts/test-reports/acc-09-truncated-recovery.json`
 - 状态：untested
 
 **ACC-10：不支持的恢复文件格式版本被拒绝**
 - 来源：恢复文件格式 §4.1、INV-14
 - 测试类型：负面
-- 测试方法：将恢复文件格式版本改为 999，尝试恢复
-- 错误判定：恢复器返回版本不支持错误即通过
+- 测试方法：分别把 1 字节 recovery format version 和 protocol version 改为不支持值
+- 错误判定：两种变体都返回 `RECOVERY_VERSION_UNSUPPORTED` 且零输出；不能把 999 写入 1 字节字段
 - 证据路径：`artifacts/test-reports/acc-10-version-mismatch.json`
 - 状态：untested
 
@@ -124,7 +127,7 @@
 - 状态：untested
 
 **ACC-12：相同明文重复加密不产生可直接关联的相同密文对象**
-- 来源：INV-2
+- 来源：INV-02
 - 测试类型：负面
 - 测试方法：对同一明文文件加密两次，比较两个密文对象的字节和对象 ID
 - 错误判定：密文字节相同或对象 ID 相同即失败
@@ -132,15 +135,15 @@
 - 状态：untested
 
 **ACC-13：对象 ID 是随机不透明标识，非裸内容哈希**
-- 来源：INV-3、对象格式 §3.3
+- 来源：INV-03、ADR-0011 §5
 - 测试类型：负面
-- 测试方法：计算多个文件的内容哈希，与对应的对象 ID 比较；构造内容相同但路径不同的文件，验证对象 ID 不同
-- 错误判定：对象 ID 等于内容哈希或内容相同导致对象 ID 相同即失败
+- 测试方法：验证 raw ID 恰好 16 字节、store key 恰好 22 字符无 padding base64url 且 canonical roundtrip；再比较内容哈希和相同内容的多次 ID
+- 错误判定：长度/编码/roundtrip 任一不符、ID 等于内容哈希、相同内容 ID 相同或随机源不可追溯均失败
 - 证据路径：`artifacts/test-reports/acc-13-object-id-randomness.json`
 - 状态：untested
 
 **ACC-14：密文对象使用 AEAD，篡改被检测**
-- 来源：INV-4
+- 来源：INV-04
 - 测试类型：负面
 - 测试方法：翻转密文对象中 1 个字节，尝试解密恢复
 - 错误判定：解密返回认证失败错误而非返回部分明文即通过
@@ -150,16 +153,16 @@
 **ACC-15：对象篡改、截断、缺失和重复被拒绝**
 - 来源：执行计划 §17、INV-14
 - 测试类型：负面
-- 测试方法：分别执行四种子测试：(a) 替换对象字节，(b) 截断对象 50%，(c) 删除一个对象引用但保留 Manifest 条目，(d) 复制一个对象到新 ID 并替换引用
-- 错误判定：任一子测试恢复部分文件而非整体失败即失败
+- 测试方法：分别执行：(a) 密文/nonce/tag 位翻转，(b) 对每个 envelope 截断边界截断，(c) 缺失对象，(d) wrong-ID substitution，(e) 重复 object ID 引用，(f) 尾随字节
+- 错误判定：六类子测试分别命中 registry 的错误码组，且不返回部分明文/成功、不写出目标根；缺任一子结果即失败
 - 证据路径：`artifacts/test-reports/acc-15-object-corruption.json`
 - 状态：untested
 
 **ACC-16：Manifest 篡改被拒绝**
 - 来源：执行计划 §17
 - 测试类型：负面
-- 测试方法：翻转 Manifest 密文 1 字节后尝试恢复
-- 错误判定：恢复器返回认证失败而非接受篡改 Manifest 即通过
+- 测试方法：分别翻转 Manifest ciphertext、tag 和 Recovery File 中用于 Manifest AAD 的 snapshot/object ID 字段，并测试 Manifest 尾随字节
+- 错误判定：AEAD/AAD 变体返回 `MANIFEST_AEAD_FAILED` 或更早的 recovery HMAC 失败；尾随字节返回 `MANIFEST_TRAILING_BYTES`；不返回部分 entries
 - 证据路径：`artifacts/test-reports/acc-16-manifest-tamper.json`
 - 状态：untested
 
@@ -174,7 +177,7 @@
 ### 3.4 路径与完整性
 
 **ACC-18：非空恢复目标目录被拒绝**
-- 来源：执行计划 §19.11、INV-8
+- 来源：执行计划 §19.11、INV-08
 - 测试类型：负面
 - 测试方法：在目标恢复目录放置一个 dummy 文件，尝试恢复
 - 错误判定：恢复器拒绝并返回非空目标错误即通过；覆盖已有文件即失败
@@ -182,7 +185,7 @@
 - 状态：untested
 
 **ACC-19：路径逃逸被拒绝**
-- 来源：执行计划 §19.12、INV-6
+- 来源：执行计划 §19.12、INV-06
 - 测试类型：负面
 - 测试方法：构造含 `../` 路径的合成 Manifest 条目，尝试恢复
 - 错误判定：恢复器写出 Vault 根目录外即失败
@@ -190,7 +193,7 @@
 - 状态：untested
 
 **ACC-20：Symlink/Junction 被拒绝**
-- 来源：执行计划 §19.12、INV-7
+- 来源：执行计划 §19.12、INV-07
 - 测试类型：负面
 - 测试方法：在 tiny fixture Vault 中创建指向 Vault 外的 Symlink 和 Junction，扫描后验证被拒绝
 - 错误判定：扫描跟随重解析点或上传其目标即失败
@@ -206,7 +209,7 @@
 - 状态：untested
 
 **ACC-22：源 Vault 零修改**
-- 来源：执行计划 §19.10、INV-9
+- 来源：执行计划 §19.10、INV-09
 - 测试类型：正面
 - 测试方法：创建快照前计算源 Vault 全部文件的 SHA-256 清单，快照后重新计算并比较
 - 错误判定：任何文件哈希变化或新增文件即失败
@@ -243,7 +246,7 @@
 - 来源：执行计划 §19.6
 - 测试类型：正面
 - 测试方法：使用 representative fixture（固定种子生成）执行完整扫描→加密→ObjectStore→恢复往返
-- 错误判定：往返中断或报错即失败
+- 错误判定：fixture 不是恰好 10,000 文件或总字节不在 1 GiB ±5%（1,020,054,733..1,127,428,915），或往返/独立验证任一失败即失败
 - 证据路径：`artifacts/performance-reports/acc-26-10k-roundtrip.json`
 - 状态：untested
 
@@ -267,15 +270,15 @@
 - 来源：执行计划 §19.15
 - 测试类型：正面
 - 测试方法：在 representative fixture 往返期间监控进程峰值 RSS
-- 错误判定：峰值 RSS 超过冻结阈值（暂定 512 MiB）即失败
+- 错误判定：schema 缺测量字段、采样间隔 >100 ms、总阶段 peak RSS 超过当前冻结值 536,870,912 字节，或 DP-011 的合法一次调整记录不成立即失败
 - 证据路径：`artifacts/performance-reports/acc-29-memory.json`
 - 状态：untested
 
 **ACC-30：10,000 文件不按 Vault 总大小无界占用内存**
 - 来源：安全不变式 §5
 - 测试类型：负面
-- 测试方法：使用 representative fixture（约 1 GiB）执行扫描，验证峰值 RSS 与文件数量相关而非与总字节线性增长
-- 错误判定：峰值 RSS 接近 Vault 总大小（线性占用）即失败
+- 测试方法：在同一环境、同为 10,000 文件下运行 representative-small（约 128 MiB）和 representative-large（约 1 GiB）
+- 错误判定：large/small 字节比 <7.5、large peak RSS - small peak RSS >134,217,728 字节，或 large peak RSS 超冻结上限即失败
 - 证据路径：`artifacts/performance-reports/acc-30-bounded-memory.json`
 - 状态：untested
 
@@ -283,7 +286,7 @@
 - 来源：执行计划 §19.15
 - 测试类型：正面
 - 测试方法：验证性能报告记录实际环境、耗时、吞吐和峰值内存，且阈值调整不超过一次（检查调整记录）
-- 错误判定：性能报告缺失必填字段或阈值调整超一次即失败
+- 错误判定：`perf-report-v1` schema 无效、任一 required 字段缺失、adjustment_count >1、存在调整但无 hash-bound 记录，或 overall 不是由各布尔 verdict 推导即失败
 - 证据路径：`artifacts/performance-reports/acc-31-perf-evaluation.json`
 - 状态：untested
 
@@ -318,8 +321,8 @@
 **ACC-35：有机器可读和人类可读报告**
 - 来源：执行计划 §19.16
 - 测试类型：正面
-- 测试方法：执行一次完整往返，验证输出 JSON（机器可读）和 Markdown（人类可读）报告均存在且含必填字段
-- 错误判定：缺少任一格式或必填字段即失败
+- 测试方法：执行完整往返，验证 JSON 满足对应 schema、Markdown 存在且两者 hash-bound；再对每个 required 字段做删除变体
+- 错误判定：缺任一格式/hash，或任一缺字段变体未返回 `REPORT_SCHEMA_INVALID` 即失败
 - 证据路径：`artifacts/test-reports/acc-35-report-formats.json`
 - 状态：untested
 
@@ -334,8 +337,8 @@
 **ACC-37：文档不宣称生产安全或独立审计完成**
 - 来源：执行计划 §19.18
 - 测试类型：正面
-- 测试方法：先扫描关闭报告和 README 中的高风险声明词汇（"零知识安全"、"已合规"、"已通过独立审计"、"生产可用"），再由人工逐处判断该文字是在禁止/否定/引用语境中，还是无证据的肯定性声明；报告保存命中位置、上下文和裁决理由
-- 错误判定：存在没有实现、测试和独立证据支持的肯定性安全/合规/生产声明即失败；仅在禁止、否定或历史引用语境出现关键词不自动失败
+- 测试方法：机器扫描当前安全/合规/生产/freshness/静态保护声明与状态词；人工逐条裁决上下文；同时验证旧 PASS/REPAIRED 结论所在章节或 ADR 明确标为 historical/superseded
+- 错误判定：存在无证据的当前肯定声明、历史结论未标历史、缺 rollback/bearer/THR-05 边界，或机器命中与人工裁决未 hash-bound 即失败
 - 证据路径：`artifacts/test-reports/acc-37-honest-claims.json`
 - 状态：untested
 
@@ -364,7 +367,7 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 
 截至 2026-08-27：
 
-- 仓库中尚无 `packages/`、测试脚本、fixture、环境清单或测试报告，37 项均为 **untested**；
-- 多数测试仍缺稳定的结构化错误码、超时/退出码、禁止副作用和“不得产生部分输出”等机器 oracle；
-- 当前尚无逐条 `THR-* → INV-* → ACC-* → evidence` 追踪表，不能证明每个安全要求都已由正面与负面路径覆盖；
-- 因此本矩阵不能支持 P0-R1 或任何安全实现已经通过的结论。37 项为 untested 本身符合“尚未实现”的当前阶段；阻止 Phase 0 文档门禁关闭的是追踪、oracle 和关闭语义仍不完整，而不是要求在 Phase 0 提前跑完 P0-R1 测试。
+- 37 ACC / 16 INV / 5 THR 的 stable ID、双向链接、机器 oracle、错误码和 evidence path 已由 registry 与静态验证器闭合；
+- smoke/fixture/performance/ACC evidence 的 JSON Schema 已存在，缺项和未知字段失败关闭；
+- 仓库仍无 `packages/`、lockfile、实际 fixture、环境清单或运行报告，37 项全部 **untested**；
+- 因此只可声明 `PHASE0_CONTRACT_CHECK_PASS mode=design-only`，不能声明 P0-R1、密码候选、性能或安全测试已经通过。

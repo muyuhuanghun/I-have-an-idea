@@ -1,9 +1,9 @@
 # P0 威胁模型
 
-> 文档版本：v0.2
-> 状态：诚实回滚边界已形成；恢复文件/Manifest/对象认证绑定仍待关闭
+> 文档版本：v1.0
+> 当前状态：5 个 THR 的设计合同与处置已冻结；实现和运行证据不存在
 > 日期：2026-08-27
-> 权威来源：README §5.3、§23、执行计划 §6
+> 机器追踪：`docs/contracts/p0-traceability-v1.json`
 
 ## 1. 职责
 
@@ -32,38 +32,44 @@ P0 不涉及真实账号、真实团队、生产服务器、自动监听、增�
 
 P0 范围内识别 5 个攻击者类别。每类分配 THR 编号作为追踪标识。
 
+<a id="thr-01"></a>
 ### THR-01：诚实但好奇的 ObjectStore（§4.1）
 
 - 可以观察对象 ID、对象数量、密文大小、总密文字节、上传下载时间、协议版本；
 - 不能解密正文、文件名、扩展名或相对路径；
 - P0 不做大小填充或流量隐藏，在关闭报告中记录该限制。
-- 缓解对应：INV-1、INV-3、ACC-32、ACC-33。
+- 当前处置：P0-R1 内缓解；对应 INV-01/02/03 与 ACC-12/13/32/33，完整集合以 registry 为准。
 
+<a id="thr-02"></a>
 ### THR-02：被动网络观察者（阶段 7 以后，§4.2）
 
 - 只观察 localhost HTTP 上的密文对象；
 - P0 阶段 7 限定 localhost，不涉及公网或中间人。
-- 缓解对应：ACC-32、ACC-33（阶段 7 适用，P0-R1 仅本地）。
+- 当前处置：P0-R1 明确 out-of-scope；不得把 Directory ObjectStore 的 ACC-32/33 外推成网络证据。Stage 7 必须先关闭 DP-014。
 
+<a id="thr-03"></a>
 ### THR-03：篡改 ObjectStore 内容的主动攻击者（§4.3）
 
 - 替换、截断、删除 Manifest 引用的密文对象，或在某个对象 ID 下返回不同字节；
 - 上述情况必须通过对象 ID/AAD 绑定、AEAD 认证或缺失引用检查失败关闭；
 - 对同一对象 ID 返回完全相同的不可变密文字节是幂等读取，不属于攻击，也不应被误报为重放；
 - 用一套完整、合法的旧恢复文件和旧 ObjectStore 副本替换当前整套输入属于完整快照回滚。P0 当前没有外部新鲜度锚点，不能检测这种整体替换，也不承诺证明输入快照是历史上的最新状态。
-- 缓解对应：INV-4、INV-6、INV-7、ACC-14、ACC-15、ACC-16。
+- 当前处置：P0-R1 内缓解；对象、Manifest、恢复文件、路径和失败关闭 ACC 的完整集合以 registry 为准。
 
+<a id="thr-04"></a>
 ### THR-04：持有过期恢复文件的实体（§4.4）
 
 - 旧恢复材料可能解开其过去对应的旧副本；
 - P0 只验证给定不可变快照的恢复，不涉及全域换代，也不提供完整快照反回滚保证。
-- 缓解对应：ADR-0005 诚实边界（关闭报告 known-limitation）。
+- 当前处置：已接受限制；ACC-37 的机器/人工绑定 oracle 必须验证关闭报告明确不提供 freshness 或反回滚。
 
+<a id="thr-05"></a>
 ### THR-05：P0 明确不防御的攻击者（§4.5）
 
 - 已被恶意软件控制的授权终端（README §5.3）；
 - 物理获取运行中进程内存的攻击者（侧信道、内存转储）；
 - 通过恶意客户端更新进行的供应链攻击（除非完成可验证构建和独立审计）。
+- 当前处置：明确 out-of-scope；ACC-37 检查这些边界没有被写成已缓解。
 
 ## 5. 信任边界
 
@@ -79,7 +85,7 @@ P0 范围内识别 5 个攻击者类别。每类分配 THR 编号作为追踪标
 不可信域:
   Directory ObjectStore（密文对象）
   ObjectStore 日志和访问记录
-  密文 Manifest 对象的外部对象 ID、密文字节和已冻结的最小公开 header
+  密文 Manifest 对象的 22 字符 object store key、密文字节和 19 字节公开 envelope header
 ```
 
 恢复文件位于 Vault 外，但属于可信域：它足以恢复域，是高敏感秘密。完整 canonical Manifest 的路径、对象引用、大小、内容策略版本和包装材料都必须加密并认证；ObjectStore 即使完全被攻击者控制，也只能看到密文和已明确允许的不透明元数据。
@@ -90,24 +96,24 @@ P0 范围内识别 5 个攻击者类别。每类分配 THR 编号作为追踪标
 
 | ATR 编号 | 攻击面 | 对应威胁 | 缓解不变式 | ACC oracle |
 |---|---|---|---|---|
-| ATR-01 | ObjectStore 读取到明文 | THR-01 | INV-1, INV-3 | ACC-32, ACC-33 |
-| ATR-02 | 相同明文产生可关联密文 | THR-01 | INV-2 | ACC-12 |
-| ATR-03 | 对象字节篡改 | THR-03 | INV-4, INV-6 | ACC-14 |
+| ATR-01 | ObjectStore 读取到明文 | THR-01 | INV-01, INV-03 | ACC-32, ACC-33 |
+| ATR-02 | 相同明文产生可关联密文 | THR-01 | INV-02 | ACC-12 |
+| ATR-03 | 对象字节篡改 | THR-03 | INV-04, INV-14 | ACC-14 |
 | ATR-04 | 完整旧快照替换 | THR-04 | ADR-0005 诚实边界 | 关闭报告 known-limitation（无 ACC oracle） |
-| ATR-05 | 路径逃逸（重解析点、.. 路径） | THR-03 | INV-6, INV-7 | ACC-19, ACC-20 |
-| ATR-06 | 非空目标覆盖 | THR-03 | INV-8 | ACC-18 |
+| ATR-05 | 路径逃逸（重解析点、.. 路径） | THR-03 | INV-06, INV-07 | ACC-19, ACC-20 |
+| ATR-06 | 非空目标覆盖 | THR-03 | INV-08 | ACC-18 |
 | ATR-07 | 缺失/截断对象 | THR-03 | INV-14, INV-15 | ACC-15 |
 | ATR-08 | 错误恢复文件（错密钥/截断/版本） | THR-03, THR-04 | INV-10, INV-11, INV-14 | ACC-08, ACC-09, ACC-10 |
-| ATR-09 | Manifest 篡改 | THR-03 | INV-4, ADR-0007 | ACC-16 |
-| ATR-10 | 源 Vault 写入污染 | THR-05（OS 进程外部攻击） | INV-9 | ACC-22 |
+| ATR-09 | Manifest 篡改 | THR-03 | INV-04, ADR-0011 | ACC-16 |
+| ATR-10 | 源 Vault 写入污染 | 架构安全要求（不误归为 THR-05） | INV-09 | ACC-22 |
 | ATR-11 | 扫描中文件变化 | THR-03 | INV-15 | ACC-23 |
 | ATR-12 | 未支持文件被静默跳过 | THR-03 | INV-16 | ACC-24 |
 | ATR-13 | 恢复部分写入被报告为成功 | THR-03 | INV-13 | ACC-25 |
 | ATR-14 | 大小写折叠碰撞 | THR-03 | INV-14 | ACC-21 |
 | ATR-15 | 日志写入失败被忽略 | THR-05 | INV-13 | ACC-34 |
-| ATR-16 | 服务器可见性泄漏明文 | THR-01, THR-02 | INV-1, INV-3 | ACC-32, ACC-33 |
+| ATR-16 | Directory ObjectStore 可见性泄漏明文 | THR-01 | INV-01, INV-03 | ACC-32, ACC-33 |
 
-详细 ACC 项见 docs/test-plans/P0-acceptance-matrix.md。完整 THR→INV→ACC→oracle→evidence 追踪表见 docs/threat-model/threat-traceability.md。
+本表是人类可读攻击面摘要，不是完整 registry。37 个 ACC、16 个 INV、5 个 THR 的双向链接、disposition、oracle 和 evidence path 见 `docs/contracts/p0-traceability-v1.json`。
 
 ## 7. P0 安全边界声明（诚实边界）
 

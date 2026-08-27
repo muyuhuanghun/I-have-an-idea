@@ -1,12 +1,12 @@
 # 阶段 0 一致性复审与门禁状态
 
-> 文档版本：v0.3
-> 当前状态：**REOPENED — Phase 1 未授权**
+> 文档版本：v1.0
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 未授权；P0-R1 未实现/未测试**
 > 日期：2026-08-27
 > 权威来源：执行计划 §11.2-11.3、§22
-> 独立复审基线：`b8f15fca1d7a1bb31bb6b2693103da73c85588fe`
+> 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
 >
-> 历史说明：v0.2 曾在上述 commit 宣布 Phase 0 PASS。2026-08-27 独立复审发现该结论把“已写计划/已给字段名”误当成协议闭合与可执行证据，因此该 PASS 声明已撤回。下文 §2-§6 保留为历史自检记录，当前裁决只以 §7-§8 为准。
+> 历史说明：v0.2 的 Phase 0 PASS 已撤回；v0.3 的 `PHASE_0_DOCUMENT_GATE_REPAIRED` 后续又被发现含 Manifest AAD 和 recovery material 两条循环依赖、伪 schema 和不完整 oracle，因此同样只保留为历史。下文 §2-§11 全部是历史记录；当前裁决只以 §12-§15 为准。
 
 ## 1. 职责
 
@@ -166,7 +166,7 @@ v0.2 自检曾声称：
 当前 Phase 0 为 REOPENED，因此本节不能被用作启动清单。
 
 
-## 7. 2026-08-27 独立复审与 gate repair 进展
+## 7. 历史 v0.3：2026-08-27 独立复审与 gate repair 进展（结论已取代）
 
 | 复审面 | v0.2 状态 | 当前状态（v0.3） | 已确认事实 | 剩余 / 停止条件 |
 |---|---|---|---|---|
@@ -182,7 +182,7 @@ v0.2 自检曾声称：
 | 验收矩阵 | PARTIAL | **REPAIRED — Repair 4 完成** | threat-traceability.md 建立 5 THR + 16 ATR + 22 错误码 + ACC oracle 完整映射；THR→INV→ACC→oracle→evidence 链可机器审计 | 实施代码未写；所有 ACC 仍为 untested（必须保持） |
 | 实现与运行证据 | NOT STARTED | **NOT STARTED（按设计）** | 仓库无 `packages/`、fixture、脚本、lockfile 或测试报告 | Phase 0 文档门禁关闭后，需独立授权进入 Phase 1 |
 
-## 8. Gate Repair 关门（v0.3 状态）
+## 8. 历史 v0.3：Gate Repair 关门声明（已撤回）
 
 执行计划 §11.2 + 复审列出的 7 项 gate repair 中，6 项已通过 ADR 关闭：
 
@@ -195,7 +195,7 @@ v0.2 自检曾声称：
 
 第 7 项（独立复审后重新判断）即本节自我审计结论。
 
-## 9. 独立复审自检（v0.3）
+## 9. 历史 v0.3：独立复审自检（不再是当前证据）
 
 ### 9.1 引用一致性
 
@@ -221,7 +221,7 @@ v0.2 自检曾声称：
 - 关闭报告应记录为 known-limitation，不是已知失败；
 - 实施代码尚未编写，不得声称任何 ACC 已通过。
 
-## 10. 当前门禁裁决
+## 10. 历史 v0.3 门禁裁决（已撤回）
 
 ```text
 PHASE_0_DOCUMENT_GATE_REPAIRED
@@ -239,7 +239,7 @@ P0_R1_NOT_TESTED
 - **P0_R1_NOT_IMPLEMENTED**：仓库无 packages/、fixture、脚本、lockfile 或测试报告；
 - **P0_R1_NOT_TESTED**：全部 37 项 ACC 仍为 untested。
 
-## 11. Phase 1 启动前置（更新）
+## 11. 历史 v0.3 Phase 1 启动前置（不再适用）
 
 Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 
@@ -250,3 +250,89 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 5. 准备 Windows 开发环境、Android Obsidian 真机和 fixture 生成器；
 6. 实施过程中严格执行 ADR 冻结的合同，任何偏差需新 ADR。
 
+## 12. 当前 v1.0 修复事实
+
+| 修复面 | 当前合同 | 静态状态 | 运行状态 |
+|---|---|---|---|
+| Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | 未实现/未测试 |
+| recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | 未实现/未测试 |
+| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | KAT 未生成 |
+| HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | CSPRNG/codec 未实现 |
+| 37/16/THR 追踪 | 37 ACC、16 INV、5 THR 双向 registry；非安全 ACC 不伪造威胁链接 | 静态检查通过 | 37 ACC 全 untested |
+| smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | harness/报告不存在 |
+| fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | fixture/generator 不存在 |
+| performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
+| 延期参数 | DP-001..026 均有 owner/phase/close artifact/hard stop | 静态检查通过 | 均未越权关闭 |
+| Schema 强制门禁 | `validate_evidence` 用 `acc-evidence-v1` 真校验每份 evidence；`--validate-samples` 用 5 对正/负样本反身校验 5 份 schema 自身 | design+samples PASS | 5 份正样本通过、5 份负样本被拒 |
+
+## 13. 当前机器门禁
+
+设计合同命令：
+
+```powershell
+python tools/verify_phase0_contracts.py
+```
+
+预期成功签名：
+
+```text
+PHASE0_CONTRACT_CHECK_PASS mode=design-only ACC=37 INV=16 THR=5 DP=26
+P0_R1 remains NOT_IMPLEMENTED / NOT_TESTED; no ACC status was upgraded.
+```
+
+该命令检查 ID、双向链接、oracle、wire offsets/lengths/HKDF、schema required、schema 关键字子集、延期参数和验收矩阵数量。它不读取运行 evidence 也不把 ACC 改为 passed。
+
+反身校验命令：
+
+```powershell
+python tools/verify_phase0_contracts.py --validate-samples
+```
+
+预期成功签名：
+
+```text
+PHASE0_CONTRACT_CHECK_PASS mode=design-only+samples ACC=37 INV=16 THR=5 DP=26
+```
+
+`tools/schema-samples/` 下为每份 schema 各放一对正/负样本；正样本必须被接受，负样本必须被拒。该模式证明 schema 强制路径本身在工作，而不是只检查 `additionalProperties` 和顶层 `required`。
+
+未来 P0-R1 evidence gate 是：
+
+```powershell
+python tools/verify_phase0_contracts.py --evidence-root artifacts
+```
+
+`validate_evidence` 在加载每份 evidence 后用 `acc-evidence-v1` 真校验：缺字段、未知字段、错误类型、enum/pattern/format/uniqueItems/contains 违反都会立即被拒；`artifacts[].path` 必须位于 `evidence-root` 之下、文件存在、`sha256` 与文件实际内容匹配。当前缺少 37 份 evidence，因而不能运行通过。这是预期的未实现状态，不得伪装成 incomplete/pass。
+
+## 14. 当前门禁裁决
+
+```text
+PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY
+PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY_AND_SAMPLES
+PHASE_1_PENDING_AUTHORIZATION
+P0_R1_NOT_IMPLEMENTED
+P0_R1_NOT_TESTED
+ACC_37_OF_37_UNTESTED
+CRYPTO_SUITE_NOT_SELECTED
+```
+
+含义：
+
+- 这轮用户要求的协议/追踪/schema/延期项/状态一致性已经形成机器可检查设计合同；
+- Phase 1 仍需用户另行授权，只能先做工程骨架和 smoke harness；
+- DP-001..005 未关闭前，生产 Recovery/Manifest/Object codec 是硬停止；
+- 没有实现、fixture、KAT、Android 真机或 performance evidence；
+- 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
+
+## 15. 当前状态一致性
+
+README、执行计划、协议、ADR、验收矩阵和本文统一使用以下含义：
+
+- `frozen design contract`：字节、schema、oracle 或门禁已经明确，可静态检查；
+- `untested/not implemented`：没有运行证据；
+- `historical/superseded/withdrawn`：仅保留决策演进，不是当前权威；
+- `deferred`：只在延期 registry 中存在，并有逐项硬停止；
+- `PASS design-only`：只指静态合同检查，绝不等同 P0-R1 PASS；
+- `PASS design-only+samples`：design-only 加上 5 份 schema 的 5 对正/负样本反身校验通过，证明 schema 强制路径在 work；仍非 P0-R1 PASS。
+
+本轮修复前基线为 `583a3a1`。本轮文件仍是未提交 diff；除非实际提交并重新核验 Git 状态，不得写成已提交或 clean。

@@ -1,98 +1,113 @@
-# P0 威胁-不变式-验收-Oracle-证据追踪
+# P0 威胁、不变式、验收与机器 Oracle 追踪
 
-> 文档版本：v0.1
-> 状态：阶段 0 gate repair 4
+> 文档版本：v1.0
+> 当前状态：37 ACC / 16 INV / 5 THR 的设计追踪已机器闭合；全部 ACC 仍为 `untested`
 > 日期：2026-08-27
-> 权威来源：P0-threat-model.md §4 §6、P0-security-invariants.md §2、P0-acceptance-matrix.md §3
+> 机器权威：`docs/contracts/p0-traceability-v1.json`
+> 验证器：`python tools/verify_phase0_contracts.py`
 
 ## 1. 职责
 
-为 P0 范围内每个安全要求提供从威胁（THR）到不变式（INV）到验收（ACC）到错误码 oracle 到证据路径的完整追踪链。任何 ACC 必须能向上追溯到至少一个 THR 和 INV；任何 THR 必须有至少一个对应 ACC；任何 ACC 必须有可机器判定的错误码 oracle 和固定证据路径。
+本文件解释追踪规则。ID、双向链接、错误码、证据路径和每条 ACC 的 required check 以机器 registry 为准。Markdown 摘要不能覆盖 registry。
 
-## 2. 追踪表
+“机器追踪已闭合”只表示设计合同可静态检查，不表示测试已执行。默认验证器明确以 `design-only` 模式运行，不会升级任何 ACC；只有未来提供 37 份 schema-valid evidence 并执行 `--evidence-root`，才会逐项评估运行证据。
 
-| THR | ATR | INV | ACC | 错误码 oracle | 证据路径 |
-|-----|-----|-----|-----|---------------|---------|
-| THR-01 ObjectStore 读取到明文 | ATR-01, ATR-16 | INV-1, INV-3 | ACC-32, ACC-33 | 扫描器在 ObjectStore 字节和日志中找到 `LEAK_*` 标记时报告 found=true | artifacts/test-reports/acc-32-metadata-leak.json |
-| THR-01 相同明文可关联 | ATR-02 | INV-2 | ACC-12 | 两次加密的 ciphertext 字节相同或 object_id 相同时报告 failed | artifacts/test-reports/acc-12-ciphertext-correlation.json |
-| THR-03 对象字节篡改 | ATR-03 | INV-4 | ACC-14 | 解密返回 OBJECT_AEAD_FAILED 错误码而非部分明文 | artifacts/test-reports/acc-14-aead-tamper.json |
-| THR-03 缺失/截断对象 | ATR-07 | INV-14, INV-15 | ACC-15 | 缺失对象返回 MISSING_OBJECT；截断返回 OBJECT_AEAD_FAILED；wrong-ID substitution 返回 OBJECT_AAD_MISMATCH | artifacts/test-reports/acc-15-object-corruption.json |
-| THR-03 Manifest 篡改 | ATR-09 | INV-4 | ACC-16 | 解密返回 MANIFEST_AEAD_FAILED 错误码 | artifacts/test-reports/acc-16-manifest-tamper.json |
-| THR-03 路径逃逸 | ATR-05 | INV-6, INV-7 | ACC-19, ACC-20 | 解析路径时返回 ENTRY_PATH_ESCAPE；扫描器返回 REPARSE_POINT_FOUND | artifacts/test-reports/acc-19-path-escape.json, acc-20-reparse-points.json |
-| THR-03 非空目标覆盖 | ATR-06 | INV-8 | ACC-18 | 恢复前检查目标目录返回 NON_EMPTY_TARGET | artifacts/test-reports/acc-18-nonempty-target.json |
-| THR-03 大小写折叠碰撞 | ATR-14 | INV-14 | ACC-21 | 恢复返回 CASE_COLLISION | artifacts/test-reports/acc-21-case-collision.json |
-| THR-03 扫描中文件变化 | ATR-11 | INV-15 | ACC-23 | 扫描器返回 FILE_CHANGED_DURING_SCAN | artifacts/test-reports/acc-23-scan-mutation.json |
-| THR-03 未支持文件被静默跳过 | ATR-12 | INV-16 | ACC-24 | 扫描器返回 UNSUPPORTED_FILES_FOUND 且快照未标记 complete | artifacts/test-reports/acc-24-unsupported-files.json |
-| THR-03 部分写入被报告为成功 | ATR-13 | INV-13 | ACC-25 | 磁盘不足时恢复返回 INCOMPLETE_RESTORE | artifacts/test-reports/acc-25-partial-write.json |
-| THR-03/04 错误恢复文件 | ATR-08 | INV-10, INV-11, INV-14 | ACC-08, ACC-09, ACC-10 | 错密钥 RECOVERY_INTEGRITY_FAILED；截断 RECOVERY_TRUNCATED；不支持版本 RECOVERY_VERSION_UNSUPPORTED | artifacts/test-reports/acc-08-wrong-recovery.json, acc-09-truncated-recovery.json, acc-10-version-mismatch.json |
-| THR-05 源 Vault 写入污染 | ATR-10 | INV-9 | ACC-22 | 源 Vault 全部文件 SHA-256 列表在快照前后完全一致 | artifacts/test-reports/acc-22-source-zero-write.json |
-| THR-05 日志写入失败 | ATR-15 | INV-13 | ACC-34 | 日志目录只读时进程返回 LOG_WRITE_FAILED 并退出 | artifacts/test-reports/acc-34-log-failure.json |
-| THR-01/02 服务器可见性 | ATR-16 | INV-1, INV-3 | ACC-32, ACC-33 | 同 ATR-01 | 同 ATR-01 |
-| THR-02 被动网络观察者 | ATR-16 | INV-1, INV-3 | ACC-32（阶段 7 适用） | 阶段 7 HTTP 抓包中无明文标记；P0-R1 仅本地 | artifacts/test-reports/acc-32-metadata-leak.json（阶段 7 扩展） |
+## 2. 稳定 ID 合同
 
-## 3. 架构/恢复不变量追踪
+- 威胁：`THR-01` 至 `THR-05`，恰好 5 个；
+- 安全不变式：`INV-01` 至 `INV-16`，恰好 16 个；
+- 验收：`ACC-01` 至 `ACC-37`，恰好 37 个；
+- 延期参数：`DP-001` 至 `DP-026`；
+- 既有 ID 不重编号、不复用。废止项保留 ID 并标记 disposition；新增项只能追加并提升 registry schema version。
 
-以下 ACC 对应的不是攻击者，而是架构正确性和恢复不变量：
+旧文档中曾出现的 `INV-1` 至 `INV-9` 是同一不变式的历史非 canonical 拼写；当前引用一律使用零填充形式。
 
-| INV | ACC | oracle | 证据路径 |
-|-----|-----|--------|---------|
-| 共享核心无平台依赖 | ACC-01 | import 检查器扫描到禁止导入即失败 | artifacts/test-reports/acc-01-import-check.json |
-| 三环境调用同一核心 | ACC-02 | 三环境执行同一 smoke test 并结果一致 | artifacts/test-reports/acc-02-cross-env.json |
-| 依赖检查在构建期执行 | ACC-03 | 移除依赖检查后构建仍成功即失败 | artifacts/test-reports/acc-03-build-gate.json |
-| 恢复文件由 CSPRNG 生成且在 Vault 外 | ACC-04 | 恢复文件路径不在 Vault 根内且来源为 RandomSource 端口 | artifacts/test-reports/acc-04-recovery-generation.json |
-| 持有性验证重新读取 | ACC-05 | fresh-process 恢复不引用内存密钥或源进程状态 | artifacts/test-reports/acc-05-possession-verified.json |
-| 恢复文件含全部字段 | ACC-06 | 解析恢复文件后所有必填字段非空 | artifacts/test-reports/acc-06-recovery-fields.json |
-| 恢复文件不含禁止信息 | ACC-07 | 在恢复文件中搜索植入标记返回 0 | artifacts/test-reports/acc-07-recovery-leak-scan.json |
-| fresh-process 只凭恢复文件+ObjectStore | ACC-11 | 删除 P0 本地工作状态后新进程可恢复 | artifacts/test-reports/acc-11-fresh-process.json |
-| 10,000 文件往返 | ACC-26 | 完整往返无错误 | artifacts/performance-reports/acc-26-10k-roundtrip.json |
-| 字节一致 | ACC-27 | Python 验证器逐文件 SHA-256 全部匹配 | artifacts/test-reports/acc-27-byte-equality.json |
-| 代码文件往返 | ACC-28 | .c/.py 字节一致 | artifacts/test-reports/acc-28-code-files.json |
-| 内存有界 | ACC-29 | 峰值 RSS ≤ 512 MiB | artifacts/performance-reports/acc-29-memory.json |
-| 内存不随 Vault 线性增长 | ACC-30 | 峰值 RSS ≪ Vault 总大小 | artifacts/performance-reports/acc-30-bounded-memory.json |
-| 性能冻结规则 | ACC-31 | 阈值调整次数 ≤ 1 | artifacts/performance-reports/acc-31-perf-evaluation.json |
-| 有报告输出 | ACC-35 | JSON + Markdown 报告均生成 | artifacts/test-reports/acc-35-report-formats.json |
-| 干净环境可重复 | ACC-36 | 删除 artifacts/ 后完整测试可重跑 | artifacts/test-reports/acc-36-repeatability.json |
-| 不宣称生产安全 | ACC-37 | 关键词扫描无禁止声明（人工裁决关键词命中） | artifacts/test-reports/acc-37-honest-claims.json |
+## 3. 追踪语义
 
-## 4. 错误码完整清单
+并非每条 ACC 都来自攻击者。例如构建门禁、报告格式和性能治理属于架构/质量要求。为避免制造假的威胁关系，registry 按以下规则检查：
 
-以下错误码是 P0 范围内恢复器和扫描器必须返回的规范错误码，供所有 ACC oracle 使用：
+- 安全 ACC：关联实际适用的 THR/INV；
+- 只来自不变式但没有直接攻击者的 ACC：允许 THR 为空，但 INV 必须存在；
+- 架构、性能、报告或可重复性 ACC：若 THR/INV 都为空，必须提供 `nonsecurity_reason`；
+- 每个 INV 必须至少被一个 ACC 覆盖，且 INV→ACC 和 ACC→INV 必须双向一致；
+- 每个 THR 必须有明确 disposition 和 threat-level oracle。范围外/延期威胁不伪装成已缓解。
 
-| 错误码 | 类别 | 触发 |
-|--------|------|------|
-| RECOVERY_MAGIC_MISMATCH | 恢复文件 | magic 字节不匹配 |
-| RECOVERY_VERSION_UNSUPPORTED | 恢复文件 | format_version 不支持 |
-| RECOVERY_INTEGRITY_FAILED | 恢复文件 | 完整性标签验证失败 |
-| RECOVERY_TRUNCATED | 恢复文件 | 文件长度不足 |
-| RECOVERY_SUITE_UNKNOWN | 恢复文件 | suite_id 不支持 |
-| MANIFEST_AEAD_FAILED | Manifest | Manifest 密文 AEAD 验证失败 |
-| MANIFEST_VERSION_UNSUPPORTED | Manifest | manifest_format_version 不支持 |
-| MANIFEST_SUITE_UNKNOWN | Manifest | suite_id 不支持 |
-| OBJECT_AEAD_FAILED | 对象 | 对象密文 AEAD 验证失败 |
-| OBJECT_AAD_MISMATCH | 对象 | 实际 AAD 与从 object_id 派生的预期 AAD 不一致 |
-| OBJECT_ID_COLLISION | 对象 | 对象 ID 碰撞重试后仍冲突 |
-| MISSING_OBJECT | 对象 | Manifest 引用对象在 ObjectStore 缺失 |
-| ENTRY_PATH_ESCAPE | entry | relative_path 包含 `..`、绝对前缀或重解析点字符 |
-| ENTRY_PATH_DUPLICATE | entry | 排序后出现相同 relative_path |
-| ENTRY_SIZE_MISMATCH | entry | 解密后大小与 plaintext_size 不一致 |
-| CASE_COLLISION | 恢复 | 目标目录已有大小写折叠后同路径 |
-| NON_EMPTY_TARGET | 恢复 | 目标目录非空 |
-| FILE_CHANGED_DURING_SCAN | 扫描 | 文件读取前后哈希不一致 |
-| UNSUPPORTED_FILES_FOUND | 扫描 | 发现未支持扩展名 |
-| REPARSE_POINT_FOUND | 扫描 | 发现 Symlink/Junction |
-| INCOMPLETE_RESTORE | 恢复 | 磁盘不足导致部分写入 |
-| LOG_WRITE_FAILED | 系统 | 日志目录不可写 |
+## 4. THR 当前处置
 
-实施时必须使用本表错误码，不使用自定义异常文本。Oracle 自动判定依赖规范错误码。
+| THR | 当前处置 | P0-R1 oracle |
+|---|---|---|
+| THR-01 | P0-R1 内缓解 | ACC-12/13/32/33 全部有 passed evidence |
+| THR-02 | 延期到 Stage 7 HTTP | P0-R1 明确标为 out-of-scope；Stage 7 必须先关闭 DP-014 |
+| THR-03 | P0-R1 内缓解 | registry 列出的破坏性/失败关闭 ACC 全部有 passed evidence |
+| THR-04 | 接受限制 | ACC-37 证明关闭报告明确“不提供 freshness/反回滚” |
+| THR-05 | 明确范围外 | ACC-37 证明恶意终端、内存转储和未审计供应链未被宣称为已缓解 |
 
-## 5. 追踪完整性检查
+## 5. ACC 机器 Oracle
 
-以下检查确保追踪链无断裂：
+每条 ACC 在 registry 中固定以下字段：
 
-1. 每个 ACC 至少有一个 THR 引用（通过 ATR 关联）；
-2. 每个 ACC 至少有一个对应错误码 oracle；
-3. 每个 ACC 有固定证据路径；
-4. 每个 INV 至少被一个 ACC 引用；
-5. 每个 THR 至少被一个 ACC 通过 ATR 关联覆盖（P0 明确不防御的攻击者 THR-05 部分不要求 ACC）。
+- `evidence_path`：唯一证据路径；
+- `required_checks`：该报告必须逐项给出 `expected`、`actual`、`passed=true`；
+- `required_error_code_groups`：每组至少观察到一个允许的稳定错误码；
+- `forbidden_side_effects`：对应标志必须显式为 `false`，缺字段不按 false 处理；
+- `status`：提交到 Git 的设计 registry 固定为 `untested`。
 
-完整追踪审计脚本在阶段 6 实施时编写，扫描所有 ADR/协议/威胁/验收/不变式文档的交叉引用。
+所有 ACC evidence 必须满足 `docs/schemas/acc-evidence-v1.schema.json`。缺字段、额外字段、错误类型、缺 required check、缺 error code、缺 side-effect flag 或 `status != passed` 都失败关闭。不得用日志文本、截图或人工口头说明替代 JSON evidence。
+
+未来运行证据的命令：
+
+```powershell
+python tools/verify_phase0_contracts.py --evidence-root artifacts
+```
+
+只有这条命令在 37 份报告齐备时返回 0，才表示 registry 的 ACC evidence oracle 全通过。它仍不等于独立安全审计。
+
+## 6. 规范错误码
+
+错误码唯一权威是 registry 的 `error_codes` 数组。当前包含恢复文件、Manifest、对象、路径、扫描、系统和报告 schema 错误。重要新增边界包括：
+
+- 固定长度/尾随字节：`RECOVERY_TRAILING_BYTES`、`MANIFEST_TRAILING_BYTES`、`OBJECT_TRAILING_BYTES`；
+- object ID canonicalization：`OBJECT_ID_INVALID`；
+- 对象截断和重复引用：`OBJECT_TRUNCATED`、`DUPLICATE_OBJECT_REFERENCE`；
+- 报告缺项：`REPORT_SCHEMA_INVALID`；
+- 越界声明：`HONEST_CLAIM_VIOLATION`。
+
+实现不得自行创造错误字符串替代这些码。新增错误码必须同时更新 registry、相关 ACC oracle 和实现测试。
+
+## 7. 静态完整性检查
+
+默认命令检查：
+
+1. 5/16/37/24 个 ID 连续、唯一、顺序稳定；
+2. THR/INV/ACC 双向链接一致；
+3. 37 个证据路径唯一，37 个 ACC 状态仍为 `untested`；
+4. required checks、错误码和 side-effect flags 都引用合法 registry 值；
+5. 验收矩阵恰有 ACC-01..37 标题和 37 个 `untested`；
+6. wire contract 的 recovery offsets、167 字节总长、101 字节 AAD、16 字节 object ID 和 HKDF 标签不漂移；
+7. 26 个延期项逐项具有 owner、阶段、关闭产物和硬停止条件；
+8. 5 份 JSON Schema 顶层 required 和拒绝未知字段规则存在，并且 schema 只使用本验证器已强制实现的 draft 2020-12 关键字子集。
+
+成功输出：
+
+```text
+PHASE0_CONTRACT_CHECK_PASS mode=design-only ACC=37 INV=16 THR=5 DP=26
+P0_R1 remains NOT_IMPLEMENTED / NOT_TESTED; no ACC status was upgraded.
+```
+
+反身校验命令：
+
+```text
+PHASE0_CONTRACT_CHECK_PASS mode=design-only+samples ACC=37 INV=16 THR=5 DP=26
+```
+
+`tools/schema-samples/` 下为每份 schema 各放一对正/负样本；正样本必须被接受，负样本必须被拒，证明 schema 强制路径在 work。
+
+未来 P0-R1 evidence gate 是：
+
+```powershell
+python tools/verify_phase0_contracts.py --evidence-root artifacts
+```
+
+`validate_evidence` 在加载每份 evidence 后用 `acc-evidence-v1` 真校验：缺字段、未知字段、错误类型、enum/pattern/format/uniqueItems/contains 违反都会立即被拒；`artifacts[].path` 必须位于 `evidence-root` 之下、文件存在、`sha256` 与文件实际内容匹配。
+
+这段输出是文档合同静态门禁证据，不是 P0-R1 运行验收证据。

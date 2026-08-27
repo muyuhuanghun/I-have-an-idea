@@ -1,7 +1,7 @@
 # P0 范围与术语表
 
 > 文档版本：v0.2
-> 状态：P0 边界草案；Phase 0 复审门禁重新打开
+> 当前状态：P0 范围与术语设计合同已冻结；实现/测试未开始
 > 日期：2026-08-27
 > 权威来源：README.md、docs/product/P0_EXECUTION_PLAN.md
 
@@ -18,11 +18,11 @@
 | Vault | 磁盘上的普通文件夹，通过 Obsidian 编辑 | README §5.1 已冻结；P0 不依赖 Obsidian API 运行 |
 | 内容策略（Content Policy） | 版本化的允许列表，决定哪些扩展名可进入正式快照 | P0 默认列表见 §4 |
 | Manifest | 版本化的加密清单，记录文件逻辑标识、相对路径、大小、密文对象引用和完整性承诺 | P0 不含团队 Proposal、Candidate Revision 或 Domain State 字段 |
-| 恢复文件（Recovery File） | Vault 外的高熵恢复材料，含 magic、格式版本、协议版本、域 ID、密码套件标识、恢复材料、完整性和非秘密指纹 | P0 不等于正式域主恢复，不涉及旧设备吊销或全域换代 |
+| 恢复文件（Recovery File） | Vault 外固定 167 字节 bearer file，含 32 字节 recovery root、domain/snapshot ID、Manifest object ID、suite、指纹和 HMAC | P0 不等于正式域主恢复；无独立静态保密、freshness 或反回滚 |
 | 持有性验证（Possession Verified） | 新进程重新从磁盘读取恢复文件，证明可凭 Vault 外材料恢复 | 不接受内存中密钥或勾选框 |
 | P0 Active | 本地域已通过恢复文件持有性验证，可创建加密快照 | 不代表多设备同步启用或生产安全达标 |
 | ObjectStore | 按不透明 ID 保存和读取密文对象的端口 | P0 第一实现为 Directory ObjectStore；不引入 mutable head |
-| 对象 ID（Object ID） | 随机、不透明的密文对象标识 | 禁止裸内容哈希作为对象 ID |
+| 对象 ID（Object ID） | 16 个随机原始字节；ObjectStore key 是 22 字符无 padding base64url | 禁止裸内容哈希和其他文本别名 |
 | P0 快照恢复 | 新进程只凭恢复文件和 ObjectStore，把给定不可变快照恢复到新建空目录 | 不等于正式域主恢复；P0 只有单用户、单快照，也不证明该快照是历史最新状态 |
 | Source of Truth | P0 中由开发者在 CLI/插件中显式指定的只读源 Vault | 不验证 README §9.1 的设备绑定流程 |
 | 独立验证器 | Python 脚本，逐文件比较恢复目录与源目录的相对路径和字节 | 不参与加密或恢复判定 |

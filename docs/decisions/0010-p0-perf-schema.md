@@ -1,17 +1,19 @@
 # ADR-0010：P0 性能采集方法与报告 Schema
 
-- 状态：已接受（冻结 Phase 0 文档门禁项；具体数值随性能采集冻结）
+- 状态：部分取代；当前 schema 和阈值权威是 `perf-report-v1.schema.json`
 - 日期：2026-08-27
 - 决策者：开发者
 - 相关文档：P0-fixture-and-performance-baseline.md §5、ADR-0008
 
-## 背景
+> 历史边界：下文字段清单不是可验证 JSON Schema，ACC-30 的“ratio 标准差 < 阈值”也没有给出阈值且不能检验随总字节增长。当前合同改为同环境/同 10,000 文件的约 128 MiB 与约 1 GiB 配对运行：字节比至少 7.5，peak RSS 增量最多 134,217,728 字节，且大 fixture 不超过当前冻结 RSS 上限。
+
+## 历史背景
 
 P0-fixture-and-performance-baseline.md §5 给出暂定性能门槛（10,000 文件、约 1 GiB、512 MiB 峰值 RSS），但未冻结采集方法、采样工具、报告 schema。
 
 无冻结 schema 时，不同运行产出的 RSS/耗时数据无法对比，ACC-29/30/31 的 oracle 难以自动判定。本 ADR 冻结性能采集方法、报告 schema 和阈值调整规则。
 
-## 决策
+## 历史决策（当前由 ADR-0012 和 JSON Schema 取代）
 
 ### 1. 测量阶段
 

@@ -1,9 +1,11 @@
 # ADR-0006：恢复文件 Canonical Serialization 与完整性覆盖
 
-- 状态：已接受（冻结 Phase 0 文档门禁项；算法参数待 smoke test）
+- 状态：**历史，字节合同已被 ADR-0011 取代**
 - 日期：2026-08-27
 - 决策者：开发者
 - 相关文档：ADR-0005、ADR-0002、P0-recovery-and-object-format.md §2、§6.1
+
+> 历史边界：本文记录 2026-08-27 的中间 gate-repair 决策。其变长 recovery material、HMAC/AEAD 二选一、旧字段顺序和“指纹不覆盖”均不是当前实现合同。当前权威是 ADR-0011 和 `p0-wire-contract-v1.json`；不得引用本文声称当前格式已闭合。
 
 ## 背景
 
@@ -16,7 +18,7 @@ P0-recovery-and-object-format.md §6.1 列出的 Phase 0 文档门禁项要求�
 - 恢复器的 fresh-process 读取可明确判定完整性通过或失败（可通过机器判定）；
 - 完整性覆盖范围明确：哪些字段被保护，哪些字段不保护。
 
-## 决策
+## 历史决策（已取代）
 
 ### 1. Canonical Serialization
 

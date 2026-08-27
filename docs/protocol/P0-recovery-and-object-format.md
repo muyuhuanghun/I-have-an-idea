@@ -1,196 +1,171 @@
-# P0 恢复文件与对象 ID 格式要求
+# P0 恢复文件、Manifest 与密文对象格式
 
-> 文档版本：v0.3
-> 状态：逻辑格式草案已形成；恢复根保护、完整性密钥来源和字节格式尚未冻结
+> 文档版本：v0.4
+> 当前状态：wire contract v1 已冻结；密码 suite 与 wrap 参数仍延期；实现和运行证据不存在
 > 日期：2026-08-27
-> 权威来源：README §8、执行计划 §8.3-8.4、ADR-0002
+> 当前权威：ADR-0011、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-deferred-parameters.json`
 
-## 1. 职责
+## 1. 职责和权威顺序
 
-本文件记录 P0 恢复文件、Manifest 定位链和密文对象的候选格式要求。只有明确标为已接受的逻辑边界可以视为当前约束；§6 所列密码参数、保护密钥来源和具体字节布局尚未冻结。实现前必须通过补充 ADR 关闭这些参数，不能把本文档存在本身当成格式已经可实现或已验证。
+本文件解释 P0 fresh-process 恢复链和 wire format。出现冲突时按以下顺序裁决：
 
-## 2. 恢复文件格式
+1. `docs/contracts/p0-wire-contract-v1.json`：字段顺序、字节长度、端序、HKDF 标签；
+2. ADR-0011：语义、安全边界和取代关系；
+3. 本协议：流程、错误和版本策略；
+4. ADR-0002/0005/0006/0007：历史决策背景。被 ADR-0011 取代的部分不得用于实现。
 
-### 2.1 必须包含的字段
+当前文档闭合的是可实现的设计合同，不是实现或测试通过证据。所有 37 项 ACC 仍为 `untested`。
 
-| 字段 | 说明 | 是否敏感 |
-|---|---|---|
-| Magic | 固定魔数，标识文件类型 | 否 |
-| 格式版本 | 恢复文件结构版本号 | 否 |
-| 协议版本 | 加密协议版本号 | 否 |
-| 域 ID（Domain ID） | 不透明域标识 | 否（不透明） |
-| 密码套件标识 | 标识使用的 AEAD、KDF、nonce 方案 | 否 |
-| 恢复材料 | 足以恢复域的高熵 bearer secret；具体静态表示和保护方案待冻结 | 是（高敏感） |
-| 完整性信息 | 用于检测结构损坏和未授权字段修改；算法及密钥来源待冻结 | 是 |
-| 非秘密指纹 | 用于用户识别恢复文件对应哪个域，不含秘密 | 否 |
-| Manifest 定位符 | 指向 ObjectStore 中的 Manifest 对象 ID | 否（不透明） |
+## 2. 无循环依赖的 fresh-process 恢复链
 
-### 2.2 Manifest 定位符的恢复链作用
+### 2.1 输入
 
-Manifest 定位符闭合的是 fresh-process 的对象寻址链；它不单独证明恢复文件真实性、快照最新性或整套输入没有被替换：
+唯一声明的恢复输入是：
+
+- Vault 外的 Recovery File v1；
+- 与它对应的 ObjectStore。
+
+没有口令、keystore、第二秘密、本地缓存或源进程内存。Recovery File 是 32 字节高熵 `recovery_root` 的 bearer file；文件失窃等价于域解密能力失窃。
+
+### 2.2 流程
 
 ```text
-fresh-process 恢复链：
-  1. 新进程读取 Vault 外恢复文件
-  2. 按最终补充 ADR 冻结的方案验证恢复文件结构和完整性；当前仅记录候选流程
-  3. 提取恢复根 → 派生域数据根（HKDF）
-  4. 读取 Manifest 定位符 → 获得 Manifest 密文对象 ID
-  5. 从 ObjectStore GET 该对象 ID → 获得 Manifest 密文
-  6. 用 Manifest 密钥（从域数据根派生）和绑定该对象 ID 的 AAD 解密、认证完整 Manifest → 获得文件条目和包装的对象密钥
-  7. 逐条解包对象密钥 → 从 ObjectStore GET 密文对象 → AEAD 解密 → 写入新建空目录
-  8. Python 独立验证器逐文件核对相对路径和字节
+1. 要求恢复文件恰好 167 字节；检查 magic、版本和 suite
+2. 读取 recovery_root，按 ADR-0011 派生 Recovery File Integrity Key
+3. 常数时间验证 HMAC-SHA256(file[0:135])；失败时不返回部分结构
+4. 从已验证恢复文件取得 domain_id、snapshot_id、manifest_object_id
+5. GET manifest_object_id，解析 Object Envelope 的 19 字节 header
+6. 用恢复文件字段 + envelope header 构造完整 101 字节 Manifest AAD
+7. 派生 Manifest Key，AEAD 解密并认证 Manifest
+8. 验证 Manifest 内 domain_id/snapshot_id/suite 与 AAD 输入逐字节一致
+9. 对每个 entry 解包对象密钥；用 Manifest 字段 + 对象 envelope 构造文件 AAD
+10. GET、AEAD 解密文件对象，先恢复到新建空目录的受控临时位置
+11. Python 独立验证器比较全部受支持文件的相对路径集合和 SHA-256
+12. 只有验证全部通过才报告成功；任何部分写入不得报告为成功
 ```
 
-没有 Manifest 定位符，fresh-process 不知道从 ObjectStore 的哪个对象 ID 读取 Manifest，恢复链在第 4 步断裂。加入该字段只解决定位问题。实现合同还必须保证：恢复文件 canonical serialization 的完整性范围覆盖全部 header、域 ID、版本/套件、恢复材料、非秘密指纹和 Manifest 定位符；Manifest 的完整 canonical 明文（路径、对象引用、大小、内容策略版本、包装材料等）全部受到 AEAD 认证。具体编码和密钥来源尚未冻结，故认证闭合仍是阻塞项。
+`snapshot_id` 在恢复文件中先于 Manifest 解密可得，因此 Manifest AAD 不再依赖待解密明文。`recovery_root` 直接存在于 bearer file 中，因此恢复文件 HMAC 不再依赖“先解密自己才能取得的密钥”。
 
-### 2.3 恢复文件禁止包含
+### 2.3 恢复文件字段
+
+Recovery File v1 是固定 167 字节：
+
+| 字段 | 字节数 | HMAC 覆盖 | 说明 |
+|---|---:|---|---|
+| magic (`EKDR`) | 4 | 是 | 固定 ASCII |
+| recovery_format_version | 1 | 是 | v1 = `0x01` |
+| protocol_version | 1 | 是 | v1 = `0x01` |
+| domain_id | 32 | 是 | 随机不透明标识 |
+| suite_id | 1 | 是 | DP-002 关闭后取得有效值 |
+| recovery_root | 32 | 是 | bearer secret；无独立静态加密 |
+| snapshot_id | 32 | 是 | 构造 Manifest AAD 所需 |
+| manifest_object_id | 16 | 是 | 原始 object ID 字节，不是文本 |
+| non_secret_fingerprint | 16 | 是 | 按 ADR-0011 公式由 domain ID 计算 |
+| integrity_tag | 32 | 否（自身） | HMAC-SHA256 |
+
+指纹不是自哈希：它是 domain ID 的显示辅助，也被 HMAC 覆盖。解析器拒绝任何缺项、长度不符或尾随字节。
+
+### 2.4 恢复文件禁止包含
 
 - 原 Vault 绝对路径；
-- 任何笔记正文、文件名或扩展名；
-- 账号密码或其他认证秘密；
-- 恢复根在“恢复材料”字段之外的重复副本；
-- 未经定义的口令、账号秘密或本地 keystore 引用。P0 当前没有这些外部解锁来源，不能用它们掩盖恢复根保护方案尚未冻结的事实。
+- 笔记正文、文件名、扩展名或内部链接；
+- 账号密码；
+- 未定义的口令、账号秘密或 keystore 引用；
+- recovery root 的重复副本；
+- JSON、平台原生结构体或其他可能产生多种字节表示的替代编码。
 
-### 2.4 恢复根保护方式
+### 2.5 HMAC 的诚实边界
 
-当前已经确定的边界是：
+HMAC key 由文件内的 bearer secret 派生。它可以让解析器拒绝非自洽的损坏/位翻转，但任何能读取 Recovery File 的人已经取得 recovery root，也能重新计算标签。P0 不得据此声称：
 
-- 恢复根由 CSPRNG 生成，目标强度不低于 256 位（最终长度见 §6）；
-- 恢复文件是足以恢复域的 bearer secret，文件失窃等价于域解密能力失窃；
-- P0 没有用户口令、第二把本地保护密钥、OS keystore 或远程托管密钥，因此当前不能声称恢复根已经获得独立的静态保密保护；
-- HMAC、AEAD 封装或“加密 + 完整性”都需要明确的密钥来源、nonce、AAD 和整体编码。该来源尚未定义，属于实现前阻塞项；
-- 从恢复文件自身携带的秘密派生完整性键，可以检测损坏或字段修改，但不能在没有外部锚点时证明攻击者没有整体替换恢复文件和配套 ObjectStore；
-- 生成后关闭句柄并重新读取只能证明磁盘文件可解析，不能替代完整 fresh-process 恢复演练。
+- 恢复文件具有独立防篡改锚；
+- 恢复文件静态加密；
+- 给定快照是最新快照；
+- 可检测合法旧恢复文件 + 匹配旧 ObjectStore 的整体替换。
 
-### 2.4.1 Bearer secret 决策（已冻结）
+Manifest/Object AEAD 认证给定快照的内部自洽，不提供外部新鲜度。
 
-ADR-0005 裁决如下：
+## 3. Canonical 字节规则
 
-- P0 选择 bearer secret 方案：恢复文件是完整秘密输入，无口令、无 keystore、无第二秘密；
-- 恢复文件完整性密钥从恢复根自身 HKDF 派生（info = recovery-file-integrity），属自我引用完整性；
-- INV-11 不变：fresh-process 只凭恢复文件和 ObjectStore；
-- 诚实边界：不检测合法旧恢复文件 + 匹配旧 ObjectStore 的整体替换，不提供快照新鲜度或反回滚；这些限制为 P0 OUT，在关闭报告中记为 known-limitation；
-- 方案 B（外部解锁秘密）推迟到 P1-alpha，引入时必须修订 INV-11 和恢复文件格式。
+所有 v1 编码统一遵守：
 
-算法参数（HKDF salt、输出长度、完整性方案选择、恢复根最终位数）仍按 §6 在 smoke test 后冻结。
+- `u8/u16/u32/u64` 都是无符号大端；
+- 固定字段必须恰好满足固定长度；
+- 变长字段必须使用合同指定的 `u16be/u32be/u64be` 长度；
+- 字符串是严格 UTF-8，不接受替换字符式容错；
+- 路径不用 NUL 终止，不含 NUL；
+- 不允许尾随字节；
+- canonical 编码中不使用 JSON、locale、平台路径分隔符或原生端序；
+- Manifest entry 按 `relative_path_utf8` 原始字节严格升序；重复或逆序拒绝。
 
-### 2.5 生成与验证流程
+## 4. Object ID 和 ObjectStore key
 
-1. 恢复根由 CSPRNG 生成，位数不低于 256 位（32 字节）；
-2. 从恢复根派生域数据根（HKDF）；
-3. 从域数据根派生 Manifest 密钥；
-4. 先生成 Manifest 对象 ID，再把该 ID、域 ID、Manifest 身份和版本/套件字段纳入 AAD，加密完整 canonical Manifest 并写入 ObjectStore；
-5. 恢复文件按候选格式写入磁盘，包含恢复材料、Manifest 定位符和其他字段；恢复材料的具体静态保护方案必须先按 §6 冻结；
-6. 生成后关闭写入句柄；
-7. 重新从磁盘读取恢复文件，解析并验证完整性；
-8. 持有性验证：新进程重新读取恢复文件，通过 Manifest 定位符从 ObjectStore 获取 Manifest 并恢复（满足 INV-10）；
-9. 仅依赖勾选框、内存中尚未清除的密钥或源进程状态均不合格。
+### 4.1 固定长度与编码
 
-## 3. 密文对象格式
+- object ID：CSPRNG 生成的 16 个原始字节（128 位）；
+- Manifest 和文件对象使用相同长度；
+- wire contract 和 AAD 中始终使用 16 个原始字节；
+- ObjectStore key：这 16 字节的 RFC 4648 base64url 无 padding 编码，恰好 22 字符；
+- Hex、带 `=` 的 base64url、普通 base64、大小写改写、语义前缀和非 canonical 别名全部拒绝。
 
-### 3.1 对象结构
+object ID 不得是内容哈希或带域前缀。10,000 对象规模下 128 位随机 ID 的碰撞概率可忽略，但实现仍须在加密前做存在性检查；碰撞时重新生成 ID、nonce 和密文。重试上限由实现固定并作为运行限制记录，耗尽返回 `OBJECT_ID_COLLISION`。
 
-每个密文对象是不可变字节序列，按以下逻辑结构组织（具体字节布局在实现时冻结）：
+### 4.2 wrong-ID substitution
 
-```text
-[格式版本] [协议版本] [密码套件标识]
-[nonce / IV]
-[AEAD 加密的明文 + 认证标签]
-```
+调用方先把 ObjectStore 文本键 canonical 解码为 16 字节，并与 Manifest/Recovery File 中期望 ID 比较；随后该 ID 进入 101 字节 AAD。把合法对象复制到新 ID 并改写未认证引用时，ID 比较或 AEAD 必须失败，返回 `OBJECT_ID_INVALID`、`OBJECT_AAD_MISMATCH` 或 `MANIFEST_AEAD_FAILED`，不得返回部分明文。
 
-Manifest 对象和文件密文对象使用相同的对象格式。Manifest 定位符就是 Manifest 对象的对象 ID。
+## 5. Object Envelope 与 AAD
 
-### 3.2 对象 ID
+Object Envelope v1 的 header 固定 19 字节，后接 nonce/ciphertext/tag。总文件长度必须严格等于三段声明长度与 19 之和。suite registry 是 nonce/tag 长度的外部权威；对象自报长度不能扩大或改变 suite 参数。
 
-对象 ID 是 ObjectStore 中标识密文对象的键。要求：
+AAD 固定 101 字节，字段为：`EKDA`、AAD/对象/协议版本、suite、object type、domain ID、object ID、snapshot ID、nonce/ciphertext/tag 长度。精确顺序见 ADR-0011 和机器合同。
 
-| 参数 | 要求 | 待冻结值 |
-|---|---|---|
-| 随机位数 | 不低于 128 位，碰撞概率在 P0 规模（10,000 对象）下可忽略 | smoke test 后冻结 |
-| CSPRNG 来源 | 通过 RandomSource 端口获取，不依赖 Math.random | 候选见 smoke test 方案 |
-| 编码 | URL-safe Base64 或 Hex，不带语义前缀 | 实现时冻结 |
-| 碰撞检查 | 加密前检查 ObjectStore 是否已存在同 ID；碰撞则重新生成 ID，并使用新 ID 重新计算 AAD 和密文 | 实现时验证 |
-| 与域绑定 | 对象 ID 不含域 ID 前缀；域/快照归属通过完整 Manifest 引用和 canonical AAD 共同绑定 | 字段语义冻结；编码待 ADR |
-| 认证附加数据 | canonical AAD 至少绑定 domain_id、snapshot/manifest identity、object_id、object_type、format_version、protocol_version、suite_id | 字段语义冻结；字节编码待 ADR |
+Manifest 的 AAD 输入来自 Recovery File + envelope；文件的 AAD 输入来自已认证 Manifest + envelope。AAD 不从待解密明文取值。
 
-对象 ID 必须先于对象加密确定，因为 `object_id` 是 AAD 的一部分。只有完成该绑定并通过 wrong-ID substitution 负面测试后，才能声称“把完整合法密文复制到另一对象 ID 并改写引用”会被认证拒绝。
+## 6. Canonical Manifest
 
-### 3.3 禁止裸内容哈希作为对象 ID
+Manifest 明文由固定 header 和 `entry_count` 个 entry 组成。固定 header 含 `EKDM`、Manifest 版本、domain/snapshot/parent snapshot、内容策略版本、suite 和 entry count。
 
-对象 ID 不得是文件内容的哈希。裸内容哈希会泄漏内容关系：攻击者可通过相同对象 ID 推断两个文件内容相同（满足 INV-3）。对象 ID 必须是随机不透明标识。Manifest 对象 ID 同样随机生成，不含内容语义。
+每个 entry 使用：
 
-### 3.4 相同明文不可关联
+- `u32be relative_path_length` + 严格 UTF-8 路径字节；
+- 16 字节 object ID；
+- `u64be plaintext_size`；
+- `u16be wrapped_key_length` + wrapped object key。
 
-相同明文重复加密不得产生可直接关联的相同密文对象（满足 INV-2）。原因：
+P0 Manifest 只列文件对象，因此 entry 不重复携带 object type。若未来允许嵌套 Manifest，必须提升 Manifest format version。路径排序、重复路径、重复 object ID、大小不符和未消费尾随字节都有稳定错误码和 ACC oracle。
 
-- 每对象密钥独立随机生成（ADR-0002）；
-- 每对象 nonce 独立随机生成；
-- 对象 ID 随机生成，不含内容哈希。
+## 7. 规范错误
 
-## 4. 重放边界
+当前错误码权威是 `docs/contracts/p0-traceability-v1.json#error_codes`。与本格式直接相关的错误至少包括：
 
-P0 单快照阶段的重放边界定义如下：
+- `RECOVERY_FIELD_MISSING`、`RECOVERY_TRUNCATED`、`RECOVERY_TRAILING_BYTES`、`RECOVERY_INTEGRITY_FAILED`；
+- `RECOVERY_VERSION_UNSUPPORTED`、`RECOVERY_SUITE_UNKNOWN`；
+- `MANIFEST_AEAD_FAILED`、`MANIFEST_VERSION_UNSUPPORTED`、`MANIFEST_SUITE_UNKNOWN`、`MANIFEST_TRAILING_BYTES`；
+- `OBJECT_ID_INVALID`、`OBJECT_AAD_MISMATCH`、`OBJECT_AEAD_FAILED`、`OBJECT_TRUNCATED`、`OBJECT_TRAILING_BYTES`；
+- `MISSING_OBJECT`、`DUPLICATE_OBJECT_REFERENCE`、`ENTRY_PATH_DUPLICATE`、`ENTRY_SIZE_MISMATCH`。
 
-### 4.1 P0 不提供完整快照反回滚保证
+解析/认证失败时不得用异常文本代替稳定错误码；不得返回部分解析结构或部分明文。
 
-P0 只验证给定不可变快照的创建和恢复，不建立最新状态指针、可信计数器或外部新鲜度锚点。因此：
+## 8. 重放与回滚边界
 
-- P0 不涉及增量同步、多快照历史或状态分叉；
-- 但这不等于完整旧快照回滚“没有风险”；
-- 如果攻击者同时提供一份合法旧恢复文件和与之匹配的旧 ObjectStore，P0 可以验证该旧快照内部自洽，却不能证明它是最新快照；
-- 该保证当前明确不属于 P0，必须在关闭报告中列为边界，不能把 AEAD 认证解释成最新性证明。
+同一 object ID 多次 GET 相同不可变字节是幂等读取。单快照内的篡改、截断、缺失、wrong-ID substitution 和重复引用必须失败关闭。
 
-### 4.2 P0 单快照内的重放保护
+P0 没有 latest pointer、可信计数器或外部 freshness anchor。合法旧 Recovery File 与匹配旧 ObjectStore 的整体替换可以内部验证通过；这是 THR-04 的已接受限制，必须由 ACC-37 检查关闭报告是否诚实声明。
 
-在单快照恢复过程中：
+## 9. 版本策略
 
-- ObjectStore 对象是不可变的，恢复器按 Manifest 中的对象引用逐个 GET；
-- 同一对象 ID 被多次 GET 返回相同密文是预期行为（幂等），不构成重放攻击；
-- 恢复器验证每个对象的 AEAD 标签；同一 ID 下的字节篡改、截断和删除必须失败；把完整合法对象复制到错误 ID，只有在 §3.2 的 object-ID/AAD 绑定冻结并验证后才能声称可检测；
-- 恢复器拒绝重复的对象 ID 引用（同一对象 ID 在 Manifest 中出现多次导致路径冲突），防止通过对象引用重放导致覆盖。
+Recovery File、Object Envelope、AAD 和 Manifest 各自有格式版本。任何字段增删、字段顺序、端序、HKDF info、object ID 长度、文本编码或认证覆盖变化，都必须提升对应格式或 protocol version，并通过新 ADR 与新 KAT。
 
-### 4.3 阶段 7 及以后的前瞻边界（不属于当前验收证据）
+不得把按旧 85 字节 AAD、NUL 终止路径、可变 object ID 或 recovery material AEAD 候选生成的字节标成 v1。
 
-localhost HTTP ObjectStore（阶段 7）引入网络后，重放边界扩展为：
+## 10. 延期参数和硬停止
 
-- 幂等重试：同一 PUT 请求重传应幂等，不产生重复对象；
-- 条件更新：阶段 7 定义最新状态指针和条件更新后，旧状态对象不应被重放到新状态（需状态序号或加密代际验证）；
-- P0 不提前引入这些机制，在阶段 7 通过正式状态协议定义。
+唯一延期参数清单是 `docs/contracts/p0-deferred-parameters.json`。与本协议直接相关的是 DP-001 至 DP-005、DP-012 和 DP-013。每项已经绑定 owner、阶段、关闭产物和硬停止条件。
 
-## 5. 版本化策略
+在 DP-001/002/003/004/005 未关闭前：
 
-### 5.1 格式版本
-
-恢复文件、密文对象和 Manifest 各有独立的格式版本号。版本号是单调递增整数。恢复器必须拒绝不支持的格式版本（满足 INV-14）。
-
-### 5.2 协议版本
-
-协议版本标识加密套件和密钥派生方案。协议版本变更等价于新密码代际，旧恢复文件可能无法用新协议恢复（旧代际停止用于新状态）。
-
-## 6. 分阶段冻结清单
-
-### 6.1 Phase 0 文档门禁关闭前
-
-- 裁决恢复材料是 bearer secret，还是引入外部解锁密钥；若引入外部密钥，必须同步修改 INV-11、范围、输入合同和生命周期；
-- ~~明确恢复文件完整性要抵抗的攻击者、密钥来源和 canonical 字段覆盖~~ **已关闭（ADR-0006，Repair 2）**
-- ~~明确完整 canonical Manifest 全部加密认证，以及 §3.2 所列 object-ID/AAD 绑定字段~~ **已关闭（ADR-0007，Repair 3）**
-- 明确 P0 只提供给定快照内部完整性，不提供整套输入的新鲜度或反回滚保证。
-
-### 6.2 获授权 smoke test 后、生产协议实现前
-
-以下算法和字节参数必须在候选 smoke test 完成后、生产恢复/对象协议实现开始前冻结：
-
-- 恢复根位数（不低于 256 位）；
-- KDF 参数（HKDF 的 salt、info、输出长度）；
-- 对象密钥包装方案（AES-KW 或 AEAD 封装）；
-- 恢复材料的具体静态表示；
-- 恢复文件完整性方案（HMAC 或 AEAD 标签）；
-- 对象 ID 随机位数（不低于 128 位）和编码；
-- nonce 位数和生成策略；
-- AEAD 具体算法（XChaCha20-Poly1305 或 AES-256-GCM）；
-- AAD 的具体 canonical 编码（字段集合按 §3.2）；
-- 恢复文件 canonical serialization 及完整性覆盖范围；
-- Manifest 完整 canonical 明文的认证编码；
-- Manifest 定位符的具体编码（与对象 ID 编码一致）。
-
-冻结后写入补充 ADR，并在恢复文件和对象格式中固定版本号。Phase 1 的 smoke harness 不得越过 §6.1 提前实现生产恢复文件、Manifest 或密文对象协议。
+- 可以实现三环境 smoke harness、schema validator 和候选适配器；
+- 不得实现或发布生产 Recovery/Manifest/Object codec；
+- 不得选择默认密码库或 suite；
+- 不得生成可被误认为正式恢复凭证的文件。

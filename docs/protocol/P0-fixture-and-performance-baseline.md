@@ -1,94 +1,100 @@
-# P0 Fixture 分布与性能基线方案
+# P0 Fixture 与性能基线合同
 
-> 文档版本：v0.2
-> 状态：生成与测量方案草案；fixture、生成器和基线报告均未执行
+> 文档版本：v1.0
+> 当前状态：schema、profile 范围和数值 oracle 已冻结；fixture、generator 和报告尚不存在
 > 日期：2026-08-27
-> 权威来源：执行计划 §9
+> 权威：ADR-0012、`fixture-manifest-v1.schema.json`、`perf-report-v1.schema.json`
 
-## 1. 职责
+## 1. 通用失败规则
 
-定义 P0 三类 fixture 的候选内容分布和性能基线门槛。当前仓库尚无 fixture、生成器或基线报告；在文件类型/大小分布、随机种子、硬件环境清单和测量方法冻结前，本文不能被引用为已取得性能基线。
+每个 fixture 必须有 schema-valid `fixture-manifest-v1`，绑定 seed、generator path/commit/hash/version、全部 entry、entries hash、feature coverage 和约束裁决。生成内容可以位于 `artifacts/generated-fixtures/` 且不提交 Git，但 manifest 和 generator 不能缺失。
+
+以下任一情况使 fixture 无效，不得运行或关闭对应 ACC：
+
+- required 字段缺失、类型错误、未知字段或 schema 条件不满足；
+- totals 与 entries 实算不一致；
+- entry path/size/SHA-256 或 entries hash 不一致；
+- 同 seed + generator commit 两次生成的 entries hash 不同；
+- profile 的文件数、总字节或 feature coverage 不满足合同；
+- `constraints.validation_errors` 非空或 verdict 不是 pass。
 
 ## 2. Tiny Fixture
 
-- 20–50 个文件；
-- 总量小于约 5 MiB；
-- 包含 Markdown、图片、PDF、Canvas、C 和 Python；
-- 包含中文目录和中文文件名；
-- 提交到 Git；
-- 每次快速测试运行。
+- 20..50 个文件；
+- 总字节不超过 5,242,880；
+- 必须覆盖 Markdown、图片、PDF、Canvas、C、Python 和中文路径；
+- Markdown 至少覆盖 frontmatter、标题、wikilink、中文段落和附件引用；
+- 小型内容与 manifest 提交 Git，每次快速测试运行。
+
+精确清单、seed 和 hash 由 DP-006 关闭。
 
 ## 3. Edge-case Fixture
 
-至少覆盖以下场景，提交固定部分到 Git：
+至少覆盖并逐项绑定稳定错误/结果：
 
-| 场景 | 验证目标 |
+| 场景 | 必需 oracle |
 |---|---|
-| 空文件 | 零字节文件正确处理 |
-| 未支持扩展名 | 返回 UnsupportedFilesFound |
-| Symlink/Junction | 拒绝并报告路径 |
-| 路径逃逸 | 重解析点逃出根目录被拒绝 |
-| 大小写碰撞 | 合成 Manifest 或恶意输入被拒绝 |
-| 扫描期间文件变化 | 文件读取前后检查变化 |
-| 文件读取失败 | IO 错误失败关闭 |
-| 非空恢复目标 | 恢复器拒绝 |
-| 空格和 Emoji 路径 | 路径正确处理 |
-| 异常或损坏 Canvas | 整文件处理，不依赖语义 |
+| 空文件 | 字节往返一致 |
+| 未支持扩展名 | `UNSUPPORTED_FILES_FOUND`，快照不 complete |
+| Symlink/Junction/其他重解析点 | `REPARSE_POINT_FOUND`，目标不读取 |
+| 路径逃逸/ADS/绝对路径 | `ENTRY_PATH_ESCAPE`，根外零写入 |
+| 大小写碰撞 | `CASE_COLLISION`，写入前拒绝 |
+| 扫描期间文件变化 | `FILE_CHANGED_DURING_SCAN` |
+| 文件读取失败 | 稳定 IO 错误，快照不 complete |
+| 非空恢复目标 | `NON_EMPTY_TARGET`，已有字节不变 |
+| 空格/Emoji/中文/深层路径 | 严格 UTF-8 往返 |
+| 异常或损坏 Canvas | 整文件字节策略，不做语义容错 |
+| Recovery/Object/Manifest 缺项、截断和尾随 | registry 对应错误码，零部分输出 |
 
-## 4. Representative Fixture
+精确恶意字节和每个 expected error group 由 DP-007 关闭。缺一个场景就保持对应 ACC `untested`。
 
-- 10,000 个文件；
-- 总量约 1 GiB；
-- 图片单个小于约 0.1 MiB；
-- PDF 单个约 1–2 MiB；
-- 不含特别大的 Canvas；
-- 包含中文路径；
-- 包含 .c 和 .py；
-- 固定种子生成；
-- 不提交生成内容到 Git。
+## 4. Representative Fixtures
 
-### 4.1 合成 Markdown 生成要求
+性能增长必须用同一环境、同一文件数、不同总字节的配对 profile：
 
-生成器应产生结构合理的合成 Markdown，包括：
+| Profile | 文件数 | 总字节范围 | 用途 |
+|---|---:|---:|---|
+| representative-small | 10,000 | 127,506,842..140,928,614（约 128 MiB ±5%） | 内存增长基准 |
+| representative-large | 10,000 | 1,020,054,733..1,127,428,915（1 GiB ±5%） | P0-R1 规模与上限 |
 
-- frontmatter；
-- 标题层级；
-- wikilink 内部链接；
-- 中文段落；
-- 附件引用。
+两个 profile 必须由同一 generator 版本生成，内容类型/路径分布一致，仅扩大文件内容体量。两者都包含中文路径、`.c` 和 `.py`，不含未支持文件。精确分布、seed 和 hash 由 DP-008/009 关闭。
 
-这些结构便于演示并为后续冲突实验复用。但 P0 默认不做压缩，因此不能把"更像真实 Markdown"错误描述为密码正确性或加密性能成立的必要证据（执行计划 §22 I5）。
+## 5. 性能采集合同
 
-## 5. 暂定性能门槛
+每份 `perf-report-v1` 必须记录：
 
-| 指标 | 暂定阈值 | 调整规则 |
-|---|---|---|
-| 扫描+加密+恢复规模 | 10,000 文件、约 1 GiB 完整往返 | 固定 |
-| 峰值 RSS | 不超过 512 MiB | 阶段 2 取得第一份可靠基线后允许调整一次，阶段 6 关闭时冻结 |
-| 内存策略 | 不把整个 Vault 读入内存 | 固定 |
-| 并发策略 | 使用有界并发 | 固定 |
-| 运行时间 | 不提前承诺固定秒数 | 只记录实际环境、耗时、吞吐 |
+- fixture ID/profile/count/bytes/manifest hash/generator hash；
+- OS/build、CPU/核心/频率、RAM、storage model/type、NTFS、Node/V8/pnpm、lockfile hash 和 power plan；
+- cold/warm cache；
+- high-resolution clock、`process.memoryUsage().rss`、采样间隔（1..100 ms）、idle RSS；
+- scan/encrypt/restore-fresh-process/restore-verify/total 五阶段的 duration、peak RSS、file/byte count 和 throughput；
+- exit code、timeout、uncaught error；
+- 阈值、调整记录、small/large 配对比较、最终布尔 verdict 和原始产物 hash。
 
-### 5.1 调整记录要求
+字段缺失、未知字段、采样间隔 >100 ms、process 非正常退出或 cross-field 计算不一致都使报告无效。
 
-性能阈值调整必须：
+## 6. 当前数值阈值
 
-- 记录调整理由；
-- 附调整前的基线数据；
-- 在阶段 6 关闭报告中说明最终冻结值；
-- 调整只允许一次，不允许反复放宽。
+| 指标 | 当前门槛 | 失败条件 |
+|---|---:|---|
+| P0-R1 规模 | large profile 恰好 10,000 文件、1 GiB ±5% | count/bytes 超范围 |
+| peak RSS | 536,870,912 字节 | large total peak RSS 超限 |
+| fixture byte growth | ≥7.5× | large/small 总字节比不足 |
+| peak RSS growth | ≤134,217,728 字节 | large peak - small peak 超限 |
+| RSS 采样 | ≤100 ms | 采样更稀或来源不明 |
+| 阈值调整 | ≤1 次 | 无 hash-bound 记录或超过一次 |
 
-## 6. 生成器要求
+ACC-30 不再使用“远小于 Vault”“ratio 标准差 < 未定义阈值”等模糊判定。吞吐和耗时只记录，不设硬阈值。
 
-- 使用固定随机种子，确保可重复生成；
-- 生成器提交到 Git，生成内容不提交；
-- 生成器输出目录路径在 artifacts/generated-fixtures/ 下；
-- .gitignore 排除 artifacts/ 目录。
+## 7. 调整与延期参数
 
-## 7. 实测前必须冻结
+- DP-006/007/008/009：fixture 清单、恶意输入、分布和 generator；
+- DP-010：实际测量主机与运行清单；
+- DP-011：512 MiB 上限的可选一次性调整；
+- DP-012：chunk、并发和队列上限。
 
-- 每类文件的数量、大小区间和总字节容差；
-- 固定随机种子、生成器版本和生成结果清单哈希；
-- 测量环境（CPU、RAM、存储、OS、Node/包版本）和冷/热缓存规则；
-- RSS、耗时、吞吐的采样工具、采样间隔和报告 schema；
-- 阈值调整的 owner、一次性调整记录和不可继续放宽的停止条件。
+每项 owner、阶段、关闭产物和硬停止条件见 `p0-deferred-parameters.json`。其他文档不得另建自由文本待定项。DP-011 没有合法关闭产物时默认上限继续为 512 MiB；不能把“尚未决定”解释为无限制。
+
+## 8. 当前事实
+
+当前仓库没有 generator、实际 fixture manifest 或 performance report。schema 和门槛存在只证明设计合同可检查；ACC-26/29/30/31 全部仍为 `untested`。

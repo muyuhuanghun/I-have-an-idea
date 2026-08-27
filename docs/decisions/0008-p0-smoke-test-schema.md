@@ -1,17 +1,19 @@
 # ADR-0008：Smoke Test JSON Schema、环境清单与错误码 Oracle
 
-- 状态：已接受（冻结 Phase 0 文档门禁项；具体数值随 smoke 实施冻结）
+- 状态：部分取代；当前 schema 权威是 `docs/schemas/smoke-*.schema.json`
 - 日期：2026-08-27
 - 决策者：开发者
 - 相关文档：P0-crypto-smoke-test-plan.md §4.3、threat-traceability.md §4
 
-## 背景
+> 历史边界：下文示例 JSON 曾被误写成“已冻结 schema”，但示例不能验证 required、类型、未知字段或跨字段裁决。当前只以 JSON Schema 文件和 ADR-0012/一致性检查的缺项失败规则为准。
+
+## 历史背景
 
 P0-crypto-smoke-test-plan.md §4.3 已定义 smoke test 的 12 步执行流程和报告输出路径，但未冻结 JSON 报告的完整 schema、环境清单采集规则、错误码 oracle 与候选/套件/环境矩阵的对应关系。threat-traceability.md §4 给出 22 个规范错误码，但未明确 smoke 报告如何关联到这些错误码。
 
 无冻结 schema 时，不同环境/候选/套件产生的报告无法机器对比，跨环境结果汇总只能人工拼接。本 ADR 冻结 schema、环境清单和错误码 oracle，使三环境 × 多候选 × 多套件的结果可自动合并和裁决。
 
-## 决策
+## 历史决策（当前由 ADR-0012 和 JSON Schema 取代）
 
 ### 1. Smoke 报告 JSON Schema（v1）
 

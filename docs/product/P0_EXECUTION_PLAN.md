@@ -1,8 +1,8 @@
 # P0 Execution Plan
 
-> 计划版本：v0.2
+> 计划版本：v0.3
 >
-> 状态：Phase 0 文档产物已提交；复审门槛重新打开（REOPENED）；Phase 1 未授权
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 未授权；P0-R1 未实现、未测试
 >
 > 日期：2026-08-27
 >
@@ -211,7 +211,8 @@ P0 统一失败关闭：
 - 每个密文对象大小；
 - 总密文字节数；
 - 上传和下载时间；
-- 协议版本。
+- Object/协议/suite 版本；
+- nonce/ciphertext/tag 的公开长度。
 
 P0 不定义 mutable `head`、状态序号或加密代际；这些字段留待后续状态协议另行定义和验收。
 
@@ -344,7 +345,7 @@ artifacts/
 
 ### 8.2 P0 最小密钥角色原则
 
-P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名体系。阶段 0 必须用 ADR 回答：
+P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名体系。ADR-0002/0005/0011 已回答：
 
 - 恢复秘密如何保护域数据根；
 - Manifest 和对象密钥是独立随机密钥、带标签派生，还是封装的数据密钥；
@@ -353,7 +354,7 @@ P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名�
 - fresh-process 恢复的唯一秘密输入和内部认证锚点是什么，以及为什么它不等于快照新鲜度锚点；
 - 设备签名若推迟，P1-alpha 如何迁移。
 
-默认倾向是：只实现满足当前不变式的最小密钥图；设备身份签名和可变 Domain State 签名推迟到 P1-alpha，除非 ADR 证明 P0 篡改/真实性测试确实需要它们。
+当前冻结结论是：只实现满足当前不变式的最小密钥图；设备身份签名和可变 Domain State 签名推迟到 P1-alpha（DP-015）。HKDF 标签、salt、固定长度和 wire bytes 以 ADR-0011/机器合同为准，旧自然语言别名无效。
 
 ### 8.3 恢复文件
 
@@ -361,23 +362,17 @@ P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名�
 
 - 由密码学安全随机源生成秘密；
 - 保存在 Vault 外；
-- 具有 magic、格式版本、协议版本、域 ID、密码套件标识、恢复材料、完整性信息和非秘密指纹；
+- 恰好 167 字节，具有 `EKDR`、格式/协议版本、32 字节 domain ID、suite ID、32 字节 recovery root、32 字节 snapshot ID、16 字节 Manifest object ID、16 字节指纹和 32 字节 HMAC；
 - 不包含原 Vault 绝对路径、正文、文件名或账号密码；
 - 生成后关闭写入句柄并重新从磁盘读取；
 - 由新进程完成正式恢复演练；
 - 被视为足以恢复域的高敏感秘密。
 
+Recovery File 是 bearer file；recovery root 不再以“用其自身派生密钥 AEAD 加密自己”的方式保存。自派生 HMAC 只提供内部自洽/损坏检测，不提供针对可读取该文件者的独立防伪或静态保密。
+
 ### 8.4 对象 ID
 
-在实现 ObjectStore 前，`encrypted-object-format` 必须冻结：
-
-- 对象 ID 的随机位数；
-- CSPRNG 来源；
-- 编码；
-- 碰撞检查和重试策略；
-- 对象 ID 与域的绑定；
-- 对象类型、版本和认证附加数据；
-- 禁止裸内容哈希作为服务器可见对象 ID。
+ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。碰撞必须在加密前检查并重新生成 ID/nonce/ciphertext。suite 与 wrap 参数仍受 DP-001..005 的生产实现硬停止约束。
 
 ## 9. Fixture 与性能基线
 
@@ -407,8 +402,8 @@ P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名�
 
 ### 9.3 Representative fixture
 
-- 10,000 个文件；
-- 总量约 1 GiB；
+- 两个同为 10,000 文件的 profile；
+- small = 127,506,842..140,928,614 字节；large = 1,020,054,733..1,127,428,915 字节；
 - 图片单个小于约 0.1 MiB；
 - PDF 单个约 1–2 MiB；
 - 不含特别大的 Canvas；
@@ -427,6 +422,8 @@ P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名�
 - 暂定峰值 RSS 不超过 512 MiB；
 - 阶段 2 取得第一份可靠基线后允许调整一次；
 - 调整必须记录理由，阶段 6 关闭时冻结；
+- large/small 字节比至少 7.5，large peak RSS - small peak RSS 不超过 128 MiB；
+- RSS 采样间隔不超过 100 ms；
 - P0 不提前承诺固定运行秒数，只记录实际环境、耗时、吞吐和峰值内存。
 
 ## 10. 阶段与工作量
@@ -460,7 +457,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - `3b9f8d3` 提交其余 Phase 0 文档；
 - `b8f15fc` 补充验收项草案、Manifest 定位符、smoke 条件和 Git 忽略规则。
 
-`b8f15fc` 是本轮复审的事实基线，不是 Phase 0 已通过的证据。后续状态必须分别记录“审查前 clean 基线”和“更新后未提交 diff”，不得把预期的 post-commit 状态写成当前事实。
+`b8f15fc` 是历史 v0.2 复审基线，不是当前 Git 基线，也不是 Phase 0 已通过的证据。随后 gate-repair commits 到 `583a3a1` 已提交；本轮 v1.0 修复前基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`。本轮修改仍是未提交 diff，不得写成 clean 或已提交。
 
 ### 11.2 工作单元
 
@@ -489,24 +486,24 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - P0 运行时零 AI；
 - 最小密钥图有书面理由；
 - ObjectStore 不含未定义 head；
-- 对象 ID 参数有待实现前必须关闭的文档门槛；
+- object ID、AAD、Recovery/Manifest canonical bytes 已由 ADR-0011 和 wire registry 冻结；
 - Android 真机 smoke test 方案明确；
-- 验收矩阵中每个安全要求至少有一个负面测试；
+- 37 ACC / 16 INV / 5 THR 有稳定 ID、双向追踪和机器 oracle；
+- smoke/fixture/performance/ACC evidence 有 JSON Schema 且缺项失败；
 - 任何未关闭项都有明确 owner、阶段和停止条件。
 
 ### 11.4 当前复审状态
 
-Phase 0 的 14 个工作单元已经产生对应文档，但 2026-08-27 的独立复审重新打开了文档门槛。当前处置和未关闭项包括：
+2026-08-27 本轮修复后的当前状态：
 
-- README、执行计划与一致性检查的当前状态已在本轮未提交 diff 中统一；提交前仍必须如实保留 dirty 状态；
-- Manifest 定位链已经写出，但恢复根保护密钥来源和恢复文件整体替换边界仍未冻结；
-- 单快照幂等读取与完整旧快照回滚已在恢复格式和威胁模型中区分；仍需一致性复审确认 README、ADR、验收矩阵和关闭报告边界完全一致；
-- crypto smoke 的候选×算法套件×环境矩阵、环境/报告 schema、算法特定 KAT 和错误 oracle 尚未冻结；实际版本、lockfile、bundle hash 与 Android 真机报告属于后续获授权执行 Phase 1 的产物，其缺失阻止候选选型，但不应被伪装成已执行证据；
-- 验收项虽已补充自然语言方法，但当前全部 `untested`，部分 oracle、负面覆盖和关闭条件仍需修正；
-- 内容策略已移除属于 P1 的冲突协调措辞，并已纳入本轮跨文档一致性检查；
-- Windows 路径、性能测量和证据报告 schema 仍需进一步冻结。
+- ADR-0011 消除 Manifest AAD/recovery material 循环依赖，冻结 wire bytes/HKDF/object ID；
+- ADR-0012 冻结 5 份 JSON Schema、缺项失败规则和数值 oracle；
+- registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
+- `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
+- 当前工作树包含本轮未提交 diff，不能描述为 clean/已提交；
+- Phase 1 仍需用户单独授权，且只从工程骨架和 smoke harness 开始。
 
-因此，阶段 0 当前状态是 `REOPENED`，不是 PASS。完成本轮 gate repair、通过一致性断言和再次独立审查前，不开始阶段 1。
+因此当前裁决是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。实现、fixture、KAT、真机和 37 项运行证据仍未开始。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 
@@ -555,14 +552,15 @@ Phase 0 的 14 个工作单元已经产生对应文档，但 2026-08-27 的独�
 - 使用有界并发；
 - 通过端口读取文件，不在核心中调用 Node API。
 
-Manifest 必须版本化；完整 canonical Manifest 都进入 AEAD 加密与认证范围，不能只保护“敏感字段”。至少描述：
+Manifest 必须严格实现 ADR-0011 的 canonical plaintext，并把完整明文作为 AEAD payload。当前字段是：
 
 - 域和快照标识；
 - 内容策略版本；
-- 每个文件的逻辑标识、原始相对路径、大小和完整性承诺；
-- 密文对象引用；
-- 必要的加密本地时间；
-- 协议和工具版本。
+- domain/snapshot/parent snapshot、内容策略版本和 suite；
+- 每个文件的严格 UTF-8 相对路径、16 字节 object ID、明文字节数和 wrapped object key；
+- entry 按路径原始 UTF-8 bytes 严格升序，无 NUL、无尾随字节。
+
+P0 不保存本地修改时间；因此不会把它以明文泄漏，也不在 v1 Manifest 中发明未冻结字段。
 
 通过条件：Tiny fixture 稳定；Representative fixture 可扫描；源 Vault 零写入；扫描中变化的文件不会进入伪一致快照。
 
@@ -570,8 +568,8 @@ Manifest 必须版本化；完整 canonical Manifest 都进入 AEAD 加密与认
 
 实现顺序：
 
-1. 冻结恢复文件和对象格式；
-2. 实现 CSPRNG 和 key/nonce 生命周期封装；
+1. 确认 DP-001..005 已由 suite 选择 ADR/KAT/真机报告关闭；
+2. 严格按 ADR-0011/wire registry 实现 CSPRNG 和 key/nonce 生命周期封装；
 3. 实现恢复文件生成；
 4. 关闭写入并重新读取恢复文件；
 5. 实现 Manifest 和文件对象认证加密；
@@ -753,14 +751,14 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-当前下一授权门槛是 Phase 0 gate repair，不是重复创建已经存在的文档，也不是直接进入密码实现：
+当前下一授权门槛是 **Phase 1 工程骨架和三环境 smoke harness**，不是生产协议实现：
 
-1. 以 `b8f15fca1d7a1bb31bb6b2693103da73c85588fe` 为审查基线，统一 README、执行计划和一致性检查中的当前状态；
-2. 把初次 Phase 0 PASS 保留为历史自检记录，并将当前门槛明确改为 `REOPENED`；
-3. 纠正恢复根保护、完整快照回滚、内容策略、smoke/KAT 和验收关闭条件中的过度声明；
-4. 运行本地链接、状态词、验收覆盖、`.gitignore`、`git diff --check` 和 Git scope 检查；
-5. 由独立复审再次判断 Phase 0 是否通过；
-6. 只有门槛重新通过且用户另行授权后，才开始阶段 1 的 workspace 和三环境 smoke harness；
-7. 未完成算法选择 ADR 前，不实现生产恢复文件、Manifest 或密文对象协议。
+1. 用户单独授权 Phase 1；
+2. 建立 workspace/lockfile 和同一 shared core 的三环境入口；
+3. 按 JSON Schema 实现 validator/aggregator 和 14 个 required vector harness；
+4. 关闭 DP-001..005，产出 suite 选择 ADR、KAT、三环境 hash-bound 报告；
+5. 只有 `cross_env_pass` 后，才能进入 Phase 2/3 的正式 Manifest/Recovery/Object codec；
+6. 任何偏离 ADR-0011 的 bytes 或 ADR-0012 的 schema 都先停下并写新 ADR；
+7. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
 
 本计划不授权自动提交或推送。本轮修改完成后应如实报告未提交 diff 的文件范围。

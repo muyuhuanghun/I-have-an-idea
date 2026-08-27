@@ -2,9 +2,9 @@
 
 > 暂定项目名：Obsidian E2EE Knowledge Domains
 >
-> 文档版本：Product Definition v0.2
+> 文档版本：Product Definition v0.3
 >
-> 状态：Phase 0 文档产物已提交；2026-08-27 复审后文档门槛重新打开；Phase 1 实现尚未开始
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 未授权；P0-R1 未实现、未测试
 >
 > 最后更新：2026-08-27
 
@@ -55,7 +55,7 @@ P1 不是以下产品：
 
 - **已冻结**：访谈中已经明确接受，除非发现自相矛盾或安全缺陷，否则作为当前产品约束。
 - **建议**：当前推荐方案，但尚未最终冻结为 P1 交付要求。
-- **待裁决**：实现前仍需要产品决策或实验数据。
+- **待裁决**：实现前仍需要产品决策或实验数据；每个当前待裁决项必须有 `DP-*` registry ID，否则视为未登记硬停止。
 - **P1 / P2 / P3**：表示阶段边界，不等于已经排定工期。
 
 ## 5. 顶层信任承诺（已冻结）
@@ -880,13 +880,15 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 5. TypeScript 是共享核心和插件主语言，Python 只作为独立验证和测试辅助；
 6. P0 使用单个 Vault 外高熵恢复文件；
 7. ObjectStore 先实现本地目录适配器，通过本地闭环后再实现 localhost HTTP 适配器；
-8. P0 只接受当前实际格式产生的不透明域 ID/对象 ID、对象数量、密文大小、访问时间和协议版本；P0 不引入 mutable `head`，状态序号和加密代际留待后续状态协议定义，不做大小或流量填充；
+8. P0 只接受当前格式产生的不透明域/object ID、对象数量、密文大小、访问时间、Object/协议/suite 版本和 nonce/ciphertext/tag 长度；P0 不引入 mutable `head`，状态序号和加密代际留待后续状态协议定义，不做大小或流量填充；
 9. P0 运行时零 AI；
-10. P0 的代表性规模为 10,000 文件、约 1 GiB，性能阈值在取得阶段 2 基线后允许调整一次，再于 P0 关闭时冻结。
+10. P0 的代表性规模为 10,000 文件、1 GiB ±5%；当前 peak RSS 上限为 512 MiB，只能按 DP-011 调整一次；
+11. Recovery File v1 是含 32 字节 recovery root 的 167 字节 bearer file；object ID 固定 16 原始字节/22 字符 base64url store key；Manifest AAD 所需 snapshot ID 先由恢复文件提供；
+12. 37 ACC / 16 INV / 5 THR 和 26 个延期项以 `docs/contracts/` 的机器 registry 为准。
 
-### 27.2 Phase 0 复审后仍需关闭的门槛
+### 27.2 历史：审查基线 b8f15fc 仍需关闭的门槛（已被当前合同取代）
 
-以下内容已经有草案或候选设计，但截至审查基线 `b8f15fca1d7a1bb31bb6b2693103da73c85588fe` 仍不能写成已冻结或已验证：
+以下 10 条只描述 `b8f15fca1d7a1bb31bb6b2693103da73c85588fe` 时的历史缺口，不是当前状态。其旧结论不得单独引用；当前裁决见 §27.3 和 consistency 文件。
 
 1. 威胁模型、安全不变式与验收项之间还缺少稳定的 Threat ID、完整映射和可执行 oracle；
 2. 候选密钥图已经形成，但 KDF 参数、独立对象密钥包装密钥、nonce 策略和用途隔离编码仍待 smoke test 后通过 ADR 冻结；
@@ -899,20 +901,29 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 9. 37 条验收项当前全部是 `untested`，仓库中没有对应实现、脚本或证据；所有 required/in-scope 项通过前不得关闭 P0-R1；
 10. Phase 0 独立一致性复审当前为 `REOPENED`，关闭上述文档问题并再次审查前不授权 Phase 1。
 
-### 27.3 推迟到 P1-alpha 以后裁决
+### 27.3 当前 Phase 0 合同状态
 
-1. 中心托管、自托管或二者并行；
-2. 账号认证方式、2FA、Passkey 和账号删除；
-3. 群组 epoch、设备签名、服务器串行化、并发事务和状态分叉证明；
-4. Proposal 密钥的审核者分发方式；
-5. 设备安全存储与移动端正式密钥保护；
-6. 紧急治理恢复的 P1 精确范围；
-7. 管理员是否可以向域主提交签名治理恢复建议；
-8. 签名更新、可验证构建和完整供应链边界；
-9. 主存储与备份物理删除 SLA；
-10. 自托管迁移与密文导出格式；
-11. 风险、文件大小、Proposal 和暂存额度阈值；
-12. 移动端电量与真实多设备压力测试。
+1. ADR-0011 和 wire registry 已消除两条循环依赖，冻结 recovery/object/Manifest canonical bytes、HKDF 标签和 16 字节 object ID；
+2. ADR-0012 和 5 份 JSON Schema 已冻结 smoke/fixture/performance/ACC evidence 的 required 与缺项失败规则；
+3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
+4. deferred registry 已逐项绑定 26 个开放/延期参数的 owner、阶段、关闭产物和硬停止；
+5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；
+6. 当前仍无 package/workspace/lockfile、候选 KAT、真机报告、fixture generator、运行报告或 passed ACC；Phase 1 仍需用户单独授权。
+
+### 27.4 推迟到 P1-alpha 以后裁决
+
+1. 中心托管、自托管或二者并行（DP-016）；
+2. 账号认证方式、2FA、Passkey 和账号删除（DP-017）；
+3. 群组 epoch（DP-025）、设备签名/状态序号/分叉证明（DP-015）；
+4. Proposal 密钥的审核者分发方式（DP-018）；
+5. 设备安全存储与移动端正式密钥保护（DP-026）；
+6. 紧急治理恢复的 P1 精确范围（DP-019）；
+7. 管理员是否可以向域主提交签名治理恢复建议（DP-019）；
+8. 签名更新、可验证构建和完整供应链边界（DP-020）；
+9. 主存储与备份物理删除 SLA（DP-021）；
+10. 自托管迁移与密文导出格式（DP-022）；
+11. 风险、文件大小、Proposal 和暂存额度阈值（DP-023）；
+12. 移动端电量与真实多设备压力测试（DP-024）。
 
 ## 28. 工程原则
 
@@ -939,25 +950,28 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前产品设想理解度已经超过最初设定的 80% 门槛，P0 的范围、平台顺序、恢复材料、元数据边界、规模目标和实现语言已经形成一致意见。Phase 0 文档集合也已形成，但复审发现恢复根保护、完整快照回滚边界、测试 oracle 和状态一致性仍未关闭。下一步只做 Phase 0 gate repair 和再次审查；在该门槛重新通过前，不开始生产密码实现。
+当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁。这个结论只到“设计合同静态一致”为止；没有实现、KAT、真机、fixture 或 ACC 运行证据。下一授权门槛是 Phase 1 工程骨架与 smoke harness，不是生产密码协议实现。
 
 ## 30. 仓库状态
 
 本节描述当前事实，不把计划产物写成已实现。
 
-审查基线为 `b8f15fca1d7a1bb31bb6b2693103da73c85588fe`。在本轮文档更新开始前，本地 `main`、`origin/main` 和远端 `refs/heads/main` 均指向该提交，工作树和 index 干净。此后由本轮产生的文档 diff 在单独审查、提交前属于计划内未提交改动，不能继续把工作树描述为 clean。
+本轮修复开始前的 Git 基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`，当时本地 `main` 与 `origin/main` 一致且工作树干净。当前这批协议、schema、registry、验证器和状态文档修改尚未提交，因此当前工作树是计划内 dirty；不得描述为 clean 或已提交。
 
 当前已纳管：
 
 ```text
 docs/
+  contracts/
+  schemas/
   product/
   threat-model/
   protocol/
   decisions/
   test-plans/
+tools/
 ```
 
 当前没有 `package.json`、workspace、lockfile、TypeScript/Python 实现、fixture 生成器、固定密码向量、Android 真机报告或任何 passed 验收证据。`artifacts/` 已被 `.gitignore` 忽略；当前其中只有未纳入 Git 的本地测试残留/目录结构，没有可作为验收证据的测试报告、fixture 或恢复材料，且本轮不擅自删除这些现有文件。
 
-当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，复审门槛见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)。当前权威结论是 Phase 0 `REOPENED`、Phase 1 未授权、P0-R1 未实现且未验收。在完整实现、测试和独立审计以前，不承诺生产可用。
+当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)。权威结论是 `PHASE0_CONTRACT_CHECK_PASS (design-only)`、Phase 1 未授权、P0-R1 未实现且 37 ACC 全部未测试。在完整实现、测试和独立审计以前，不承诺生产可用。

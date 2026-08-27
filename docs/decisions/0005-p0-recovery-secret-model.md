@@ -1,6 +1,6 @@
 # ADR-0005：恢复文件 bearer secret 与外部解锁秘密二选一
 
-- 状态：已接受（冻结 Phase 0 语义决策；算法参数待 smoke test 后冻结）
+- 状态：语义仍有效；恢复文件 HMAC/wire 细节由 ADR-0011 取代
 - 日期：2026-08-27
 - 决策者：开发者
 - 相关文档：ADR-0002、ADR-0004、P0-recovery-and-object-format.md §2.4、P0-security-invariants.md、P0-scope-and-glossary.md §5
@@ -48,10 +48,10 @@ P0-recovery-and-object-format.md §2.4 指出：P0 当前没有用户口令、�
 
 ### 恢复文件完整性密钥来源
 
-完整性密钥从恢复根自身派生：恢复根经 HKDF（info = recovery-file-integrity）派生恢复文件完整性密钥。这是自我引用的：
+完整性密钥按 ADR-0011 从恢复根派生，canonical info 为 `ekd-v1/recovery-file-integrity`。Recovery File v1 直接携带 32 字节 recovery root，并固定使用 HMAC-SHA256；不再保留 recovery material AEAD 候选。
 
-- 持有恢复根者可验证恢复文件完整性；
-- 不持有恢复根者无法伪造合法恢复文件；
+- 解析器可验证恢复文件内部自洽并检测未重算标签的损坏；
+- 任何能读取 bearer file 的人已经持有恢复根，也能派生 HMAC key，因此不能声称对这类读写者有独立防伪能力；
 - 但无法证明攻击者没有整体替换恢复文件 + 匹配 ObjectStore（因为旧对在内部自洽）。
 
 ### INV-11 不变
@@ -83,7 +83,7 @@ P0 选择方案 A 意味着以下能力明确不可用，须在 P0-R1 关闭报�
 ### 对其他文档的影响
 
 - P0-recovery-and-object-format.md §2.4 的 bearer-secret/外部解锁二选一阻塞项关闭，本 ADR 为其裁决依据；
-- P0-recovery-and-object-format.md §6 的实现前冻结参数清单新增：恢复文件完整性密钥 = HKDF(recovery_root, info=recovery-file-integrity)；
+- P0-recovery-and-object-format.md 的当前参数以 ADR-0011 和延期参数 registry 为准；
 - P0-security-invariants.md 的整体替换边界与本决策的诚实边界一致；
 - 验收矩阵无需新增 ACC：整体替换作为 known-limitation 记录，不设负面测试（P0 无法检测的设计限制不应伪装成可测验收）。
 
@@ -103,11 +103,10 @@ P0 选择方案 A 意味着以下能力明确不可用，须在 P0-R1 关闭报�
 
 ## 与算法参数的关系
 
-本 ADR 冻结的是语义决策（bearer secret + 自派生完整性密钥），不是算法参数。以下参数仍待 smoke test 后按 P0-recovery-and-object-format.md §6 冻结：
+本 ADR 冻结 bearer-secret 语义。2026-08-27 后续 ADR-0011 已关闭 recovery root 长度、HMAC、salt/info、字段布局和 object ID 长度。当前仍延期的 suite/wrap/KAT 参数只以 `p0-deferred-parameters.json` 为准。
 
-- HKDF 的 salt、输出长度；
-- 完整性方案的具体选择（HMAC-SHA256 或 AEAD 封装）；
-- 恢复文件完整性密钥的派生 info 编码；
-- 恢复根最终位数（不低于 256 位）。
+- AEAD suite 及 key/nonce/tag 参数（DP-002）；
+- object-key wrap 方案（DP-003）；
+- 精确 KAT 与候选实现（DP-001/004/005）。
 
-这些参数冻结后写入补充 ADR，不修改本决策的语义结论。
+这些参数冻结后写入选择 ADR，不修改 bearer-secret 语义；未来引入外部解锁秘密必须按 DP-013 新建迁移 ADR。

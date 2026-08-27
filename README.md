@@ -4,7 +4,7 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 未授权；P0-R1 未实现、未测试
+> 当前状态：Phase 0 设计合同静态门禁通过（design-only 与 design-only+samples 两档），基线 `fcbc873` 已提交并推送到 origin/main；Phase 1 未授权；P0-R1 未实现、未测试
 >
 > 最后更新：2026-08-27
 
@@ -907,7 +907,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 2. ADR-0012 和 5 份 JSON Schema 已冻结 smoke/fixture/performance/ACC evidence 的 required 与缺项失败规则；
 3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
 4. deferred registry 已逐项绑定 26 个开放/延期参数的 owner、阶段、关闭产物和硬停止；
-5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；
+5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身（`acc-evidence-v1` / `fixture-manifest-v1` / `perf-report-v1` / `smoke-aggregate-v1` / `smoke-report-v1`），证明 schema 强制路径在 work；`--evidence-root` 模式在加载每份 evidence 后用 `acc-evidence-v1` 真校验，缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反都立即被拒；
 6. 当前仍无 package/workspace/lockfile、候选 KAT、真机报告、fixture generator、运行报告或 passed ACC；Phase 1 仍需用户单独授权。
 
 ### 27.4 推迟到 P1-alpha 以后裁决
@@ -950,13 +950,13 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁。这个结论只到“设计合同静态一致”为止；没有实现、KAT、真机、fixture 或 ACC 运行证据。下一授权门槛是 Phase 1 工程骨架与 smoke harness，不是生产密码协议实现。
+当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁，schema 强制路径由 `--validate-samples` 用 5 对正/负样本反身校验过。这个结论只到“设计合同静态一致 + 门禁反身校验通过”为止；没有实现、KAT、真机、fixture 或 ACC 运行证据。下一授权门槛是 Phase 1 工程骨架与 smoke harness，不是生产密码协议实现。
 
 ## 30. 仓库状态
 
 本节描述当前事实，不把计划产物写成已实现。
 
-本轮修复开始前的 Git 基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`，当时本地 `main` 与 `origin/main` 一致且工作树干净。当前这批协议、schema、registry、验证器和状态文档修改尚未提交，因此当前工作树是计划内 dirty；不得描述为 clean 或已提交。
+本轮修复开始前的 Git 基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`，当时本地 `main` 与 `origin/main` 一致且工作树干净。本轮协议、schema、registry、验证器和状态文档修改已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`，当前 `main...origin/main` 为 `0 0` 且工作树 clean；之前的“计划内 dirty、尚未提交”描述只属于 commit 前的中间状态，不再适用。
 
 当前已纳管：
 
@@ -974,4 +974,4 @@ tools/
 
 当前没有 `package.json`、workspace、lockfile、TypeScript/Python 实现、fixture 生成器、固定密码向量、Android 真机报告或任何 passed 验收证据。`artifacts/` 已被 `.gitignore` 忽略；当前其中只有未纳入 Git 的本地测试残留/目录结构，没有可作为验收证据的测试报告、fixture 或恢复材料，且本轮不擅自删除这些现有文件。
 
-当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)。权威结论是 `PHASE0_CONTRACT_CHECK_PASS (design-only)`、Phase 1 未授权、P0-R1 未实现且 37 ACC 全部未测试。在完整实现、测试和独立审计以前，不承诺生产可用。
+当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)。权威结论是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，Phase 1 未授权、P0-R1 未实现且 37 ACC 全部未测试。`design-only+samples` 表示 schema 强制路径已被 5 对正/负样本反身校验过，不等于 P0-R1 已通过。在完整实现、测试和独立审计以前，不承诺生产可用。

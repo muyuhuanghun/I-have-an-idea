@@ -335,4 +335,4 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `PASS design-only`：只指静态合同检查，绝不等同 P0-R1 PASS；
 - `PASS design-only+samples`：design-only 加上 5 份 schema 的 5 对正/负样本反身校验通过，证明 schema 强制路径在 work；仍非 P0-R1 PASS。
 
-本轮修复前基线为 `583a3a1`。本轮文件仍是未提交 diff；除非实际提交并重新核验 Git 状态，不得写成已提交或 clean。
+本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`，当前 `main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，两者都不等于 P0-R1 PASS。

@@ -457,7 +457,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - `3b9f8d3` 提交其余 Phase 0 文档；
 - `b8f15fc` 补充验收项草案、Manifest 定位符、smoke 条件和 Git 忽略规则。
 
-`b8f15fc` 是历史 v0.2 复审基线，不是当前 Git 基线，也不是 Phase 0 已通过的证据。随后 gate-repair commits 到 `583a3a1` 已提交；本轮 v1.0 修复前基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`。本轮修改仍是未提交 diff，不得写成 clean 或已提交。
+`b8f15fc` 是历史 v0.2 复审基线，不是当前 Git 基线，也不是 Phase 0 已通过的证据。随后 gate-repair commits 到 `583a3a1` 已提交；本轮 v1.0 修复前基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`。本轮设计合同与验证器升级已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`，当前 `main...origin/main` 为 `0 0` 且工作树 clean；“未提交 diff”只属于 commit 前的中间状态，不再适用。
 
 ### 11.2 工作单元
 
@@ -500,7 +500,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - ADR-0012 冻结 5 份 JSON Schema、缺项失败规则和数值 oracle；
 - registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
 - `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
-- 当前工作树包含本轮未提交 diff，不能描述为 clean/已提交；
+- 当前工作树 clean，本轮已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；`main...origin/main` 为 `0 0`；
 - Phase 1 仍需用户单独授权，且只从工程骨架和 smoke harness 开始。
 
 因此当前裁决是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。实现、fixture、KAT、真机和 37 项运行证据仍未开始。
@@ -761,4 +761,4 @@ feat: add localhost HTTP ObjectStore adapter
 6. 任何偏离 ADR-0011 的 bytes 或 ADR-0012 的 schema 都先停下并写新 ADR；
 7. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
 
-本计划不授权自动提交或推送。本轮修改完成后应如实报告未提交 diff 的文件范围。
+本计划不授权自动提交或推送。本轮修改已经由用户显式授权后通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；之后的 README/一致性/执行计划 stale 措辞修订也属于用户显式授权下的小补丁提交。

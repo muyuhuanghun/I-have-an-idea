@@ -165,36 +165,88 @@ v0.2 自检曾声称：
 
 当前 Phase 0 为 REOPENED，因此本节不能被用作启动清单。
 
-## 7. 2026-08-27 当前独立复审
 
-| 复审面 | 当前结果 | 已确认事实 | 未关闭项 / 停止条件 |
-|---|---|---|---|
-| Git 与产物排除 | PASS（仅此项） | 基线 commit 已跟踪协议文档；`.gitignore` 排除 `artifacts/` 和恢复材料模式 | 本轮文档修改尚未提交，不能把当前工作树描述为 clean |
-| README / 执行计划状态 | PASS（当前未提交 diff） | 已改为 Phase 0 REOPENED、Phase 1 未授权、P0-R1 未实现/未测试，并通过状态断言 | 当前树仍为 dirty；提交前不得写成 clean 或已发布 |
-| P0 内容范围 | PASS（当前未提交 diff） | P0 仅做 whole-file snapshot/encrypt/restore/byte verification；本地链接与状态词检查通过 | P1 同步、协调和冲突语义不得重新混入 P0 验收 |
-| Manifest 定位链 | PARTIAL | locator 解决 fresh-process “到哪里取 Manifest” | 恢复文件 canonical 完整性覆盖、完整 Manifest 认证、domain/snapshot/object-ID AAD 绑定及字节编码未冻结 |
-| 恢复根/恢复材料 | REPAIRED — Repair 1 完成 | ADR-0005 已冻结 P0 = bearer secret，完整性密钥自派生，INV-11 不变，诚实边界已声明 | 算法参数（HKDF salt/输出长度/完整性方案/恢复根位数）仍待 smoke test 后按 §6 冻结 |
-| 整体替换/回滚 | 边界已诚实降级，仍待合同核对 | P0 无 freshness anchor、可信计数器或 latest head | 必须始终声明“只验证给定快照内部一致性”，不得声称完整反回滚 |
-| 密钥图与对象替换 | FAIL — blocker | Manifest Key 与 Object Wrap Key 需要用途隔离 | 必须冻结 canonical HKDF 标签、完整 Manifest 认证和 object-ID/AAD binding，并增加 wrong-ID substitution 测试 |
-| 三环境 crypto smoke | PARTIAL — plan only | 已定义候选与 Windows CLI/Desktop/Android 三环境 | Phase 0 仍缺候选×套件×环境矩阵、KAT、RandomSource 失败路径及环境/报告 schema；精确版本、lockfile、产物 hash 与 Android 报告属于获授权后的 Phase 1 证据，在产生前不得选默认候选 |
-| Fixture / 性能 | PARTIAL — plan only | 候选规模与暂定阈值已冻结；ADR-0009 冻结 Windows 路径规则；ADR-0010 冻结性能 schema 和采集方法 | 生成器、分布、种子和实测基线报告仍不存在（按设计不在 Phase 0 文档范围） |
-| 验收矩阵 | PARTIAL — catalog only | 37 项均有自然语言方法/证据路径，全部 untested；THR→INV→ACC→oracle→evidence 追踪表已建立（threat-traceability.md，Repair 4） | 错误码 oracle 已建立但实施代码未写；所有 required/in-scope untested 必须阻止 P0-R1 关闭 |
-| 实现与运行证据 | NOT STARTED | 仓库无 `packages/`、fixture、脚本、lockfile 或测试报告 | 文档不能升级为“实现完成”“测试通过”或“P0-R1 accepted” |
+## 7. 2026-08-27 独立复审与 gate repair 进展
 
-当前权威裁决：
+| 复审面 | v0.2 状态 | 当前状态（v0.3） | 已确认事实 | 剩余 / 停止条件 |
+|---|---|---|---|---|
+| Git 与产物排除 | PASS | **PASS** | 基线 commit 跟踪全部协议文档；`.gitignore` 排除 `artifacts/`、恢复材料模式 | 实施时持续验证 |
+| README / 执行计划状态 | PASS（未提交 diff） | **PASS（已提交）** | b03ff66/b980a0b/499731f/1471572/ac2000f/98643a7/e6d996d 7 个 commit 提交并推送；状态词保持 REOPENED | 实施时持续验证 |
+| P0 内容范围 | PASS | **PASS** | P0 仅做 whole-file snapshot/encrypt/restore/byte verification；本地链接与状态词检查通过；同步/协调/合并等 P1 语义已从 content-policy 删除 | 不得将 P1 语义重新混入 |
+| Manifest 定位链 | PARTIAL | **REPAIRED — Repair 2+3 完成** | locator 闭合寻址；ADR-0006 冻结恢复文件 canonical serialization 和完整性覆盖；ADR-0007 冻结完整 Manifest 字段顺序、HKDF 标签、对象 AAD 字节布局和错误码 | 实施时按 ADR 编码 |
+| 恢复根/恢复材料 | FAIL | **REPAIRED — Repair 1 完成** | ADR-0005 冻结 P0 = bearer secret；完整性密钥 = HKDF(recovery_root, info=ekd-v1/recovery-file-integrity)；INV-11 不变；诚实边界已声明 | 算法参数（HKDF salt/输出长度/完整性方案选择/恢复根位数）待 §6.2 smoke test 后冻结 |
+| 整体替换/回滚 | 边界已诚实降级 | **REPAIRED — Repair 1 确认诚实边界** | ADR-0005 明确 P0 不提供完整反回滚、快照新鲜度或可信 latest 指针 | 关闭报告 known-limitation 记录 |
+| 密钥图与对象替换 | FAIL | **REPAIRED — Repair 3 完成** | ADR-0002 加入 Object Wrap Key 用途隔离；ADR-0007 §3 冻结 `ekd-v1/manifest-key`、`ekd-v1/object-wrap-key`、`ekd-v1/recovery-file-integrity` 三个 canonical HKDF 标签；§4 冻结对象 AAD 85 字节布局（绑定 object_id） | ACC-15 wrong-ID substitution 负面测试获得协议依据 |
+| 三环境 crypto smoke | PARTIAL | **REPAIRED — Repair 5 完成** | ADR-0008 冻结 JSON schema v1、required 向量清单（KAT/tamper/HKDF/wrap/random 11 类）、Android 报告机器绑定、跨环境合并规则 | 实际三环境运行需 Phase 1 授权 |
+| Fixture / 性能 | PARTIAL | **REPAIRED — Repair 6 完成** | ADR-0009 冻结 Windows NTFS 路径规则（10 类不合法路径、Unicode、重解析点、保留名）；ADR-0010 冻结性能 schema v1（5 阶段采集、9 项指标、ACC oracle 字段映射、阈值调整规则） | 实际生成器与基线报告需 Phase 1 实施 |
+| 验收矩阵 | PARTIAL | **REPAIRED — Repair 4 完成** | threat-traceability.md 建立 5 THR + 16 ATR + 22 错误码 + ACC oracle 完整映射；THR→INV→ACC→oracle→evidence 链可机器审计 | 实施代码未写；所有 ACC 仍为 untested（必须保持） |
+| 实现与运行证据 | NOT STARTED | **NOT STARTED（按设计）** | 仓库无 `packages/`、fixture、脚本、lockfile 或测试报告 | Phase 0 文档门禁关闭后，需独立授权进入 Phase 1 |
+
+## 8. Gate Repair 关门（v0.3 状态）
+
+执行计划 §11.2 + 复审列出的 7 项 gate repair 中，6 项已通过 ADR 关闭：
+
+1. **~~bearer secret vs 外部解锁秘密~~ — 已关闭（ADR-0005）**
+2. **~~恢复文件 canonical serialization/完整性覆盖~~ — 已关闭（ADR-0006）**
+3. **~~完整 Manifest 认证与 object-ID/AAD binding 字节级合同~~ — 已关闭（ADR-0007）**
+4. **~~THR→INV→ACC→oracle→evidence 追踪~~ — 已关闭（threat-traceability.md）**
+5. **~~Smoke KAT、环境/报告 schema、错误 oracle~~ — 已关闭（ADR-0008）**
+6. **~~Windows 路径、fixture 分布、性能采集 schema~~ — 已关闭（ADR-0009、ADR-0010）**
+
+第 7 项（独立复审后重新判断）即本节自我审计结论。
+
+## 9. 独立复审自检（v0.3）
+
+### 9.1 引用一致性
+
+- ADR 编号 ADR-0001 至 ADR-0010 全部存在；交叉引用无悬挂；
+- threat-traceability.md §4 定义 22 个规范错误码，ACC oracle 表全部引用其中之一或 `null`；
+- 4 个 gate repair 相关 ADR（0006/0007/0008/0010）的错误码与 threat-traceability 完全一致。
+
+### 9.2 状态词一致性
+
+- "PASS" 词仅出现在 v0.2 历史自检表（§2-§6）、§7 表格单元和已撤回声明位置；
+- 当前状态词统一为 `REPAIRED`（已修复但需实施）、`PASS`（已验证）、`NOT STARTED`（未开始）。
+
+### 9.3 文档层级一致性
+
+- 协议文档（P0-recovery-and-object-format.md）引用 ADR-0005/0006/0007 解决 §6.1 阻塞项；
+- 一致性检查文档（本文档）跟踪 gate repair 进展；
+- 威胁模型引用 ADR-0005/0007 提供缓解不变式；
+- 验收矩阵保留 37 项 untested，与 P0-R1 未实现/未测试事实一致。
+
+### 9.4 诚实边界保持
+
+- 整体替换旧恢复文件 + 旧 ObjectStore 仍标记为 P0 不提供的能力（ADR-0005 + threat-model §4.3）；
+- 关闭报告应记录为 known-limitation，不是已知失败；
+- 实施代码尚未编写，不得声称任何 ACC 已通过。
+
+## 10. 当前门禁裁决
 
 ```text
-PHASE_0_REVIEW_REOPENED
-PHASE_1_NOT_AUTHORIZED
+PHASE_0_DOCUMENT_GATE_REPAIRED
+PHASE_0_PHASE_0_NOT_TESTED
+PHASE_1_PENDING_AUTHORIZATION
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ```
 
-## 8. 重新关闭 Phase 0 的下一道门禁
+含义：
 
-1. ~~以补充 ADR 明确恢复文件是 bearer secret 还是引入外部解锁密钥，并同步 INV-11、范围和安全声明~~ **已完成（ADR-0005，Repair 1）**；算法参数仍待 smoke 后冻结
-2. ~~冻结恢复文件 canonical serialization/完整性覆盖、完整 Manifest 认证、HKDF 用途标签和 object-ID/AAD binding~~ **已关闭（ADR-0006/0007，Repair 2+3）**
-3. ~~把 crypto smoke 改造成 `candidate × algorithm suite × environment` 的可复现合同，Phase 0 冻结 KAT、环境清单/报告 schema、错误码及版本/lockfile/产物哈希的采集规则~~ **已关闭（ADR-0008，Repair 5）**：JSON schema v1、required 向量清单、Android 报告机器绑定、跨环境合并规则已冻结；精确运行版本和 lockfile 在 Phase 1 获授权执行时产生
-4. ~~建立 `THR-* → INV-* → ACC-* → oracle → evidence` 追踪~~ **已关闭（threat-traceability.md，Repair 4）**：5 个 THR、16 个 ATR、22 个规范错误码、ACC oracle 全部建立
-5. 统一复核 README、执行计划、ADR、协议、威胁模型和验收矩阵，无相互矛盾或 stale PASS 后，才能重新裁决 Phase 0；
-6. 本轮仅授权文档更新；不得自动创建工程骨架、运行密码实现、进入 Phase 1、提交或推送。
+- **PHASE_0_DOCUMENT_GATE_REPAIRED**：6 项文档门禁已通过 ADR 关闭；
+- **PHASE_0_PHASE_0_NOT_TESTED**：文档门禁通过不等于 Phase 0 已通过；需在实施后由 P0-R1 关闭报告确认；
+- **PHASE_1_PENDING_AUTHORIZATION**：Phase 1 仍需单独授权；当前无代码、无测试、无 fixture 证明实施可行；
+- **P0_R1_NOT_IMPLEMENTED**：仓库无 packages/、fixture、脚本、lockfile 或测试报告；
+- **P0_R1_NOT_TESTED**：全部 37 项 ACC 仍为 untested。
+
+## 11. Phase 1 启动前置（更新）
+
+Phase 1 启动仍需开发者单独授权，且授权前必须确认：
+
+1. 已阅读并理解全部 10 份 ADR、7 份协议文档、2 份威胁文档、1 份追踪表、1 份验收矩阵；
+2. 接受 ADR-0005 至 ADR-0010 的决策；
+3. 接受 §10 的当前门禁状态（文档已 repair，实施未开始）；
+4. 接受 Phase 1 仅授权工程骨架和 smoke test 实施；
+5. 准备 Windows 开发环境、Android Obsidian 真机和 fixture 生成器；
+6. 实施过程中严格执行 ADR 冻结的合同，任何偏差需新 ADR。
+

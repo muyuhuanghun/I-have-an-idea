@@ -173,7 +173,7 @@ localhost HTTP ObjectStore（阶段 7）引入网络后，重放边界扩展为�
 
 - 裁决恢复材料是 bearer secret，还是引入外部解锁密钥；若引入外部密钥，必须同步修改 INV-11、范围、输入合同和生命周期；
 - ~~明确恢复文件完整性要抵抗的攻击者、密钥来源和 canonical 字段覆盖~~ **已关闭（ADR-0006，Repair 2）**
-- 明确完整 canonical Manifest 全部加密认证，以及 §3.2 所列 object-ID/AAD 绑定字段；
+- ~~明确完整 canonical Manifest 全部加密认证，以及 §3.2 所列 object-ID/AAD 绑定字段~~ **已关闭（ADR-0007，Repair 3）**
 - 明确 P0 只提供给定快照内部完整性，不提供整套输入的新鲜度或反回滚保证。
 
 ### 6.2 获授权 smoke test 后、生产协议实现前

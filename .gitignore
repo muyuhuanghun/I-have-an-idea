@@ -28,3 +28,14 @@ node_modules/
 dist/
 build/
 coverage/
+
+# P0 artifacts: generated fixtures, test reports, performance reports
+# These are reproducible via generators; never commit generated content.
+artifacts/
+
+# P0 recovery files: high-entropy secrets that can recover a domain.
+# Never commit recovery material to Git.
+*.recovery
+*.recoverykey
+recovery-*.bin
+recovery-files/

@@ -1,9 +1,11 @@
 # 阶段 0 一致性检查与通过条件
 
-> 文档版本：v0.1
+> 文档版本：v0.2
 > 状态：阶段 0 工作单元 13-14
 > 日期：2026-08-27
 > 权威来源：执行计划 §11.2-11.3、§22
+>
+> v0.2 修订：验收矩阵补充测试方法/错误判定/证据路径/状态（ACC-01~37）；恢复文件格式新增 Manifest 定位符闭合 fresh-process 恢复链；smoke test 方案补充具体执行条件；新增重放边界和恢复根保护方式定义；.gitignore 添加 artifacts/ 和恢复文件忽略规则。
 
 ## 1. 职责
 
@@ -74,6 +76,9 @@
 | 检查项 | 来源 | 结果 | 证据 |
 |---|---|---|---|
 | 恢复文件格式要求已写 | §8.3 | 通过 | P0-recovery-and-object-format.md §2 |
+| Manifest 定位符闭合 fresh-process 恢复链 | §8.3 | 通过 | P0-recovery-and-object-format.md §2.2 |
+| 恢复根保护方式已定义 | §8.3 | 通过 | P0-recovery-and-object-format.md §2.4 |
+| 重放边界已定义 | §8.3 | 通过 | P0-recovery-and-object-format.md §4 |
 | 对象 ID 参数有待实现前关闭的门槛 | §11.3 | 通过 | P0-recovery-and-object-format.md §3.2 |
 | 禁止裸内容哈希作为对象 ID | §8.4 | 通过 | P0-recovery-and-object-format.md §3.3 |
 
@@ -82,6 +87,7 @@
 | 检查项 | 来源 | 结果 | 证据 |
 |---|---|---|---|
 | 三环境 smoke test 方案明确 | §11.3 | 通过 | P0-crypto-smoke-test-plan.md |
+| smoke test 具体执行条件已定义 | §8.1 | 通过 | P0-crypto-smoke-test-plan.md §4 |
 | 至少比较两条候选路径 | §8.1 | 通过 | P0-crypto-smoke-test-plan.md §2 |
 
 ### 2.10 Fixture 与性能（工作单元 10）
@@ -95,9 +101,11 @@
 | 检查项 | 来源 | 结果 | 证据 |
 |---|---|---|---|
 | 验收矩阵 schema 已建立 | §11.2.11 | 通过 | P0-acceptance-matrix.md §2 |
+| 每条 ACC 含测试方法、错误判定、证据路径和状态 | §11.2.11 | 通过 | P0-acceptance-matrix.md §3 全部 |
 | 前 10 条关键要求已写 | §11.2.11 | 通过 | P0-acceptance-matrix.md §3.1-3.2 |
 | 其余要求、负面测试和证据路径已写 | §11.2.12 | 通过 | P0-acceptance-matrix.md §3 全部、§4 |
 | 每个安全要求至少一个负面测试 | §11.3 | 通过 | P0-acceptance-matrix.md §3 负面测试项 |
+| 全部 ACC 初始状态为 untested | §11.3 | 通过 | P0-acceptance-matrix.md §3 |
 
 ## 3. 执行计划 §11.3 通过条件逐项核对
 
@@ -111,8 +119,8 @@
 | 6 | P0 运行时零 AI | 满足 | P0-security-invariants.md §4 |
 | 7 | 最小密钥图有书面理由 | 满足 | ADR-0002 |
 | 8 | ObjectStore 不含未定义 head | 满足 | ADR-0004 |
-| 9 | 对象 ID 参数有实现前关闭的门槛 | 满足 | P0-recovery-and-object-format.md §5 |
-| 10 | Android 真机 smoke test 方案明确 | 满足 | P0-crypto-smoke-test-plan.md §3 |
+| 9 | 对象 ID 参数有实现前关闭的门槛 | 满足 | P0-recovery-and-object-format.md §3.2、§6 |
+| 10 | Android 真机 smoke test 方案明确 | 满足 | P0-crypto-smoke-test-plan.md §3、§4 |
 | 11 | 验收矩阵每个安全要求至少一个负面测试 | 满足 | P0-acceptance-matrix.md §3 |
 | 12 | 任何未关闭项有明确 owner、阶段和停止条件 | 满足 | 见 §4 待裁决项 |
 
@@ -120,8 +128,8 @@
 
 以下项已在文档中定义门槛，但不冻结具体数值，推迟到阶段 1 smoke test 后冻结：
 
-- 恢复根位数、KDF 参数、对象密钥包装方案、完整性方案（ADR-0002 + P0-recovery-and-object-format.md §5）；
-- 对象 ID 随机位数和编码（P0-recovery-and-object-format.md §3.2）；
+- 恢复根位数、KDF 参数、对象密钥包装方案、恢复根保护方案、完整性方案（ADR-0002 + P0-recovery-and-object-format.md §6）；
+- 对象 ID 随机位数、编码和 Manifest 定位符编码（P0-recovery-and-object-format.md §3.2）；
 - AEAD 具体算法和 nonce 策略（P0-crypto-smoke-test-plan.md）；
 - 性能阈值在阶段 2 取得基线后允许调整一次（P0-fixture-and-performance-baseline.md §5）。
 
@@ -135,6 +143,10 @@
 
 - §11.3 的 12 条通过条件全部满足；
 - §22 GLM 评审处置表的各项已在对应文档中落实；
+- fresh-process 恢复链已闭合：恢复文件含 Manifest 定位符，新进程可凭恢复文件定位并解密 Manifest（P0-recovery-and-object-format.md §2.2）；
+- 验收矩阵每条 ACC 含具体测试方法、错误判定、证据路径和初始状态（untested）；
+- 重放边界、恢复根保护方式和 smoke test 执行条件已定义；
+- .gitignore 已添加 artifacts/ 和恢复文件忽略规则，防止误提交测试数据或恢复材料；
 - 剩余待裁决项均为"实现前冻结数值"类型，有明确 owner、阶段和停止条件，不构成阶段 1 开始的阻塞。
 
 因此，阶段 0 文档硬门槛通过，允许进入阶段 1（工程骨架和三环境密码 smoke test）。

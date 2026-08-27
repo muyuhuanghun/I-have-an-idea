@@ -1,0 +1,747 @@
+# P0 Execution Plan
+
+> 计划版本：v0.1
+>
+> 状态：初步可执行基线，尚未开始阶段 0
+>
+> 日期：2026-08-27
+>
+> 适用仓库：`I_have_an_idea`
+
+## 1. 文档职责和权威边界
+
+本文件把 `README.md` 的产品定义转换为当前可执行的 P0 计划。两者职责不同：
+
+- `README.md` 定义产品目标、长期信任承诺和 P1/P2/P3 边界；
+- 本文件定义当前 P0 的子集、顺序、产物、工时、验收门槛和停止条件；
+- 威胁模型、密钥生命周期、对象格式和测试计划后续分别进入对应的正式文档；
+- 本计划不能把“拟实现”升级成“已实现”，也不能自动修改 README 中已经冻结的长期产品承诺；
+- 如果实现证据与文档冲突，必须先停止并通过 ADR 修改相关文档，不能让代码静默改变协议。
+
+当前 P0 是 README 长期设想的严格子集。P0 通过只证明本地加密快照闭环通过了已列测试，不证明完整同步产品、生产安全、零知识安全或合规状态。
+
+## 2. 已确认的开发约束
+
+### 2.1 目标优先级
+
+```text
+简历级技术原型
+    >
+小规模真实试用 ≈ 长期产品潜力
+    >
+密码协议研究本身
+```
+
+因此 P0 必须同时产生：
+
+- 可演示的端到端闭环；
+- 清晰、可解释的架构；
+- 威胁模型和负面边界；
+- 可重复自动测试；
+- 10,000 文件、约 1 GiB 的规模证据；
+- 失败结果和未测试项；
+- 不夸大安全性的关闭报告。
+
+### 2.2 人力和时间
+
+- 独立开发；
+- 平均每天约 1 小时、每周约 7 小时；
+- 没有硬截止日期；
+- 熟悉 C、Python、AI/深度学习和全栈工程；
+- TypeScript 是新主语言，学习成本必须进入计划；
+- 不允许以赶进度为理由跳过源数据保护、恢复演练和负面测试。
+
+### 2.3 平台和运行方式
+
+- Windows 是 P0 主开发与正式验收平台；
+- P0 早期在真实 Android Obsidian 中做共享核心和密码候选的兼容性 smoke test；
+- Android 正式同步属于 P1-alpha；
+- iOS 后置；
+- 移动端只承诺打开 Obsidian 后运行；
+- 不要求 Obsidian 关闭后继续后台同步。
+
+Obsidian 官方说明移动端不存在 Node.js 和 Electron API。因此共享核心及其依赖不能假设 Node/Electron 可用：<https://docs.obsidian.md/Plugins/Getting%20started/Mobile%20development>。
+
+## 3. P0 术语
+
+### 3.1 P0 快照恢复
+
+“P0 快照恢复”指：在新的进程和新的本地工作状态下，只使用 Vault 外恢复文件和 ObjectStore 密文，把一个不可变快照恢复到新建空目录。
+
+它不等于 README 的正式“域主恢复”。P0 不涉及：
+
+- 丢失全部正式设备后的身份恢复；
+- 旧设备吊销；
+- 成员移除；
+- 全域密钥换代；
+- 历史授权迁移；
+- 生产账号系统。
+
+### 3.2 P0 Active
+
+P0 复用：
+
+```text
+LocalPrepared
+    ↓
+RecoverySetupPending
+    ↓
+PossessionVerified
+    ↓
+Active
+```
+
+P0 的 `Active` 只表示当前本地域已经通过恢复文件持有性验证，可以创建加密快照。它不表示真实多设备同步已经启用，也不表示产品达到生产安全。
+
+### 3.3 ObjectStore
+
+ObjectStore 是只按不透明 ID 保存和读取密文对象的端口。P0 第一实现是本地目录；本地闭环关闭后，再实现 localhost HTTP 适配器。
+
+P0 单快照阶段不引入未定义的 mutable `head`。只有在 localhost HTTP 或 P1-alpha 需要表达最新状态、前驱和条件更新时，才通过正式状态协议定义 head。
+
+## 4. P0 范围
+
+### 4.1 P0 IN
+
+1. P0 合同、威胁模型、安全不变式和关键 ADR；
+2. TypeScript 共享核心；
+3. Node/CLI 适配器；
+4. Python 独立验证器；
+5. 极薄的 Windows Obsidian 插件；
+6. Android Obsidian 兼容性 smoke test；
+7. 只读 Vault 扫描；
+8. 版本化内容允许列表；
+9. 版本化加密 Manifest；
+10. Vault 外单个高熵恢复文件；
+11. 恢复文件持有性验证；
+12. 本地认证加密和版本化密文对象；
+13. 随机、不透明对象 ID；
+14. Directory ObjectStore；
+15. 新进程向新建空目录执行快照恢复；
+16. 源目录与恢复目录的独立逐文件验证；
+17. 服务器可见性扫描；
+18. 10,000 文件、约 1 GiB 的代表性 fixture；
+19. 篡改、缺失对象、错误恢复文件、路径逃逸、非空目标和中断测试；
+20. 本地闭环关闭后实现 localhost HTTP ObjectStore；
+21. P0 关闭报告。
+
+### 4.2 P0 OUT
+
+- 文件监听；
+- 增量同步；
+- Base / Working / Incoming；
+- 三方协调；
+- 冲突 UI；
+- 第二台真实设备；
+- Android 正式同步；
+- iOS；
+- 账号、密码、2FA、Passkey；
+- 团队域、成员和角色；
+- Proposal 和 Candidate Revision；
+- Named Release；
+- 配额和计费；
+- 历史保留后台清除；
+- 跨发布清除；
+- AI 运行时组件；
+- 自托管迁移；
+- 生产服务器；
+- 生产安全、零知识安全或合规声明。
+
+任何 OUT 项进入当前实现都需要先修改本计划并说明它替换了哪个已排期工作，不能作为“顺手加入”的附加功能。
+
+## 5. 内容和路径策略
+
+### 5.1 两层文件模型
+
+共享核心把普通文件处理为：
+
+```text
+relative_path + byte_stream + encrypted_metadata
+```
+
+加密和快照恢复不依赖文件语义；产品层使用版本化允许列表控制正式支持范围。
+
+P0 默认至少允许：
+
+- `.md`；
+- `.canvas`；
+- `.pdf`；
+- `.png`、`.jpg`、`.jpeg`、`.gif`、`.webp`；
+- `.c`、`.h`、`.cpp`、`.hpp`、`.py`。
+
+其他代码类型必须显式加入策略。“主流语言”不是允许列表。
+
+### 5.2 不支持文件
+
+发现未支持的普通文件时：
+
+1. 收集相对路径和原因；
+2. 在本地报告中展示；
+3. 返回 `UnsupportedFilesFound`；
+4. 不把快照标记为完成；
+5. 不静默跳过。
+
+### 5.3 Symlink、Junction 和重解析点
+
+P0 统一失败关闭：
+
+- 不跟随；
+- 不读取目标内容；
+- 不上传；
+- 不恢复；
+- 显式报告路径；
+- 阻止快照正式完成。
+
+### 5.4 P0 路径承诺
+
+- P0 正式往返验收限定为源 Vault 与目标目录均位于 Windows NTFS 默认行为下；
+- 路径必须始终保持在指定根目录内；
+- 代表性 fixture 包含中文路径；
+- 当前代表性 fixture 不要求空格或 Emoji，但 edge-case fixture 可以测试它们；
+- 大小写碰撞通过合成 Manifest 或恶意输入测试，不要求在默认 Windows 目录中实际创建两个冲突文件；
+- Windows 与 Android 的跨文件系统路径语义属于 P1-alpha 裁决。
+
+## 6. 元数据与 AI 边界
+
+### 6.1 P0 允许 ObjectStore 观察
+
+- 不透明域 ID；
+- 不透明对象 ID；
+- 对象数量；
+- 每个密文对象大小；
+- 总密文字节数；
+- 上传和下载时间；
+- 协议版本；
+- 状态序号和加密代际（如果对应格式在 P0 中实际存在）。
+
+### 6.2 P0 不允许 ObjectStore 观察
+
+- 正文；
+- 原始文件名；
+- 扩展名；
+- 相对路径；
+- Markdown 铃接；
+- Canvas 内容；
+- 裸内容哈希；
+- 密钥和恢复秘密；
+- 账号 ID、成员 ID、权限事件和配额事件。P0 不产生这些控制面字段。
+
+P0 不做大小填充、对象数量隐藏或流量隐藏，必须在关闭报告中记录该限制。
+
+### 6.3 AI
+
+P0 运行时零 AI。AI 只允许用于开发辅助、生成合成测试数据或离线分析报告，不能参与：
+
+- 随机数或密钥生成；
+- 加密或完整性判断；
+- 路径验证；
+- 域激活；
+- 恢复成功判定；
+- 权限和安全不变式。
+
+## 7. 推荐架构
+
+```text
+CLI ───────────────┐
+                   ├── Application Core ── Domain Core
+Obsidian Plugin ───┘            │
+                                ├── VaultSource port
+                                ├── CryptoProvider port
+                                ├── ObjectStore port
+                                ├── RandomSource port
+                                └── Clock port
+
+Adapters:
+  Node read-only Vault
+  Obsidian Vault
+  Directory ObjectStore
+  HTTP ObjectStore
+```
+
+共享核心不得直接导入：
+
+- Node `fs` 或 `path`；
+- Electron；
+- Obsidian API；
+- Windows 专属 API；
+- Android 专属 API；
+- localhost HTTP 的具体实现。
+
+推荐仓库结构：
+
+```text
+docs/
+  product/
+  threat-model/
+  protocol/
+  decisions/
+  test-plans/
+
+packages/
+  core/
+  crypto/
+  adapters/
+    node-vault/
+    obsidian-vault/
+    directory-object-store/
+    http-object-store/
+
+apps/
+  cli/
+  obsidian-plugin/
+  mock-server/
+
+tools/
+  fixture-generator/
+  python-verifier/
+
+fixtures/
+  tiny/
+  edge-cases/
+
+artifacts/
+  generated-fixtures/
+  test-reports/
+  performance-reports/
+```
+
+大型 fixture 和运行报告不得提交到 Git；Git 只保存生成器、固定种子、配置、摘要和小型 fixture。
+
+## 8. 密码与密钥设计门槛
+
+### 8.1 不提前冻结算法
+
+阶段 0 先冻结威胁、密钥角色、格式版本和测试要求，阶段 1 再通过真实三环境 smoke test选择实现。不得因为某个库在 Node 中运行就认定它适合 Android Obsidian。
+
+当前需要比较的候选路径至少包括两种：
+
+1. Web Crypto `SubtleCrypto`；
+2. `libsodium-wrappers`；
+3. `@noble/ciphers` 与必要的 noble 配套库可以作为第三候选。
+
+官方资料：
+
+- Web Crypto 提供低层密码操作，部分算法支持可能不同，调用者必须正确组合：<https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto>；
+- `libsodium.js` 提供 WebAssembly 和纯 JavaScript 包装，并支持浏览器与服务端：<https://github.com/jedisct1/libsodium.js/>；
+- `@noble/ciphers` 是无运行时依赖的 TypeScript/JavaScript 实现，但其官方文档也明确说明 JavaScript/JIT 环境存在常数时间限制：<https://github.com/paulmillr/noble-ciphers>。
+
+候选比较必须覆盖：
+
+- Windows Node/CLI；
+- Windows Obsidian；
+- 真实 Android Obsidian；
+- 随机数来源；
+- AEAD；
+- 二进制分块或流式策略；
+- 包体积和初始化；
+- 测试向量；
+- 维护、审计和供应链信息；
+- 错误处理；
+- 升级和协议版本固定。
+
+一次只选择一个生产实现。比较候选不意味着组合多个库拼装自创协议。
+
+### 8.2 P0 最小密钥角色原则
+
+P0 不默认实现为 P1 预留但当前没有验证价值的全部设备签名体系。阶段 0 必须用 ADR 回答：
+
+- 恢复秘密如何保护域数据根；
+- Manifest 和对象密钥是独立随机密钥、带标签派生，还是封装的数据密钥；
+- 不同用途如何避免密钥和 nonce 复用；
+- P0 快照真实性使用 AEAD、MAC 还是签名；
+- fresh-process 恢复如何获得唯一可信锚点；
+- 设备签名若推迟，P1-alpha 如何迁移。
+
+默认倾向是：只实现满足当前不变式的最小密钥图；设备身份签名和可变 Domain State 签名推迟到 P1-alpha，除非 ADR 证明 P0 篡改/真实性测试确实需要它们。
+
+### 8.3 恢复文件
+
+恢复文件必须：
+
+- 由密码学安全随机源生成秘密；
+- 保存在 Vault 外；
+- 具有 magic、格式版本、协议版本、域 ID、密码套件标识、恢复材料、完整性信息和非秘密指纹；
+- 不包含原 Vault 绝对路径、正文、文件名或账号密码；
+- 生成后关闭写入句柄并重新从磁盘读取；
+- 由新进程完成正式恢复演练；
+- 被视为足以恢复域的高敏感秘密。
+
+### 8.4 对象 ID
+
+在实现 ObjectStore 前，`encrypted-object-format` 必须冻结：
+
+- 对象 ID 的随机位数；
+- CSPRNG 来源；
+- 编码；
+- 碰撞检查和重试策略；
+- 对象 ID 与域的绑定；
+- 对象类型、版本和认证附加数据；
+- 禁止裸内容哈希作为服务器可见对象 ID。
+
+## 9. Fixture 与性能基线
+
+### 9.1 Tiny fixture
+
+- 20–50 个文件；
+- 小于约 5 MiB；
+- 包含 Markdown、图片、PDF、Canvas、C 和 Python；
+- 包含中文目录和中文文件名；
+- 提交到 Git；
+- 每次快速测试运行。
+
+### 9.2 Edge-case fixture
+
+至少覆盖：
+
+- 空文件；
+- 未支持扩展名；
+- Symlink/Junction；
+- 路径逃逸；
+- 大小写碰撞；
+- 扫描期间文件变化；
+- 文件读取失败；
+- 非空恢复目标；
+- 空格和 Emoji；
+- 异常或损坏 Canvas。
+
+### 9.3 Representative fixture
+
+- 10,000 个文件；
+- 总量约 1 GiB；
+- 图片单个小于约 0.1 MiB；
+- PDF 单个约 1–2 MiB；
+- 不含特别大的 Canvas；
+- 包含中文路径；
+- 包含 `.c` 和 `.py`；
+- 固定种子生成；
+- 不提交生成内容。
+
+生成器应产生结构合理的合成 Markdown，包括 frontmatter、标题、wikilink、中文段落和附件引用，便于演示并为后续冲突实验复用。但 P0 默认不做压缩，因此不能把“更像真实 Markdown”错误描述为密码正确性或加密性能成立的必要证据。
+
+### 9.4 暂定性能门槛
+
+- 完成 10,000 文件、约 1 GiB 的扫描、加密和恢复；
+- 不把整个 Vault 读入内存；
+- 使用有界并发；
+- 暂定峰值 RSS 不超过 512 MiB；
+- 阶段 2 取得第一份可靠基线后允许调整一次；
+- 调整必须记录理由，阶段 6 关闭时冻结；
+- P0 不提前承诺固定运行秒数，只记录实际环境、耗时、吞吐和峰值内存。
+
+## 10. 阶段与工作量
+
+工时是低置信度时间盒，不是交付承诺。按每周约 7 小时估算。
+
+| 阶段 | 主要产物 | 预计工时 | 约合日历时间 |
+|---|---|---:|---:|
+| 0 | P0 合同、威胁模型、ADR、验收矩阵 | 8–12 小时 | 1–2 周 |
+| 1 | TypeScript 基础、工程骨架、三环境密码 spike | 10–16 小时 | 1.5–3 周 |
+| 2 | fixture、只读扫描器、Manifest | 14–20 小时 | 2–3 周 |
+| 3 | 恢复文件、密钥图、加密对象、Directory ObjectStore | 22–30 小时 | 3–5 周 |
+| 4 | fresh-process 恢复、Python 独立验证 | 14–20 小时 | 2–3 周 |
+| 5 | 极薄 Windows Obsidian 插件 | 8–14 小时 | 1–2 周 |
+| 6 | 10,000 文件压力、破坏性测试、P0-R1 关闭 | 14–20 小时 | 2–3 周 |
+| 7 | localhost HTTP ObjectStore、网络失败测试 | 12–24 小时 | 2–4 周 |
+
+P0-R1（本地目录闭环）约 90–132 小时，即约 13–19 个满额投入周；考虑学习、返工和现实中断，合理日历窗口是 13–24 周。阶段 7 完成后才规划 P1-alpha。
+
+## 11. 阶段 0：文档硬门槛
+
+GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致性审查。阶段 0 改为 10–14 个一小时工作单元，不再强求一周完成。
+
+### 11.1 启动前：保存 v0.1 Git 基线
+
+当前仓库尚无提交，暂存区保存 v0.1 基线，而 v0.2 README 和本计划位于工作区。未经用户授权，本计划不执行提交。
+
+在暂存 v0.2 以前，建议由用户授权执行：
+
+```powershell
+git diff --cached --check
+git commit -m "docs: establish product definition v0.1"
+```
+
+该提交只应包含当前已经暂存的 `.gitattributes`、`.gitignore` 和 README v0.1。随后再审查、暂存并提交 v0.2 与本计划。不得先运行 `git add README.md`，否则会覆盖暂存区中的 v0.1 基线。
+
+### 11.2 工作单元
+
+1. 完成 P0 术语表和 IN/OUT；
+2. 冻结内容允许列表、未知文件和重解析点行为；
+3. 写威胁模型的资产、攻击者和信任边界；
+4. 写安全不变式和服务器元数据边界；
+5. 画恢复秘密、域根、Manifest/对象密钥的候选密钥图；
+6. 写共享核心和适配器 ADR；
+7. 写 P0 状态真实性、是否需要签名以及为何不提前引入 head 的 ADR；
+8. 写恢复文件和对象 ID 格式要求；
+9. 写密码候选三环境 smoke test 方案；
+10. 写 fixture 分布和性能基线方案；
+11. 建立验收矩阵 schema 和前 10 条关键要求；
+12. 补齐其余要求、负面测试和证据路径；
+13. 使用本文件的评审处置表逐项检查 README、计划和 ADR；
+14. 只有所有 P0 阻塞项关闭后，才允许阶段 1 开始。
+
+### 11.3 阶段 0 通过条件
+
+- P0 的 IN/OUT 无模糊项；
+- “快照恢复”和“域主恢复”已经区分；
+- 内容范围与 README 一致；
+- Symlink/Junction 行为明确为拒绝；
+- P0 元数据是 README 长期边界的严格子集；
+- P0 运行时零 AI；
+- 最小密钥图有书面理由；
+- ObjectStore 不含未定义 head；
+- 对象 ID 参数有待实现前必须关闭的文档门槛；
+- Android 真机 smoke test 方案明确；
+- 验收矩阵中每个安全要求至少有一个负面测试；
+- 任何未关闭项都有明确 owner、阶段和停止条件。
+
+## 12. 阶段 1：工程骨架和移动兼容性
+
+### 12.1 TypeScript 学习前置
+
+至少安排以下短练习并保留小测试：
+
+- `strict` 类型检查；
+- interface 与 discriminated union；
+- Promise、`async`/`await` 和错误传播；
+- `Uint8Array`、`ArrayBuffer` 和避免无界复制；
+- ESM/CJS 边界；
+- 依赖打包；
+- Web/Node 随机数接口差异。
+
+学习练习不进入协议包，不用练习代码污染正式实现。
+
+### 12.2 工程骨架
+
+- 建立 workspace；
+- 建立 core、crypto、adapters、CLI 和插件包；
+- 建立统一 lint/typecheck/test 命令；
+- 建立最小 Obsidian 插件；
+- 用依赖检查阻止共享核心导入 Node/Electron/Obsidian。
+
+### 12.3 三环境 smoke test
+
+每个候选至少在以下环境执行相同小测试向量：
+
+1. Windows Node/CLI；
+2. Windows Obsidian；
+3. 真实 Android Obsidian。
+
+测试内容：随机数、AEAD 往返、篡改拒绝、二进制输入、初始化耗时和内存。任何候选只在前两种环境通过，都不能成为 P0 默认实现。
+
+## 13. 阶段 2：扫描、Manifest 和 fixture
+
+扫描器必须：
+
+- 只读源 Vault；
+- 不在源 Vault 创建缓存、数据库、锁或临时文件；
+- 排除 `.obsidian`；
+- 拒绝 Symlink/Junction；
+- 对未知文件失败关闭；
+- 文件读取前后检查变化；
+- 使用有界并发；
+- 通过端口读取文件，不在核心中调用 Node API。
+
+Manifest 必须版本化，敏感字段进入加密 Manifest。至少描述：
+
+- 域和快照标识；
+- 内容策略版本；
+- 每个文件的逻辑标识、原始相对路径、大小和完整性承诺；
+- 密文对象引用；
+- 必要的加密本地时间；
+- 协议和工具版本。
+
+通过条件：Tiny fixture 稳定；Representative fixture 可扫描；源 Vault 零写入；扫描中变化的文件不会进入伪一致快照。
+
+## 14. 阶段 3：恢复文件、加密对象和目录存储
+
+实现顺序：
+
+1. 冻结恢复文件和对象格式；
+2. 实现 CSPRNG 和 key/nonce 生命周期封装；
+3. 实现恢复文件生成；
+4. 关闭写入并重新读取恢复文件；
+5. 实现 Manifest 和文件对象认证加密；
+6. 实现 Directory ObjectStore；
+7. 实现服务器可见性报告；
+8. 加入错误密钥和篡改测试。
+
+相同明文重复加密不得产生可直接关联的相同密文对象。ObjectStore 和日志中不得出现测试预置的明文正文、文件名、扩展名和路径。
+
+## 15. 阶段 4：fresh-process 恢复
+
+正式集成测试：
+
+```text
+进程 A 创建快照
+    ↓
+进程 A 退出
+    ↓
+删除 P0 本地工作状态
+    ↓
+进程 B 只读取恢复文件和 ObjectStore
+    ↓
+恢复到新建空目录
+    ↓
+Python 独立验证器比较路径集合和文件字节
+```
+
+恢复器必须拒绝：
+
+- 非空目标目录；
+- 路径逃逸；
+- 大小写折叠后碰撞；
+- 缺失、截断或篡改对象；
+- 错误恢复文件；
+- 不支持的格式版本。
+
+任何部分写入不能被报告为完整成功。
+
+## 16. 阶段 5：极薄 Obsidian 插件
+
+插件只负责：
+
+- 调用共享核心创建 P0 快照；
+- 展示扫描、恢复持有性和加密进度；
+- 展示文件数、原始/密文字节和服务器可见性摘要；
+- 导出测试报告。
+
+CLI 继续负责正式 fresh-process 恢复，以便安全选择新建空目录和清理本地状态。插件不得复制密码或 Manifest 实现。
+
+## 17. 阶段 6：压力和破坏性验收
+
+至少测试：
+
+- 10,000 文件、约 1 GiB 完整往返；
+- 错误恢复文件；
+- 恢复文件截断；
+- 对象缺失、重复、截断和篡改；
+- Manifest 篡改；
+- 扫描中文件变化或消失；
+- 非空目标；
+- 路径逃逸和大小写碰撞；
+- Symlink/Junction；
+- 写入中断和模拟磁盘不足；
+- 日志写入失败；
+- 未支持文件；
+- 服务器明文标记扫描；
+- 源 Vault 零修改；
+- 峰值 RSS 和处理耗时。
+
+P0-R1 关闭报告必须区分：已通过、失败、未测试、已知限制和移出范围。
+
+## 18. 阶段 7：localhost HTTP ObjectStore
+
+只有 P0-R1 关闭后才开始。
+
+最小能力：
+
+- PUT/GET/存在性检查不透明对象；
+- 幂等重试；
+- 大小限制；
+- 超时、断线、重复请求和部分失败模拟；
+- 目录后端复用；
+- 不引入账号、团队、计费或生产部署。
+
+若加入 HTTP 后必须修改共享加密核心或恢复语义，说明前面的端口边界失败，必须回到架构修复，不能复制一套网络版本。
+
+## 19. P0-R1 完成定义
+
+只有以下条件全部成立，P0-R1 才能关闭：
+
+1. 共享核心无 Node/Electron/Obsidian 依赖；
+2. Windows CLI、Windows Obsidian 和 Android smoke test 调用同一核心；
+3. 恢复文件由 CSPRNG 生成并保存在 Vault 外；
+4. 持有性验证重新读取磁盘文件；
+5. 新进程只凭恢复文件和 ObjectStore 恢复；
+6. 10,000 文件、约 1 GiB 完整往返；
+7. 支持文件相对路径集合和字节完全一致；
+8. `.c`、`.py` 等明确支持的代码文件完整往返；
+9. 未支持文件不被静默跳过；
+10. 源 Vault 零写入；
+11. 非空恢复目标被拒绝；
+12. 路径逃逸、重解析点和大小写碰撞被拒绝；
+13. 错误密钥、篡改、缺失对象和不支持版本失败关闭；
+14. ObjectStore 和服务器日志不含禁止的明文信息；
+15. 实测内存有界，性能目标按冻结规则评估；
+16. 有机器可读和人类可读报告；
+17. 测试可从干净环境重复运行；
+18. 文档没有宣称生产安全或独立审计完成。
+
+## 20. 硬停止条件
+
+发生以下任一情况必须停止当前阶段，不得带病进入下一阶段：
+
+- 任何测试修改了源 Vault；
+- fresh-process 恢复依赖未声明的本地缓存或内存秘密；
+- ObjectStore 或日志出现禁止的明文；
+- Android Obsidian 不能运行已选密码实现；
+- 共享核心必须导入 Node/Electron 才能工作；
+- 10,000 文件处理仍按 Vault 总大小无界占用内存；
+- 未支持文件被静默遗漏；
+- 路径验证允许写出目标根目录；
+- 篡改或错误密钥被当成成功；
+- README、协议文档、ADR 和实现出现无法解释的冲突。
+
+停止后只做问题定位、范围修订和负面证据记录，不继续后续功能。
+
+## 21. 推荐提交序列
+
+```text
+docs: establish product definition v0.1
+docs: align product definition with P0 decisions
+docs: add initial P0 execution plan
+docs: freeze P0 scope content policy and terminology
+docs: add P0 threat model and security invariants
+docs: record architecture recovery metadata and state decisions
+test: define P0 acceptance matrix and fixture profiles
+build: scaffold TypeScript workspace and shared core
+test: add cross-runtime crypto smoke harness
+test: add deterministic tiny Vault fixtures
+feat: implement read-only Vault inventory
+feat: implement versioned manifest generation
+test: add representative Vault generator
+feat: implement versioned recovery file
+feat: implement encrypted object format
+feat: add directory ObjectStore adapter
+feat: implement fresh-process snapshot restore
+test: add independent Python round-trip verifier
+feat: add thin Obsidian snapshot interface
+test: add 10000-file one-gibibyte acceptance profile
+test: add corruption crash and metadata-leak checks
+docs: publish P0-R1 closeout report
+feat: add localhost HTTP ObjectStore adapter
+```
+
+提交信息只是建议；未经单独授权，不自动提交。
+
+## 22. GLM 评审处置记录
+
+| 编号 | 处置 | 结论 |
+|---|---|---|
+| C1 内容范围 | 采纳 | README 显式改为核心字节模型 + 版本化允许列表，并加入代码文件 |
+| C2 P0 范围 | 采纳 | Base/Working/Incoming 和三方协调移入 P1-alpha |
+| C3 恢复术语 | 采纳 | 增加“P0 快照恢复”，与正式域主恢复分离 |
+| C4 元数据 | 采纳并澄清 | P0 是长期元数据边界的严格子集，不产生账号/成员字段 |
+| C5 AI | 采纳并澄清 | P0 运行时零 AI，开发辅助不进入安全判断 |
+| C6 激活状态 | 采纳并限定 | 复用状态名，但 P0 Active 不代表生产就绪 |
+| C7 性能 | 采纳 | 10,000/1 GiB 和 512 MiB 为暂定目标，基线后只允许调整一次 |
+| C8 Git 基线 | 部分采纳 | 必须先保存 v0.1，但本次不越权自动提交；提供安全提交顺序 |
+| I1 密钥角色 | 调整 | 不默认实现六类密钥；阶段 0 论证最小密钥图，设备签名默认后置 |
+| I2 ObjectStore head | 采纳 | 单快照 P0 删除 head；增量/HTTP 状态协议再定义 |
+| I3 重解析点 | 采纳 | P0 默认拒绝 Symlink/Junction |
+| I4 对象 ID | 采纳 | 位数、CSPRNG、编码和碰撞策略在实现前冻结 |
+| I5 fixture 代表性 | 部分采纳 | 生成结构合理 Markdown，但不把它误写成无压缩加密性能的必要证据 |
+| R6 TypeScript 学习 | 采纳 | 学习成本纳入阶段 1，不假设 1–2 小时即可掌握完整工程边界 |
+| R7 密码候选 | 采纳并核实 | 比较 Web Crypto、libsodium.js、noble 中至少两条路径，依官方资料和实测选择 |
+| R8 Android 环境 | 采纳原则 | 不依赖“应该可用”或未核实运行时标签，直接在真实 Android Obsidian 测试 |
+| R9 Windows 大小写 | 采纳 | P0 正式往返限定 NTFS 默认行为，恶意大小写碰撞用合成输入拒绝 |
+| R10 一小时矩阵 | 采纳 | 阶段 0 扩为 10–14 个工作单元，不把完整矩阵挤进一小时 |
+
+## 23. 下一授权门槛
+
+本文件写入不代表阶段 0 已经开始。下一步只应在用户确认后执行：
+
+1. 保存当前暂存的 Product Definition v0.1 Git 基线；
+2. 审查并提交 README v0.2 与本计划；
+3. 创建阶段 0 的 P0 scope、threat model、ADR 和 acceptance matrix；
+4. 阶段 0 全部通过前不创建密码实现。

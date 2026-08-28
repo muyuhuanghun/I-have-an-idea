@@ -1,8 +1,8 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 未授权；P0-R1 未实现/未测试**
-> 日期：2026-08-27
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 工程骨架与三环境密码 smoke harness 已按用户单独授权完成首次实施；Windows Node/Obsidian/Android 三环境均已产出 dirty-source dev-only 运行证据，Android 设备签名经独立验签有效；`cross_env_pass` 仍未取得（报告绑定 dirty source）；P0-R1 未实现/未测试；DP-001..005 仍开放**
+> 日期：2026-08-28
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
 >

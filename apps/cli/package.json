@@ -1,0 +1,28 @@
+{
+  "name": "@ekd/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "ekd-p0": "dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "import": "./dist/main.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@ekd/core": "workspace:0.1.0",
+    "@ekd/crypto": "workspace:0.1.0",
+    "@ekd/smoke": "workspace:0.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "build": "node build.mjs"
+  }
+}

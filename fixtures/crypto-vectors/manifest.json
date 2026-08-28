@@ -1,0 +1,49 @@
+{
+  "schema_version": "ekd-crypto-vector-manifest-v1",
+  "status": "phase1-kat-candidate",
+  "suite_id": 1,
+  "suite_name": "AES-256-GCM-HKDF-SHA-256-AES-256-KW",
+  "aad_contract": "ekd-object-aad-v1-101-bytes",
+  "vectors_path": "fixtures/crypto-vectors/vectors.json",
+  "vectors_sha256": "fbc0902c8f0da529384439fe4e6d1fecaf170faab58a5aa17c190ef93d7340ff",
+  "vector_count": 14,
+  "required_vector_counts": {
+    "aead_kat": 3,
+    "aead_tamper_ciphertext": 1,
+    "aead_tamper_tag": 1,
+    "aead_tamper_nonce": 1,
+    "aead_tamper_aad": 1,
+    "hkdf_kat": 2,
+    "hkdf_info_isolation": 1,
+    "random_roundtrip": 1,
+    "random_source_errors": 1,
+    "wrap_kat": 1,
+    "wrap_bad_material": 1
+  },
+  "sources": [
+    {
+      "id": "nist-gcmvs-aes256",
+      "url": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/mac/gcmtestvectors.zip",
+      "archive_sha256": "f9fc479e134cde2980b3bb7cddbcb567b2cd96fd753835243ed067699f26a023",
+      "member": "gcmEncryptExtIV256.rsp"
+    },
+    {
+      "id": "nist-kwvs-aes256",
+      "url": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/mac/kwtestvectors.zip",
+      "archive_sha256": "04a4a82e4de65bca505125295003f9c75a5a815afda046dc83661b8b580dfdf3",
+      "member": "kwtestvectors/KW_AE_256.txt"
+    },
+    {
+      "id": "rfc5869",
+      "url": "https://datatracker.ietf.org/doc/html/rfc5869"
+    },
+    {
+      "id": "adr-0011-canonical-labels",
+      "path": "docs/decisions/0011-p0-wire-contract-v1.md"
+    },
+    {
+      "id": "project-smoke-contract",
+      "path": "docs/protocol/P0-crypto-smoke-test-plan.md"
+    }
+  ]
+}

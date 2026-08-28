@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/crypto" },
+    { "path": "./packages/adapters" },
+    { "path": "./packages/smoke" },
+    { "path": "./apps/cli" },
+    { "path": "./apps/obsidian-plugin" }
+  ]
+}

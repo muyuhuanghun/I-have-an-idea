@@ -28,6 +28,7 @@ node_modules/
 dist/
 build/
 coverage/
+*.tsbuildinfo
 
 # P0 artifacts: generated fixtures, test reports, performance reports
 # These are reproducible via generators; never commit generated content.

@@ -1,0 +1,31 @@
+{
+  "name": "@ekd/crypto",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./webcrypto": {
+      "types": "./dist/webcrypto.d.ts",
+      "import": "./dist/webcrypto.js"
+    },
+    "./noble": {
+      "types": "./dist/noble.d.ts",
+      "import": "./dist/noble.js"
+    }
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "@ekd/core": "workspace:0.1.0",
+    "@noble/ciphers": "2.3.0",
+    "@noble/hashes": "2.3.0"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc -p tsconfig.json"
+  }
+}

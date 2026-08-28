@@ -1,0 +1,166 @@
+{
+  "schema_version": "ekd-crypto-vectors-v1",
+  "suite": {
+    "name": "AES-256-GCM-HKDF-SHA-256-AES-256-KW",
+    "suite_id": 1,
+    "key_length_bytes": 32,
+    "nonce_length_bytes": 12,
+    "tag_length_bytes": 16,
+    "wrap_key_length_bytes": 32,
+    "aad_contract": "ekd-object-aad-v1-101-bytes"
+  },
+  "vectors": [
+    {
+      "vector_id": "aead-kat-empty",
+      "category": "aead-kat",
+      "required": true,
+      "source_id": "nist-gcmvs-aes256",
+      "source_locator": "gcmEncryptExtIV256.rsp, IVlen=96, PTlen=0, AADlen=0, Taglen=128, Count=0",
+      "key_hex": "b52c505a37d78eda5dd34f20c22540ea1b58963cf8e5bf8ffa85f9f2492505b4",
+      "nonce_hex": "516c33929df5a3284ff463d7",
+      "aad_hex": "",
+      "plaintext_hex": "",
+      "ciphertext_hex": "",
+      "tag_hex": "bdc1ac884d332457a1d2664f168c76f0"
+    },
+    {
+      "vector_id": "aead-kat-zero-byte",
+      "category": "aead-kat",
+      "required": true,
+      "source_id": "nist-gcmvs-aes256",
+      "source_locator": "gcmEncryptExtIV256.rsp, IVlen=96, PTlen=128, AADlen=0, Taglen=128, Count=10",
+      "key_hex": "23aaa78a5915b14f00cf285f38ee275a2db97cb4ab14d1aac8b9a73ff1e66467",
+      "nonce_hex": "4a675ec9be1aab9632dd9f59",
+      "aad_hex": "",
+      "plaintext_hex": "56659c06a00a2e8ed1ac60572eee3ef7",
+      "ciphertext_hex": "e6c01723bfbfa398d9c9aac8c683bb12",
+      "tag_hex": "4a2f78a9975d4a1b5f503a4a2cb71553"
+    },
+    {
+      "vector_id": "aead-kat-with-aad",
+      "category": "aead-kat",
+      "required": true,
+      "source_id": "nist-gcmvs-aes256",
+      "source_locator": "gcmEncryptExtIV256.rsp, IVlen=96, PTlen=128, AADlen=128, Taglen=128, Count=0",
+      "key_hex": "92e11dcdaa866f5ce790fd24501f92509aacf4cb8b1339d50c9c1240935dd08b",
+      "nonce_hex": "ac93a1a6145299bde902f21a",
+      "aad_hex": "1e0889016f67601c8ebea4943bc23ad6",
+      "plaintext_hex": "2d71bcfa914e4ac045b2aa60955fad24",
+      "ciphertext_hex": "8995ae2e6df3dbf96fac7b7137bae67f",
+      "tag_hex": "eca5aa77d51d4a0a14d9c51e1da474ab"
+    },
+    {
+      "vector_id": "aead-tamper-ciphertext",
+      "category": "aead-tamper-ciphertext",
+      "required": true,
+      "source_id": "derived-aead-kat-with-aad",
+      "base_vector_id": "aead-kat-with-aad",
+      "mutation": {"field": "ciphertext", "byte_index": 0, "xor": 1},
+      "expected_error_codes": ["OBJECT_AEAD_FAILED"]
+    },
+    {
+      "vector_id": "aead-tamper-tag",
+      "category": "aead-tamper-tag",
+      "required": true,
+      "source_id": "derived-aead-kat-with-aad",
+      "base_vector_id": "aead-kat-with-aad",
+      "mutation": {"field": "tag", "byte_index": 15, "xor": 1},
+      "expected_error_codes": ["OBJECT_AEAD_FAILED"]
+    },
+    {
+      "vector_id": "aead-tamper-nonce",
+      "category": "aead-tamper-nonce",
+      "required": true,
+      "source_id": "derived-aead-kat-with-aad",
+      "base_vector_id": "aead-kat-with-aad",
+      "mutation": {"field": "nonce", "byte_index": 0, "xor": 1},
+      "expected_error_codes": ["OBJECT_AEAD_FAILED"]
+    },
+    {
+      "vector_id": "aead-tamper-aad",
+      "category": "aead-tamper-aad",
+      "required": true,
+      "source_id": "derived-aead-kat-with-aad",
+      "base_vector_id": "aead-kat-with-aad",
+      "mutation": {"field": "aad", "byte_index": 0, "xor": 1},
+      "expected_error_codes": ["OBJECT_AEAD_FAILED", "OBJECT_AAD_MISMATCH"]
+    },
+    {
+      "vector_id": "hkdf-rfc5869-case-1",
+      "category": "hkdf-kat",
+      "required": true,
+      "source_id": "rfc5869",
+      "source_locator": "Appendix A.1, SHA-256 Test Case 1",
+      "ikm_hex": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+      "salt_hex": "000102030405060708090a0b0c",
+      "info_hex": "f0f1f2f3f4f5f6f7f8f9",
+      "length_bytes": 42,
+      "okm_hex": "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865"
+    },
+    {
+      "vector_id": "hkdf-rfc5869-case-3",
+      "category": "hkdf-kat",
+      "required": true,
+      "source_id": "rfc5869",
+      "source_locator": "Appendix A.3, SHA-256 Test Case 3",
+      "ikm_hex": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+      "salt_hex": "",
+      "info_hex": "",
+      "length_bytes": 42,
+      "okm_hex": "8da4e775a563c18f715f802a063c5a31b8a11f5c5ee1879ec3454e5f3c738d2d9d201395faa4b61a96c8"
+    },
+    {
+      "vector_id": "hkdf-canonical-label-isolation",
+      "category": "hkdf-info-isolation",
+      "required": true,
+      "source_id": "adr-0011-canonical-labels",
+      "source_locator": "docs/decisions/0011-p0-wire-contract-v1.md HKDF registry",
+      "ikm_hex": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+      "salt_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "length_bytes": 32,
+      "outputs": [
+        {"label_ascii": "ekd-v1/domain-data-root", "okm_hex": "6603d9760fa9ba89404625ee48020dc71a7cce1e8c3e48839461dd827cf3f2fe"},
+        {"label_ascii": "ekd-v1/recovery-file-integrity", "okm_hex": "cabe06e4459a712ee90de672995fa998411f6b599316d28251117a407b66b5d6"},
+        {"label_ascii": "ekd-v1/manifest-key", "okm_hex": "01a443b301a241892eedf988f1ed718abfb2949073b78fdc95ce24a188bb5c02"},
+        {"label_ascii": "ekd-v1/object-wrap-key", "okm_hex": "04d756f2ac54c31748c12513bd94c3454892705858c2c9873ace364235ba0a0c"}
+      ]
+    },
+    {
+      "vector_id": "random-roundtrip",
+      "category": "random-roundtrip",
+      "required": true,
+      "source_id": "project-smoke-contract",
+      "key_length_bytes": 32,
+      "nonce_length_bytes": 12,
+      "plaintext_length_bytes": 257,
+      "aad_length_bytes": 101
+    },
+    {
+      "vector_id": "random-source-errors",
+      "category": "random-source-errors",
+      "required": true,
+      "source_id": "project-smoke-contract",
+      "subchecks": ["short-read", "failure", "all-zero"],
+      "expected_error_codes": ["RANDOM_SOURCE_SHORT_READ", "RANDOM_SOURCE_FAILED", "RANDOM_SOURCE_ALL_ZERO"]
+    },
+    {
+      "vector_id": "wrap-kat-aes256",
+      "category": "wrap-kat",
+      "required": true,
+      "source_id": "nist-kwvs-aes256",
+      "source_locator": "KW_AE_256.txt, PLAINTEXT LENGTH=128, COUNT=0",
+      "kek_hex": "f59782f1dceb0544a8da06b34969b9212b55ce6dcbdd0975a33f4b3f88b538da",
+      "key_material_hex": "73d33060b5f9f2eb5785c0703ddfa704",
+      "wrapped_hex": "2e63946ea3c090902fa1558375fdb2907742ac74e39403fc"
+    },
+    {
+      "vector_id": "wrap-bad-material",
+      "category": "wrap-bad-material",
+      "required": true,
+      "source_id": "derived-wrap-kat-aes256",
+      "base_vector_id": "wrap-kat-aes256",
+      "mutation": {"field": "wrapped", "byte_index": 0, "xor": 1},
+      "expected_error_codes": ["OBJECT_KEY_UNWRAP_FAILED"]
+    }
+  ]
+}

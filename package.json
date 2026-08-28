@@ -1,0 +1,27 @@
+{
+  "name": "ekd-p0",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Engineering scaffold for the P0 Phase 1 shared core and environment smoke tests.",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "check:imports": "node tools/check-imports.mjs",
+    "lint": "eslint .",
+    "typecheck": "pnpm --recursive --sort run typecheck",
+    "test": "pnpm --recursive --sort --if-present run test",
+    "build": "pnpm run check:imports && pnpm --recursive --sort run build",
+    "test:all": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.17.0",
+    "@types/node": "22.10.5",
+    "esbuild": "0.24.2",
+    "eslint": "9.17.0",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.18.0",
+    "vitest": "2.1.8"
+  }
+}

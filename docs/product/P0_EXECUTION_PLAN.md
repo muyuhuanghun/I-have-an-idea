@@ -2,9 +2,9 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 未授权；P0-R1 未实现、未测试
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 工程骨架与三环境密码 smoke harness 已按用户单独授权完成首次实施并产出 dev-only 运行证据；Windows Node CLI、Windows Obsidian 1.13.7、Android Obsidian / YLP-W00 三个环境均已真实运行并 14/14 pass，Android 设备签名经独立验签有效，但全部报告绑定 dirty 源树；`cross_env_pass` 仍未取得（原因：报告绑定 dirty source，聚合器要求 clean source）；P0-R1 未实现、未测试；DP-001..005 仍开放；后续 Manifest/Object/Recovery 编码、fixture、独立验证、10 000 文件压力测试与 localhost HTTP ObjectStore 仍按 §20 处于硬停止状态
 >
-> 日期：2026-08-27
+> 日期：2026-08-28
 >
 > 适用仓库：`I_have_an_idea`
 
@@ -500,10 +500,10 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - ADR-0012 冻结 5 份 JSON Schema、缺项失败规则和数值 oracle；
 - registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
 - `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
-- 当前工作树 clean，本轮已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；`main...origin/main` 为 `0 0`；
-- Phase 1 仍需用户单独授权，且只从工程骨架和 smoke harness 开始。
+- Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；当前 Phase 1 实施尚未提交，工作树 dirty、Git index 为空；
+- Phase 1 已获用户单独授权，并严格限制为工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和三环境 smoke harness；Windows 已产出 dirty-source dev-only 报告，Android 真机 verified binding 和 `cross_env_pass` 仍缺失。
 
-因此当前裁决是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。实现、fixture、KAT、真机和 37 项运行证据仍未开始。
+因此当前裁决仍是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。Phase 1 scaffold/KAT dev smoke 已开始并通过 Windows 开发证据，但生产实现、fixture、Android 真机和 37 项 ACC 运行证据仍未开始或未通过。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 

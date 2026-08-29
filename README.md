@@ -4,9 +4,9 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过（design-only 与 design-only+samples 两档），基线 `fcbc873` 已提交并推送到 origin/main；Phase 1 工程骨架与三环境密码 smoke harness 已实施并通过 dev-only 运行（lint/typecheck/test/build 全部通过；Windows Node CLI 的 webcrypto 和 noble 候选各 14/14 pass；隔离 Vault 中的 Windows Obsidian 1.13.7 / webcrypto 以及 Android Obsidian / YLP-W00 / webcrypto 也已真实运行并 14/14 pass，设备签名经独立验签有效，但全部证据绑定 dirty 源树）；`cross_env_pass` 仍未取得（原因：报告绑定 dirty source，聚合器要求 clean source）；P0-R1 仍为未实现、未测试；DP-001..005 仍开放；后续恢复材料、Manifest/Object 编码、fixture、独立验证、10 000 文件压力测试与 localhost HTTP ObjectStore 仍按 README §27 与 P0 Execution Plan §20 处于硬停止状态，等 `cross_env_pass` 后再单独授权
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 工程骨架、统一门、最小插件和 Web Crypto/Noble 两候选六单元正式矩阵已经完成。正式证据绑定 clean source commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，两个候选均取得 `cross_env_pass`；ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，关闭 DP-001..005。P0-R1 仍未实现、未测试，37 个 ACC 仍为 `untested`；生产 Recovery/Manifest/Object codec、fixture、压力测试和 HTTP ObjectStore 尚未授权或开始，当前停在 Phase 1 关闭复审点
 >
-> 最后更新：2026-08-28
+> 最后更新：2026-08-29
 
 ## 1. 项目一句话定义
 
@@ -906,9 +906,9 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 1. ADR-0011 和 wire registry 已消除两条循环依赖，冻结 recovery/object/Manifest canonical bytes、HKDF 标签和 16 字节 object ID；
 2. ADR-0012 和 5 份 JSON Schema 已冻结 smoke/fixture/performance/ACC evidence 的 required 与缺项失败规则；
 3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
-4. deferred registry 已逐项绑定 26 个开放/延期参数的 owner、阶段、关闭产物和硬停止；
+4. deferred registry 已逐项绑定 26 个参数的 owner、阶段、状态、关闭产物和硬停止；DP-001..005 已由 ADR-0013 关闭；
 5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身（`acc-evidence-v1` / `fixture-manifest-v1` / `perf-report-v1` / `smoke-aggregate-v1` / `smoke-report-v1`），证明 schema 强制路径在 work；`--evidence-root` 模式在加载每份 evidence 后用 `acc-evidence-v1` 真校验，缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反都立即被拒；
-6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已获单独授权并完成首次实施；Windows Node/Obsidian/Android 三环境均有 dirty-source dev-only 报告，Android 设备签名已验签有效，但 `cross_env_pass` 仍未取得（报告绑定 dirty source），仍无 fixture generator 或 passed ACC。
+6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已按单独授权完成；clean-source 正式矩阵中 Web Crypto 和 Noble 均取得 `cross_env_pass`，ADR-0013 已选择 Web Crypto 并关闭 DP-001..005；仍无 fixture generator 或 passed ACC。
 
 ### 27.4 推迟到 P1-alpha 以后裁决
 
@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁，schema 强制路径由 `--validate-samples` 用 5 对正/负样本反身校验过。Phase 1 工程骨架、候选 KAT、三环境 smoke harness 与最小插件已经单独授权实施，并取得 dirty-source 的 Windows 与 Android dev-only 运行证据；Android 真机 verified binding 已生成并经独立验签，但尚无 clean-source `cross_env_pass`、fixture 或 ACC 通过证据。生产密码协议实现仍处于硬停止状态。
+当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁，schema 强制路径由 `--validate-samples` 用 5 对正/负样本反身校验过。Phase 1 正式矩阵已经完成，Android verified binding 经独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 选择 Web Crypto 并关闭 DP-001..005。仍无 fixture、P0-R1 实现或 ACC 通过证据；取得选型结果不等于生产协议实现已获授权。
 
 ## 30. 仓库状态
 
@@ -972,6 +972,6 @@ docs/
 tools/
 ```
 
-Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 Obsidian 插件、固定密码向量和统一门禁配置已纳管。三环境均有 dirty-source dev-only 报告（含 Android 真机 verified binding），但 `cross_env_pass` 仍未取得，仍无 fixture generator 或任何 passed ACC。`artifacts/` 已被 `.gitignore` 忽略；其中的 dev-only 报告不是正式验收证据或 `cross_env_pass`。
+Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 Obsidian 插件、固定密码向量和统一门禁配置已纳管。正式 runtime evidence 位于 `.gitignore` 忽略的 `artifacts/test-reports/crypto-smoke/formal-63db4eeb/`；ADR-0013 记录两个 aggregate 的路径和 SHA-256。P0-R1、fixture generator 和所有 ACC evidence 仍不存在。
 
-当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)。权威结论是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，Phase 1 工程骨架与三环境密码 smoke harness 已按用户单独授权完成首次实施，Windows Node/Obsidian/Android 三环境均产出 dev-only 运行证据且 Android 设备签名验签有效，但 `cross_env_pass` 仍未取得（报告绑定 dirty source）、P0-R1 仍为未实现且 37 ACC 全部未测试、DP-001..005 仍开放。`design-only+samples` 表示 schema 强制路径已被 5 对正/负样本反身校验过，不等于 P0-R1 已通过；当前 dev-only 证据同样不关闭任何 ACC 或 DP。在完整实现、测试和独立审计以前，不承诺生产可用。
+当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)，密码选择见 ADR-0013。权威结论是：Phase 0 design-only/design-only+samples 门通过；Phase 1 两候选正式矩阵均为 `cross_env_pass`，DP-001..005 已关闭；P0-R1 仍未实现且 37 ACC 全部未测试。前两项不等于 P0-R1、生产安全或后续阶段授权；在完整实现、测试和独立审计以前，不承诺生产可用。

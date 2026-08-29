@@ -1,7 +1,7 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 工程骨架与三环境密码 smoke harness 已按用户单独授权完成首次实施；Windows Node/Obsidian/Android 三环境均已产出 dirty-source dev-only 运行证据，Android 设备签名经独立验签有效；`cross_env_pass` 仍未取得（报告绑定 dirty source）；P0-R1 未实现/未测试；DP-001..005 仍开放**
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 正式三环境矩阵已完成，Web Crypto/Noble 两个 aggregate 均为 `cross_env_pass`；ADR-0013 选择 Web Crypto 和 Suite 1，DP-001..005 已关闭；P0-R1 仍未实现/未测试，37 ACC 仍为 `untested`**
 > 日期：2026-08-29
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
@@ -259,10 +259,10 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | 14 个密码 smoke required vectors 已生成并用于 dev-only 运行；生产 wire codec 仍未实现/未测试，DP-004 仍 open |
 | HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | CSPRNG/codec 未实现 |
 | 37/16/THR 追踪 | 37 ACC、16 INV、5 THR 双向 registry；非安全 ACC 不伪造威胁链接 | 静态检查通过 | 37 ACC 全 untested |
-| smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | harness 与 dirty-source dev-only 报告已存在；正式两候选六单元矩阵和 `cross_env_pass` 不存在 |
+| smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | fixture/generator 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
-| 延期参数 | DP-001..026 均有 owner/phase/close artifact/hard stop | 静态检查通过 | 均未越权关闭 |
+| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 的 `closed` 状态绑定 ADR-0013；其余项未越权关闭 |
 | Schema 强制门禁 | `validate_evidence` 用 `acc-evidence-v1` 真校验每份 evidence；`--validate-samples` 用 5 对正/负样本反身校验 5 份 schema 自身 | design+samples PASS | 5 份正样本通过、5 份负样本被拒 |
 
 ## 13. 当前机器门禁
@@ -309,20 +309,20 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 ```text
 PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY
 PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY_AND_SAMPLES
-PHASE_1_ENGINEERING_SCAFFOLD_IMPLEMENTED_DEV_ONLY
-PHASE_1_FORMAL_SMOKE_PENDING
+PHASE_1_ENGINEERING_SCAFFOLD_COMPLETE
+PHASE_1_FORMAL_SMOKE_CROSS_ENV_PASS
+PHASE_1_CRYPTO_SUITE_SELECTED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
-CRYPTO_SUITE_NOT_SELECTED
 ```
 
 含义：
 
 - 这轮用户要求的协议/追踪/schema/延期项/状态一致性已经形成机器可检查设计合同；
-- Phase 1 工程骨架和 smoke harness 已按单独授权实施并取得 dirty-source dev-only 证据，但正式 clean-source 候选矩阵尚未执行；
-- DP-001..005 未关闭前，生产 Recovery/Manifest/Object codec 是硬停止；
-- 已有固定 KAT 与 Android 真机 dev-only evidence；仍没有 P0-R1、fixture、performance evidence 或任何正式 `cross_env_pass`；
+- Phase 1 工程骨架和 smoke harness 已按单独授权完成，正式 clean-source 六单元矩阵中两个候选均取得 `cross_env_pass`；
+- ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭；
+- 仍没有 P0-R1、fixture、performance evidence 或任何 passed ACC，且 Phase 2/3 未获授权；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 
 ## 15. 当前状态一致性
@@ -332,7 +332,7 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `frozen design contract`：字节、schema、oracle 或门禁已经明确，可静态检查；
 - `untested/not implemented`：没有运行证据；
 - `historical/superseded/withdrawn`：仅保留决策演进，不是当前权威；
-- `deferred`：只在延期 registry 中存在，并有逐项硬停止；
+- `deferred/open/conditional/closed`：只在延期 registry 中使用；`closed` 还必须绑定存在的 closure ADR；
 - `PASS design-only`：只指静态合同检查，绝不等同 P0-R1 PASS；
 - `PASS design-only+samples`：design-only 加上 5 份 schema 的 5 对正/负样本反身校验通过，证明 schema 强制路径在 work；仍非 P0-R1 PASS。
 

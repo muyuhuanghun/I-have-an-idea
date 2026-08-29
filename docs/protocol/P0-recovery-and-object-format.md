@@ -1,9 +1,9 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
-> 文档版本：v0.4
-> 当前状态：wire contract v1 已冻结；密码 suite 与 wrap 参数仍延期；实现和运行证据不存在
-> 日期：2026-08-27
-> 当前权威：ADR-0011、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-deferred-parameters.json`
+> 文档版本：v0.5
+> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；生产 codec 未实现，37 ACC 仍为 `untested`
+> 日期：2026-08-29
+> 当前权威：ADR-0011、ADR-0013、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-deferred-parameters.json`
 
 ## 1. 职责和权威顺序
 
@@ -161,11 +161,6 @@ Recovery File、Object Envelope、AAD 和 Manifest 各自有格式版本。任�
 
 ## 10. 延期参数和硬停止
 
-唯一延期参数清单是 `docs/contracts/p0-deferred-parameters.json`。与本协议直接相关的是 DP-001 至 DP-005、DP-012 和 DP-013。每项已经绑定 owner、阶段、关闭产物和硬停止条件。
+唯一延期参数 registry 是 `docs/contracts/p0-deferred-parameters.json`。与本协议直接相关的是 DP-001 至 DP-005、DP-012 和 DP-013；其中 DP-001..005 已由 ADR-0013 和正式三环境矩阵关闭，DP-012/013 仍延期。
 
-在 DP-001/002/003/004/005 未关闭前：
-
-- 可以实现三环境 smoke harness、schema validator 和候选适配器；
-- 不得实现或发布生产 Recovery/Manifest/Object codec；
-- 不得选择默认密码库或 suite；
-- 不得生成可被误认为正式恢复凭证的文件。
+DP-001..005 的关闭只解除密码选型前置门，不代表生产 codec 已实现、验证或获得 Phase 2/3 授权。当前仍不得实现或发布生产 Recovery/Manifest/Object codec，也不得生成可被误认为正式恢复凭证的文件。

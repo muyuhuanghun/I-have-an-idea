@@ -380,6 +380,7 @@ def validate_wire_contract(wire: dict[str, Any]) -> None:
 
 def validate_deferred(registry: dict[str, Any]) -> None:
     require(registry.get("schema_version") == "p0-deferred-parameters-v1", "wrong deferred registry version")
+    require(registry.get("status") == "authoritative_deferred_parameter_registry", "wrong deferred registry status")
     owners = registry.get("owners", [])
     owner_ids = [owner.get("id") for owner in owners]
     assert_unique(owner_ids, "owner IDs")
@@ -390,7 +391,11 @@ def validate_deferred(registry: dict[str, Any]) -> None:
         for field in ("name", "owner", "phase", "status", "close_artifact", "hard_stop"):
             require(isinstance(item.get(field), str) and item[field].strip(), f"{item.get('id')}: missing {field}")
         require(item["owner"] in owner_ids, f"{item['id']}: unknown owner {item['owner']}")
-        require(item["status"] in {"open", "conditional", "deferred"}, f"{item['id']}: invalid status")
+        require(item["status"] in {"open", "conditional", "deferred", "closed"}, f"{item['id']}: invalid status")
+        if item["status"] == "closed":
+            closure_adr = item.get("closure_adr")
+            require(isinstance(closure_adr, str) and closure_adr.strip(), f"{item['id']}: closed item lacks closure_adr")
+            require((ROOT / closure_adr).is_file(), f"{item['id']}: closure_adr does not exist: {closure_adr}")
 
 
 def validate_traceability(trace: dict[str, Any]) -> None:

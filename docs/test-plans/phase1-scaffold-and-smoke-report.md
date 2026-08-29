@@ -1,6 +1,6 @@
 # Phase 1 Scaffold and Crypto Portability Smoke — Status Report
 
-> 报告版本：v0.5
+> 报告版本：v0.6
 > 日期：2026-08-29
 > 适用仓库：`I_have_an_idea`
 > 关联文档：README §27、`docs/product/P0_EXECUTION_PLAN.md` §12、`docs/decisions/0012-p0-machine-contracts-and-gates.md`、`docs/protocol/P0-crypto-smoke-test-plan.md`
@@ -9,7 +9,7 @@
 
 本报告只覆盖用户单独授权的 Phase 1 工程 workspace、共享核心与适配器骨架、统一 lint/typecheck/test、最小 Obsidian 插件和三环境密码 smoke harness。
 
-本阶段不实现生产 Recovery / Manifest / Object codec，不进入 Phase 2 / Phase 3，也不自动 commit 或 push。`cross_env_pass` 取得前，DP-001..005 保持开放，生产协议编码继续硬停止。
+本阶段不实现生产 Recovery / Manifest / Object codec，不进入 Phase 2 / Phase 3，也不自动 commit 或 push。正式矩阵和 ADR-0013 已关闭 DP-001..005，但这不等于后续阶段获得授权。
 
 ## 2. 已实施结构
 
@@ -53,29 +53,30 @@ Android 报告必须同时满足：
 
 此前未获授权的 `0013-p1-smoke-report-device-binding-optional.md` 已删除，schema 和聚合器已恢复 ADR-0012 / DP-005 的 Android verified binding 强门。
 
-## 5. 当前运行证据
+## 5. 正式运行证据
 
-| 环境 | 当前证据 | 是否可关闭 DP |
+正式矩阵绑定 clean source commit `63db4eeb71a3ddab527000453a389a53cabe0db1`。统一门在构建前通过；CLI 与插件 build metadata 分别绑定各自 bundle、同一 lockfile 和同一 vector set。
+
+| 环境 | Web Crypto | Noble 2.3.0 |
 |---|---|---|
-| Windows Node CLI / WebCrypto | dirty source 下 14/14，`verdict=pass` | 否，dev-only |
-| Windows Node CLI / Noble 2.3.0 | dirty source 下 14/14，`verdict=pass` | 否，dev-only |
-| Windows Obsidian / WebCrypto | 隔离 Vault 已加载当前 bundle 并由 Obsidian 1.13.7 真实运行；14/14、`verdict=pass`、report schema-valid、raw artifact hash 一致；`source_tree_state=dirty`，run `7f3e265d-2e75-464a-a65b-43ca63b51031` | 否，dev-only |
-| Android Obsidian / WebCrypto | 真机 YLP-W00 / Android 16 / arm64-v8a 已运行；14/14、`verdict=pass`、report schema-valid、raw artifact hash 一致、`device_binding.verified=true`、ECDSA P-256 签名经 Windows Node 独立验签通过；`source_tree_state=dirty`，run `5072c1a4-c35f-4490-8605-b49febfa3bed` | 否，dev-only |
-| 三环境 aggregate | `cross_env_invalid`（三份报告均绑定 dirty source，聚合器要求 clean） | 否 |
+| Windows Node CLI | 14/14，schema/raw/bundle/clean 绑定有效 | 14/14，schema/raw/bundle/clean 绑定有效 |
+| Windows Obsidian 1.13.7 | 隔离 Vault 真实运行，14/14 | 隔离 Vault 真实运行，14/14 |
+| Android Obsidian 1.12.7 | YLP-W00 / Android 16 / arm64-v8a，14/14，设备签名独立验签通过 | 同一真机，14/14，设备签名独立验签通过 |
+| 三环境 aggregate | `cross_env_pass` | `cross_env_pass` |
 
-所有报告都必须绑定同一 source commit、lockfile、candidate、suite 与 vector set。工作树 dirty 时，即使单环境 14/14，也不得被聚合器接受为正式证据。
+证据根为 `artifacts/test-reports/crypto-smoke/formal-63db4eeb/`。Web Crypto aggregate SHA-256 为 `0c151722aa78b3fe415333b8bb277d3a504aa8883dfc26d1ec9822f656262331`；Noble aggregate SHA-256 为 `237f1b289df8a3d4c7a42d7ae844da43517536b4fa6af4bd4432d9c69aa6d699`。六份 source report 的 path/hash 由各自 aggregate 绑定。
 
-本次 Windows Obsidian 报告位于 `artifacts/phase1-test-vault/phase1-smoke-output/reports/windows-obsidian-webcrypto-7f3e265d-2e75-464a-a65b-43ca63b51031.json`；其 `candidate.bundle_sha256` 为 `e2106785d21a2f3b1bf342b0828bee3a5dcefa9d985853157e8bb11778e03346`，与隔离 Vault 中当前 `main.js` 及构建 metadata 一致。这只是现场开发 smoke 证据，不是 `cross_env_pass`。
+Android 两份报告的 `device_binding.verified=true`，公钥指纹均为 `1dd114eeef1ce9503f644d86e75e6069c12166c4d1515f536b8a27b211b76a6b`；Node 聚合器和独立 Web Crypto 验签均通过。完整证据和选择理由见 ADR-0013。
 
 ## 6. DP-001..005 状态
 
 | DP | 权威含义 | 当前状态 |
 |---|---|---|
-| DP-001 | 生产密码候选实现及精确版本 | OPEN；两个候选并行，尚未选择默认实现 |
-| DP-002 | AEAD suite_id、算法及 key/nonce/tag 长度 | OPEN；候选参数已用于 dev smoke，缺三环境正式选择证据 |
-| DP-003 | 对象密钥 wrap 算法、wrap key length 与 wrapped bytes 合同 | OPEN；AES-256-KW KAT 已通过三环境 dev-only，缺 clean-source 正式证据 |
-| DP-004 | 算法级 KAT 的精确 bytes 与来源 | OPEN；14 个向量和 manifest 已存在，尚未由正式选择 ADR 关闭 |
-| DP-005 | Android 真机、Obsidian、插件与设备签名精确身份 | OPEN；强绑定门已恢复，Android 真机报告已产出且设备签名验签有效，但仍缺 clean-source 正式报告聚合（`cross_env_pass`）与 suite selection ADR |
+| DP-001 | 生产密码候选实现及精确版本 | CLOSED；Web Crypto wrapper `0.1.0` |
+| DP-002 | AEAD suite_id、算法及 key/nonce/tag 长度 | CLOSED；ADR-0013 Suite 1 |
+| DP-003 | 对象密钥 wrap 算法、wrap key length 与 wrapped bytes 合同 | CLOSED；AES-256-KW，32 字节 KEK，32 字节 object key 包装为 40 字节 |
+| DP-004 | 算法级 KAT 的精确 bytes 与来源 | CLOSED；14 个 required 向量及 manifest/hash 已由六份正式报告绑定 |
+| DP-005 | Android 真机、Obsidian、插件与设备签名精确身份 | CLOSED；两候选均有真机 verified binding 和独立验签证据 |
 
 ## 7. 统一门与回归范围
 
@@ -97,14 +98,10 @@ Phase 0 schema 反身门另行运行：
 python tools/verify_phase0_contracts.py --validate-samples
 ```
 
-该命令通过只代表设计合同/schema 门有效，不代表 P0-R1、ACC 或 DP 已关闭。
+该命令通过只代表设计合同/schema 门有效，不会自行关闭 P0-R1、ACC 或 DP；DP-001..005 的关闭依据是 ADR-0013 及其绑定的正式矩阵。
 
-## 8. 关闭 DP-001..005 仍需的证据
+## 8. Phase 1 关闭与停止点
 
-1. Phase 1 实现及 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`。
-2. 将 Web Crypto + Noble 2.3.0 两候选矩阵的合同修正纳入新的用户手动提交；在该提交之前不得生成正式证据。
-3. 从新的 clean source 运行一次统一门并重建，确认 CLI 与插件 build metadata 都绑定同一 clean commit。
-4. 对 Web Crypto 和 Noble 各执行一次 `windows-node-cli`、`windows-obsidian`、`android-obsidian`，共六份正式 source report；Android 两份报告都必须带可由聚合器重新验签的 verified device binding。
-5. 每个候选分别聚合其三份报告，共生成两份 aggregate。被选择的候选必须取得 `cross_env_pass`；另一候选必须形成完整、有效的比较结果，不能因缺报告或非法绑定而成为无效比较。
-6. 只有取得可引用的 `cross_env_pass` 后，才写入 suite selection ADR，更新权威 deferred registry，关闭 DP-001..005。
-7. 停下复审；不得自动进入 Phase 2 / Phase 3。
+Phase 1 授权范围已经完成：工程骨架、统一门、最小插件、六个正式矩阵单元、两个 `cross_env_pass`、ADR-0013 和 DP-001..005 registry 状态均已形成。当前只做关闭材料复审，不自动提交或推送。
+
+P0-R1 仍未实现，37 个 ACC 仍为 `untested`，fixture、生产 Recovery/Manifest/Object codec、压力测试和 HTTP ObjectStore 均未开始。必须停在此处；Phase 2/3 需要用户另行明确授权。

@@ -1,6 +1,6 @@
 {
   "schema_version": "p0-deferred-parameters-v1",
-  "status": "authoritative_open_item_registry",
+  "status": "authoritative_deferred_parameter_registry",
   "owners": [
     {"id": "OWNER-P0", "name": "项目开发者", "accountability": "P0 协议、实现与证据"},
     {"id": "OWNER-PRODUCT", "name": "产品 owner（当前由项目开发者承担）", "accountability": "P1 及以后产品范围和 UX 决策"},
@@ -12,7 +12,8 @@
       "name": "生产密码候选实现及精确版本",
       "owner": "OWNER-P0",
       "phase": "Phase 1 crypto smoke",
-      "status": "open",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0013-p0-crypto-suite-selection.md",
       "close_artifact": "docs/decisions/0013-p0-crypto-suite-selection.md + lockfile + smoke-aggregate-v1 reports",
       "hard_stop": "三环境 cross_env_pass 和 artifact hash 未齐备时，不得选择默认库或开始生产协议编码"
     },
@@ -21,7 +22,8 @@
       "name": "AEAD suite_id、算法及 key/nonce/tag 字节长度",
       "owner": "OWNER-SECURITY",
       "phase": "Phase 1 crypto smoke",
-      "status": "open",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0013-p0-crypto-suite-selection.md",
       "close_artifact": "docs/decisions/0013-p0-crypto-suite-selection.md 中的 suite registry v1",
       "hard_stop": "suite registry 未冻结时，不得生成正式 Object Envelope、AAD、Manifest 或 Recovery File"
     },
@@ -30,7 +32,8 @@
       "name": "对象密钥 wrap 算法、wrap key length 和 wrapped bytes 合同",
       "owner": "OWNER-SECURITY",
       "phase": "Phase 1 crypto smoke，最迟 Phase 3 前",
-      "status": "open",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0013-p0-crypto-suite-selection.md",
       "close_artifact": "docs/decisions/0013-p0-crypto-suite-selection.md + wrap KAT vectors",
       "hard_stop": "wrap KAT、坏材料拒绝和三环境结果未通过时，不得实现 Manifest object-key 包装"
     },
@@ -39,7 +42,8 @@
       "name": "算法级 KAT 的精确 key/nonce/AAD/plaintext/ciphertext/tag 字节",
       "owner": "OWNER-SECURITY",
       "phase": "Phase 1 crypto smoke",
-      "status": "open",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0013-p0-crypto-suite-selection.md",
       "close_artifact": "fixtures/crypto-vectors/manifest.json 及其 hash-bound 二进制向量",
       "hard_stop": "至少 14 个 required 向量及来源未固定时，smoke 报告只能是 incomplete，不得用于选型"
     },
@@ -48,7 +52,8 @@
       "name": "Android 真机、Obsidian、插件和设备签名精确身份",
       "owner": "OWNER-P0",
       "phase": "Phase 1 crypto smoke",
-      "status": "open",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0013-p0-crypto-suite-selection.md",
       "close_artifact": "android-obsidian smoke-report-v1 + 已验证 device_binding",
       "hard_stop": "模拟器、截图、缺签名或 hash 不匹配的报告不得进入 cross_env_pass"
     },

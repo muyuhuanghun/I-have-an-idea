@@ -60,7 +60,7 @@ perf report 必须绑定 fixture、环境、缓存状态、测量工具、idle R
 
 ### 6. 延期项
 
-`p0-deferred-parameters.json` 是唯一开放项清单，当前为 DP-001..026。每项必须包含 owner、phase、close artifact、hard stop 和 status。其他文档不得新增未注册的“待定/实现时再说”参数。
+`p0-deferred-parameters.json` 是唯一延期参数 registry，固定为 DP-001..026。每项必须包含 owner、phase、close artifact、hard stop 和 status；`closed` 项还必须绑定存在的 closure ADR。其他文档不得新增未注册的“待定/实现时再说”参数。
 
 ## 机器门禁
 
@@ -89,4 +89,4 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 - ADR-0008/0010 的示例字段清单保留为历史背景，不能再作为 schema 权威；
 - threat-traceability.md 的旧摘要表由 registry 取代；
 - 任何必填缺项、未知字段、未定义阈值或人工模糊判定都是硬停止条件；
-- 本 ADR 建立时实现、fixture 和运行报告尚未开始；截至 2026-08-29，Phase 1 workspace、候选 smoke harness 与 dirty-source dev-only 报告已存在，但 P0-R1、fixture 和 37 份 ACC evidence 仍未实现，全部 ACC 保持 `untested`。
+- 本 ADR 建立时实现、fixture 和运行报告尚未开始；截至 2026-08-29，Phase 1 正式矩阵与 ADR-0013 选型已完成，DP-001..005 已关闭，但 P0-R1、fixture 和 37 份 ACC evidence 仍未实现，全部 ACC 保持 `untested`。

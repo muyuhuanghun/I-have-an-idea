@@ -102,4 +102,4 @@ fresh-process 恢复的唯一秘密输入是恢复文件中的恢复根；其作
 - HKDF 具体参数（salt 来源、输出长度）在密码候选 smoke test 后冻结；
 - 对象密钥包装由 DP-003 关闭，不能在实现中无 ADR 自行确定；
 - 恢复文件完整性已经由 ADR-0011 固定为 HMAC-SHA256；不再保留 recovery material AEAD 候选；
-- 当前开放项只以 `docs/contracts/p0-deferred-parameters.json` 的 DP-001..005/012 为准，禁止从本历史列表新增隐式参数。
+- 当前状态只以 `docs/contracts/p0-deferred-parameters.json` 为准：DP-001..005 已由 ADR-0013 关闭，DP-012 仍延期；禁止从本历史列表新增隐式参数。

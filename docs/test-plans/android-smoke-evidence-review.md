@@ -4,6 +4,7 @@
 > 复审人：DSH 主代理（GLM）
 > 复审对象：gpt 提交的 Android Obsidian Phase 1 smoke 运行报告与相关结论
 > 基线 commit：2084a6799321c4d849c358cb13d5a07eb775802f（工作树 dirty）
+> 状态说明：本文是 dirty-source 开发证据的历史复审快照；正式矩阵和当前选型见 ADR-0013，不得用本文的当时状态覆盖当前 registry。
 
 ## 1. 复审方法
 

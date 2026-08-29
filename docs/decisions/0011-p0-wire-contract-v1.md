@@ -129,11 +129,11 @@ wrapped_object_key       wrapped_key_length bytes
 
 路径必须是严格 UTF-8，不含 NUL，使用 `/` 作为逻辑分隔符。entry 按 `relative_path_utf8` 原始字节严格升序；相等或逆序都拒绝。解析后必须验证 Manifest 内的 domain/snapshot/suite 与调用方已经用于 AAD 的值逐字节相等。`entry_count`、所有长度和文件结尾必须完全闭合，不允许未消费尾随字节。
 
-## 7. 当前仍延期的参数
+## 7. 当时延期的参数与后续关闭
 
-本 ADR 已冻结 recovery root、object ID、HMAC、字段顺序、端序、标签和覆盖字节。AEAD suite、suite 对应的 key/nonce/tag 长度、对象密钥 wrap 算法和 wrapped bytes 仍需实测选择。它们的唯一当前清单是 `docs/contracts/p0-deferred-parameters.json`；每项必须有 owner、关闭阶段、关闭产物和硬停止条件。
+本 ADR 建立时只冻结 recovery root、object ID、HMAC、字段顺序、端序、标签和覆盖字节；AEAD suite、key/nonce/tag 长度、对象密钥 wrap 算法和 wrapped bytes 当时仍需实测选择。2026-08-29，ADR-0013 根据正式三环境矩阵冻结 Suite 1 并关闭 DP-001..005。
 
-在这些参数关闭前，可以实现 schema、KAT harness 和候选适配器，不得写生产 Recovery/Manifest/Object 编解码器或生成可被误认为正式格式的恢复文件。
+关闭前只允许实现 schema、KAT harness 和候选适配器。关闭后是否进入生产 Recovery/Manifest/Object 编解码仍由后续阶段授权决定；ADR-0013 本身不授权实现。
 
 ## 8. 后果与迁移
 
@@ -141,4 +141,3 @@ wrapped_object_key       wrapped_key_length bytes
 - ADR-0007 的 85 字节 AAD、16 字节 object ID“暂定”状态和 NUL 终止路径不再是当前合同。
 - 任何已有 fixture 或实现若按旧合同生成，只能标记为 historical/invalid-v0，不得静默迁移为 v1 证据。
 - ACC-06、08、09、10、15、16 的 oracle 必须引用本 ADR 和机器合同。
-

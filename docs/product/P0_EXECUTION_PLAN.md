@@ -2,9 +2,9 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 工程骨架与三环境密码 smoke harness 已按用户单独授权完成首次实施并产出 dev-only 运行证据；Windows Node CLI、Windows Obsidian 1.13.7、Android Obsidian / YLP-W00 三个环境均已真实运行并 14/14 pass，Android 设备签名经独立验签有效，但全部报告绑定 dirty 源树；`cross_env_pass` 仍未取得（原因：报告绑定 dirty source，聚合器要求 clean source）；P0-R1 未实现、未测试；DP-001..005 仍开放；后续 Manifest/Object/Recovery 编码、fixture、独立验证、10 000 文件压力测试与 localhost HTTP ObjectStore 仍按 §20 处于硬停止状态
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 工程骨架、统一门、最小插件和 Web Crypto/Noble 两候选六单元正式矩阵已经完成，两个 aggregate 均为 `cross_env_pass`。ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭。P0-R1 未实现、未测试，37 ACC 仍为 `untested`；后续 Manifest/Object/Recovery 编码、fixture、独立验证、10 000 文件压力测试与 localhost HTTP ObjectStore 尚未授权或开始
 >
-> 日期：2026-08-28
+> 日期：2026-08-29
 >
 > 适用仓库：`I_have_an_idea`
 
@@ -372,7 +372,7 @@ Recovery File 是 bearer file；recovery root 不再以“用其自身派生密�
 
 ### 8.4 对象 ID
 
-ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。碰撞必须在加密前检查并重新生成 ID/nonce/ciphertext。suite 与 wrap 参数仍受 DP-001..005 的生产实现硬停止约束。
+ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。碰撞必须在加密前检查并重新生成 ID/nonce/ciphertext。Suite 1 与 wrap 参数已由 ADR-0013 冻结；生产 codec 尚未实现，也未因选型完成而自动获得授权。
 
 ## 9. Fixture 与性能基线
 
@@ -501,9 +501,9 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
 - `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
 - Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；Phase 1 实现与 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`；
-- Phase 1 已获用户单独授权，并严格限制为工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和三环境 smoke harness；Windows 与 Android 均已产出 dirty-source dev-only 报告，Android 真机 verified binding 已独立验签有效，但正式 clean-source 候选矩阵与 `cross_env_pass` 仍缺失。
+- Phase 1 已按用户单独授权完成工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和正式三环境 smoke；六份 source report 绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，Android 两份 verified binding 已独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 已选择 Web Crypto 并关闭 DP-001..005。
 
-因此当前裁决仍是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。Phase 1 scaffold/KAT dev smoke 已取得 Windows 与 Android 开发证据，但正式 clean-source smoke、生产实现、fixture 和 37 项 ACC 运行证据仍未开始或未通过。
+因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成，但仍不是 P0-R1 PASS。生产实现、fixture 和 37 项 ACC 运行证据仍未开始或未通过。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 
@@ -751,14 +751,12 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-当前下一授权门槛是 **Phase 1 工程骨架和三环境 smoke harness**，不是生产协议实现：
+Phase 1 已完成并停在关闭复审点。下一授权门槛是用户复审关闭材料后，另行决定是否授权 Phase 2；`cross_env_pass` 只是解除 DP-001..005 的前置硬停止，不是 Phase 2/3 的自动授权。
 
-1. 用户单独授权 Phase 1；
-2. 建立 workspace/lockfile 和同一 shared core 的三环境入口；
-3. 按 JSON Schema 实现 validator/aggregator 和 14 个 required vector harness；
-4. 关闭 DP-001..005，产出 suite 选择 ADR、KAT、三环境 hash-bound 报告；
-5. 只有 `cross_env_pass` 后，才能进入 Phase 2/3 的正式 Manifest/Recovery/Object codec；
-6. 任何偏离 ADR-0011 的 bytes 或 ADR-0012 的 schema 都先停下并写新 ADR；
-7. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
+1. 复审 ADR-0013、两个 aggregate hash 和 deferred registry 的关闭状态；
+2. 由用户自行决定是否提交/推送 Phase 1 关闭材料；
+3. 未获得新的明确授权前，不实现 Manifest/Recovery/Object codec、fixture、压力测试或 HTTP ObjectStore；
+4. 任何偏离 ADR-0011 bytes、ADR-0012 schema 或 ADR-0013 Suite 1 的修改都先停下并写新 ADR；
+5. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
 
 本计划不授权自动提交或推送。本轮修改已经由用户显式授权后通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；之后的 README/一致性/执行计划 stale 措辞修订也属于用户显式授权下的小补丁提交。

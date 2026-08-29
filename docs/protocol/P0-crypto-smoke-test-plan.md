@@ -1,9 +1,9 @@
 # P0 密码候选三环境 Smoke Test 合同
 
 > 文档版本：v1.1
-> 当前状态：schema、required vector profile 和裁决规则已冻结；Phase 1 harness 已实现并取得 dirty-source dev-only 证据，正式 clean-source 候选矩阵尚未执行
+> 当前状态：schema、required vector profile 和裁决规则已冻结；Web Crypto/Noble 两候选正式三环境矩阵均为 `cross_env_pass`，ADR-0013 已完成选择
 > 日期：2026-08-29
-> 权威：ADR-0011/0012、`smoke-report-v1.schema.json`、`smoke-aggregate-v1.schema.json`
+> 权威：ADR-0011/0012/0013、`smoke-report-v1.schema.json`、`smoke-aggregate-v1.schema.json`
 
 ## 1. 职责
 
@@ -122,4 +122,4 @@ Obsidian 移动端不得假设 Node/Electron/Buffer 可用；候选 API、WASM �
 - DP-004：KAT bytes；
 - DP-005：Android 环境和签名身份。
 
-它们各自的 owner、阶段、关闭产物和硬停止条件见延期 registry。当前 workspace、lockfile、两个候选适配器、14 个固定向量、测试插件和 dirty-source dev-only 报告已经存在；这些报告不能进入正式选择。正式 clean-source 矩阵、`cross_env_pass` 和 suite selection ADR 尚不存在，DP-001..005 继续保持 open，任何候选都不得写成默认生产实现。
+它们各自的 owner、阶段、关闭产物和硬停止条件见延期 registry。正式矩阵绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`：两个候选均在 Windows Node、Windows Obsidian 和真实 Android Obsidian 中完成 14/14 required vectors，两个 aggregate 均为 `cross_env_pass`。ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭；Noble 保留为比较基线，不是生产 fallback。该结论不授权 Phase 2/3，也不升级任何 ACC。

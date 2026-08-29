@@ -1,0 +1,205 @@
+{
+  "schema_version": "fixture-manifest-v1",
+  "fixture_id": "tiny-v1",
+  "profile": "tiny",
+  "seed": "ekd-tiny-v1",
+  "generator": {
+    "path": "tools/fixture-generator.mjs",
+    "git_commit": "c783135ad02c4d92ae0fb05110758292238d1fa4",
+    "sha256": "500028874cc00239746fc6b05411aa5128caa2e18ada5b997f7f11a85215970c",
+    "version": "1.0.0"
+  },
+  "totals": {
+    "files": 20,
+    "bytes": 794
+  },
+  "entries_sha256": "fc508b5c3a2eaedf58dd330df852790236c7c5fd4267756fc226a1e7415907ac",
+  "entries": [
+    {
+      "relative_path": "README.md",
+      "size_bytes": 101,
+      "sha256": "7a0813d2c658b2b11f2680dcf4fbc5f9a7761314505a1684bd5a5eacbaf45266",
+      "content_class": "markdown",
+      "features": [
+        "frontmatter",
+        "heading",
+        "wikilink",
+        "chinese-content",
+        "attachment-reference"
+      ]
+    },
+    {
+      "relative_path": "attachments/anim.gif",
+      "size_bytes": 34,
+      "sha256": "1e85ec81b9800b4c443d39caca0d0926089a3ac201120db1ceb45b93789480b8",
+      "content_class": "image",
+      "features": []
+    },
+    {
+      "relative_path": "attachments/diagram.jpeg",
+      "size_bytes": 4,
+      "sha256": "32461d5bd1773012acef0ba15636752949bd7c2ce50f9172159d9f56cf0dd9af",
+      "content_class": "image",
+      "features": []
+    },
+    {
+      "relative_path": "attachments/document.pdf",
+      "size_bytes": 69,
+      "sha256": "cfa3181c1ee36e8bce5e39f84959f4558ea7ba32c0e4539a8ab3c8ce8c716ec6",
+      "content_class": "pdf",
+      "features": []
+    },
+    {
+      "relative_path": "attachments/image.webp",
+      "size_bytes": 24,
+      "sha256": "6238549d100543a83a9c8ba39b5924160dcc7b7a5ae394a95a9a9061f6f083ba",
+      "content_class": "image",
+      "features": []
+    },
+    {
+      "relative_path": "attachments/photo.jpg",
+      "size_bytes": 8,
+      "sha256": "db5f0729ccc287732c20b009e9050b22de1d3b6c5019fb8f159978f16415eef2",
+      "content_class": "image",
+      "features": []
+    },
+    {
+      "relative_path": "attachments/pixel.png",
+      "size_bytes": 68,
+      "sha256": "28042705b81ade571d21d43639df9d5359f015dca5f59fa187ab94b0849eb3b3",
+      "content_class": "image",
+      "features": []
+    },
+    {
+      "relative_path": "canvas/board.canvas",
+      "size_bytes": 23,
+      "sha256": "a461bf77bc4e4d732f7afc121c70e7f70ed8bf225a082a4e01951d1eb6b5c278",
+      "content_class": "canvas",
+      "features": []
+    },
+    {
+      "relative_path": "code/header.h",
+      "size_bytes": 43,
+      "sha256": "20130c02af1a98d5054cb60556e81de1b92af154521812feab67dca362d1d4a5",
+      "content_class": "c",
+      "features": []
+    },
+    {
+      "relative_path": "code/header.hpp",
+      "size_bytes": 45,
+      "sha256": "0c3ec2a76fa460d83399f9f365c64b25df63e3a397684c495e85a4e006c6384d",
+      "content_class": "c",
+      "features": []
+    },
+    {
+      "relative_path": "code/main.c",
+      "size_bytes": 74,
+      "sha256": "6350702ca07b4339c06baa3446106c4b1f459ef3d01848bd0a48c1d10e34764f",
+      "content_class": "c",
+      "features": []
+    },
+    {
+      "relative_path": "code/main.cpp",
+      "size_bytes": 54,
+      "sha256": "2fd9c389c56489228981d766c83c1d67b6b8b07a50700d01f13326f8ba5cbb5d",
+      "content_class": "c",
+      "features": []
+    },
+    {
+      "relative_path": "code/tool.py",
+      "size_bytes": 63,
+      "sha256": "0049214146c09e015865e54237ecc4d15c9e043886cb20d1d9c68659bf744bc9",
+      "content_class": "python",
+      "features": []
+    },
+    {
+      "relative_path": "deep/a/b/c/deep.md",
+      "size_bytes": 7,
+      "sha256": "9fb2d7f661bff67ff024138a50246d2a16fe4dfa4e69b6cabfdf592db271e4f9",
+      "content_class": "markdown",
+      "features": [
+        "heading",
+        "deep-path"
+      ]
+    },
+    {
+      "relative_path": "notes/attachments.md",
+      "size_bytes": 45,
+      "sha256": "e59589a0a9d41a007282fa59047e3ba35b3180f63811d49a5bdb9da97e33a48f",
+      "content_class": "markdown",
+      "features": [
+        "heading",
+        "attachment-reference"
+      ]
+    },
+    {
+      "relative_path": "notes/empty.md",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "content_class": "markdown",
+      "features": [
+        "empty"
+      ]
+    },
+    {
+      "relative_path": "notes/links.md",
+      "size_bytes": 20,
+      "sha256": "ac337384fd40e63fa424042e81b7ca176e538a6c6ecce5115efecc2237e21b9c",
+      "content_class": "markdown",
+      "features": [
+        "heading",
+        "wikilink"
+      ]
+    },
+    {
+      "relative_path": "notes/second.md",
+      "size_bytes": 44,
+      "sha256": "e2272c6413a7d25f53738f1bb4409b9dd7a5ba83c30f2a0ad5a782eb0a11f6a6",
+      "content_class": "markdown",
+      "features": [
+        "heading"
+      ]
+    },
+    {
+      "relative_path": "notes/介绍.md",
+      "size_bytes": 41,
+      "sha256": "5a8e45e72df820112be3bc9f7222a19d4b103af80ea5df69973639e688a6e8ac",
+      "content_class": "markdown",
+      "features": [
+        "heading",
+        "chinese-content"
+      ]
+    },
+    {
+      "relative_path": "中文/学习笔记.md",
+      "size_bytes": 27,
+      "sha256": "3fbfe9d7cdfdb0d92a01970ae4454f89e4975071a5eb0e7b9c6845e0d4be3620",
+      "content_class": "markdown",
+      "features": [
+        "heading",
+        "wikilink",
+        "chinese-content",
+        "chinese-path"
+      ]
+    }
+  ],
+  "feature_coverage": [
+    "markdown",
+    "image",
+    "pdf",
+    "canvas",
+    "c",
+    "python",
+    "empty-file",
+    "chinese-path",
+    "deep-path"
+  ],
+  "constraints": {
+    "min_files": 20,
+    "max_files": 50,
+    "min_bytes": 0,
+    "max_bytes": 5242880,
+    "validation_errors": [],
+    "verdict": "pass"
+  }
+}

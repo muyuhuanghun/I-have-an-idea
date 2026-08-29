@@ -5,7 +5,7 @@
   "description": "Engineering scaffold for the P0 Phase 1 shared core and environment smoke tests.",
   "packageManager": "pnpm@11.19.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "check:imports": "node tools/check-imports.mjs",

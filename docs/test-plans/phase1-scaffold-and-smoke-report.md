@@ -1,7 +1,7 @@
 # Phase 1 Scaffold and Crypto Portability Smoke — Status Report
 
-> 报告版本：v0.4
-> 日期：2026-08-28
+> 报告版本：v0.5
+> 日期：2026-08-29
 > 适用仓库：`I_have_an_idea`
 > 关联文档：README §27、`docs/product/P0_EXECUTION_PLAN.md` §12、`docs/decisions/0012-p0-machine-contracts-and-gates.md`、`docs/protocol/P0-crypto-smoke-test-plan.md`
 
@@ -60,7 +60,7 @@ Android 报告必须同时满足：
 | Windows Node CLI / WebCrypto | dirty source 下 14/14，`verdict=pass` | 否，dev-only |
 | Windows Node CLI / Noble 2.3.0 | dirty source 下 14/14，`verdict=pass` | 否，dev-only |
 | Windows Obsidian / WebCrypto | 隔离 Vault 已加载当前 bundle 并由 Obsidian 1.13.7 真实运行；14/14、`verdict=pass`、report schema-valid、raw artifact hash 一致；`source_tree_state=dirty`，run `7f3e265d-2e75-464a-a65b-43ca63b51031` | 否，dev-only |
-| Android Obsidian | 真机 YLP-W00 / Android 16 / arm64-v8a 已运行；14/14、`verdict=pass`、report schema-valid、raw artifact hash 一致、`device_binding.verified=true`、ECDSA P-256 签名经 Windows Node 独立验签通过；`source_tree_state=dirty`，run `5072c1a4-c35f-4490-8605-b49febfa3bed` | 否，dev-only |
+| Android Obsidian / WebCrypto | 真机 YLP-W00 / Android 16 / arm64-v8a 已运行；14/14、`verdict=pass`、report schema-valid、raw artifact hash 一致、`device_binding.verified=true`、ECDSA P-256 签名经 Windows Node 独立验签通过；`source_tree_state=dirty`，run `5072c1a4-c35f-4490-8605-b49febfa3bed` | 否，dev-only |
 | 三环境 aggregate | `cross_env_invalid`（三份报告均绑定 dirty source，聚合器要求 clean） | 否 |
 
 所有报告都必须绑定同一 source commit、lockfile、candidate、suite 与 vector set。工作树 dirty 时，即使单环境 14/14，也不得被聚合器接受为正式证据。
@@ -101,9 +101,10 @@ python tools/verify_phase0_contracts.py --validate-samples
 
 ## 8. 关闭 DP-001..005 仍需的证据
 
-1. 用户复审当前未提交实现；按禁令由用户自行提交，或另行显式授权提交。
-2. 在 clean source 上重建，并重新生成正式 Windows Node 与 Windows Obsidian 报告。
-3. 在真实 Android Obsidian 环境生成带 verified device binding 的正式报告。
-4. 三份正式报告聚合为 `cross_env_pass`。
-5. 写入 suite selection ADR，更新权威 deferred registry，关闭 DP-001..005。
-6. 停下复审；不得自动进入 Phase 2 / Phase 3。
+1. Phase 1 实现及 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`。
+2. 将 Web Crypto + Noble 2.3.0 两候选矩阵的合同修正纳入新的用户手动提交；在该提交之前不得生成正式证据。
+3. 从新的 clean source 运行一次统一门并重建，确认 CLI 与插件 build metadata 都绑定同一 clean commit。
+4. 对 Web Crypto 和 Noble 各执行一次 `windows-node-cli`、`windows-obsidian`、`android-obsidian`，共六份正式 source report；Android 两份报告都必须带可由聚合器重新验签的 verified device binding。
+5. 每个候选分别聚合其三份报告，共生成两份 aggregate。被选择的候选必须取得 `cross_env_pass`；另一候选必须形成完整、有效的比较结果，不能因缺报告或非法绑定而成为无效比较。
+6. 只有取得可引用的 `cross_env_pass` 后，才写入 suite selection ADR，更新权威 deferred registry，关闭 DP-001..005。
+7. 停下复审；不得自动进入 Phase 2 / Phase 3。

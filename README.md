@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁，schema 强制路径由 `--validate-samples` 用 5 对正/负样本反身校验过。Phase 1 工程骨架、候选 KAT、三环境 smoke harness 与最小插件已经单独授权实施，并取得 dirty-source 的 Windows dev-only 运行证据；但没有 Android 真机 verified binding、`cross_env_pass`、fixture 或 ACC 通过证据。生产密码协议实现仍处于硬停止状态。
+当前 P0 的设计合同已经完成本轮静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁，schema 强制路径由 `--validate-samples` 用 5 对正/负样本反身校验过。Phase 1 工程骨架、候选 KAT、三环境 smoke harness 与最小插件已经单独授权实施，并取得 dirty-source 的 Windows 与 Android dev-only 运行证据；Android 真机 verified binding 已生成并经独立验签，但尚无 clean-source `cross_env_pass`、fixture 或 ACC 通过证据。生产密码协议实现仍处于硬停止状态。
 
 ## 30. 仓库状态
 

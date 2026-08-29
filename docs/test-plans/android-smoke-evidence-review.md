@@ -81,7 +81,7 @@ random-roundtrip 向量的 expected_sha256 是运行时用随机明文算出来�
 | DP-002 | open |
 | DP-003 | open |
 | DP-004 | open |
-| DP-005 | open（device_binding 强门已满足，但仍缺 clean-source 正式报告聚合）|
+| DP-005 | open（dirty-source 开发报告已通过 device_binding 强门；正式 clean-source 强门尚未满足）|
 | P0-R1 | 未实现、未测试 |
 | 生产 Manifest/Object/Recovery codec | 硬停止 |
 
@@ -91,7 +91,7 @@ gpt 这轮的工作整体可信。Android 兼容性 smoke 的核心事实——1
 
 唯一要修正的是"两次 raw hash 一致"这句话。事实是两份 raw 的整体 hash 不同（因为随机向量），只有固定 KAT 向量的结果是跨运行一致的。这不影响任何裁决，只是措辞要改。
 
-## 6. 下一步（和 gpt 一致，确认无误）
+## 6. 当时记录的下一步（由 §7 后续核对修正）
 
 1. 你复审并手动提交当前 Phase 1 实现。
 2. 从 clean source 重新构建。
@@ -100,4 +100,12 @@ gpt 这轮的工作整体可信。Android 兼容性 smoke 的核心事实——1
 5. 写 suite selection ADR，关闭 DP-001..005。
 6. 停下，不自动进 Phase 2。
 
-Android 真机不用再跑了——两份报告已经证明固定向量稳定、设备密钥稳定、签名可验，重复跑只会再消耗一轮真机时间，不会增加新信息。
+同一 dirty-source WebCrypto 开发运行不需要继续重复——两份报告已经证明固定向量稳定、设备密钥稳定、签名可验；正式 clean-source 候选矩阵仍按 §7 执行。
+
+## 7. 2026-08-29 后续合同核对
+
+上面的“不用再跑”仅指不再重复生成同一 dirty-source WebCrypto 开发证据，不表示可以复用 dirty 报告关闭 DP。Phase 1 实现与本复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`。
+
+进一步核对主动权威后发现，正式选择必须比较至少两个候选，并按 candidate × suite 分别完成三环境矩阵。当前已实现的两个候选是 Web Crypto 与 Noble 2.3.0，因此 §6 的“一轮正式三环境运行”由本节澄清为：每个候选、每个环境各运行一次，共六份 clean-source source report；每个候选分别生成一份 aggregate。正式 Android 仍需运行 WebCrypto 和 Noble 各一次，两次都必须生成 verified device binding。这不是重复可靠性测试，而是两个不同候选矩阵单元的正式证据。
+
+在候选矩阵合同修正被用户手动提交之前，不构建正式 bundle、不运行正式真机证据。取得至少一个可引用的 `cross_env_pass` 后，才能写 suite selection ADR；DP-001..005 在此之前继续保持 open。

@@ -89,4 +89,4 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 - ADR-0008/0010 的示例字段清单保留为历史背景，不能再作为 schema 权威；
 - threat-traceability.md 的旧摘要表由 registry 取代；
 - 任何必填缺项、未知字段、未定义阈值或人工模糊判定都是硬停止条件；
-- 当前实现、fixture 和运行报告仍未开始，全部 ACC 保持 `untested`。
+- 本 ADR 建立时实现、fixture 和运行报告尚未开始；截至 2026-08-29，Phase 1 workspace、候选 smoke harness 与 dirty-source dev-only 报告已存在，但 P0-R1、fixture 和 37 份 ACC evidence 仍未实现，全部 ACC 保持 `untested`。

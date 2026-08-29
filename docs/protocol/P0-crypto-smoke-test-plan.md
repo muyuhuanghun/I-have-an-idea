@@ -1,8 +1,8 @@
 # P0 密码候选三环境 Smoke Test 合同
 
-> 文档版本：v1.0
-> 当前状态：schema、required vector profile 和裁决规则已冻结；smoke 尚未实现或执行
-> 日期：2026-08-27
+> 文档版本：v1.1
+> 当前状态：schema、required vector profile 和裁决规则已冻结；Phase 1 harness 已实现并取得 dirty-source dev-only 证据，正式 clean-source 候选矩阵尚未执行
+> 日期：2026-08-29
 > 权威：ADR-0011/0012、`smoke-report-v1.schema.json`、`smoke-aggregate-v1.schema.json`
 
 ## 1. 职责
@@ -11,7 +11,9 @@
 
 ## 2. 候选和环境
 
-至少比较两条候选路径：Web Crypto SubtleCrypto、libsodium-wrappers；可加入 @noble/ciphers。一次只选择一个生产实现，不拼装自创协议。
+本轮至少比较两条候选路径：平台 Web Crypto `SubtleCrypto`（项目 wrapper `0.1.0`），以及 `@noble/ciphers@2.3.0` + `@noble/hashes@2.3.0`。`libsodium-wrappers` 不属于本轮 Phase 1 矩阵；如需加入，必须先显式修改本合同并实现对应适配器，不能把缺失报告视为已比较。一次只选择一个生产实现，不拼装自创协议。
+
+该矩阵只冻结正式比较范围，不预先选择默认实现。两个候选都必须完成下列三个环境的同 suite 运行；至少一个候选取得 `cross_env_pass` 后，才能由 suite selection ADR 作出选择。
 
 每个 candidate × suite 必须在相同 vector manifest 下运行：
 
@@ -120,4 +122,4 @@ Obsidian 移动端不得假设 Node/Electron/Buffer 可用；候选 API、WASM �
 - DP-004：KAT bytes；
 - DP-005：Android 环境和签名身份。
 
-它们各自的 owner、阶段、关闭产物和硬停止条件见延期 registry。当前没有 packages、lockfile、vectors、测试插件或报告；所有候选与 suite 都是 `untested`，不得写成默认实现。
+它们各自的 owner、阶段、关闭产物和硬停止条件见延期 registry。当前 workspace、lockfile、两个候选适配器、14 个固定向量、测试插件和 dirty-source dev-only 报告已经存在；这些报告不能进入正式选择。正式 clean-source 矩阵、`cross_env_pass` 和 suite selection ADR 尚不存在，DP-001..005 继续保持 open，任何候选都不得写成默认生产实现。

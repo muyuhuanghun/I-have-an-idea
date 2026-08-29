@@ -315,16 +315,16 @@ artifacts/
 
 阶段 0 先冻结威胁、密钥角色、格式版本和测试要求，阶段 1 再通过真实三环境 smoke test选择实现。不得因为某个库在 Node 中运行就认定它适合 Android Obsidian。
 
-当前需要比较的候选路径至少包括两种：
+本轮 Phase 1 正式矩阵需要比较两条候选路径：
 
-1. Web Crypto `SubtleCrypto`；
-2. `libsodium-wrappers`；
-3. `@noble/ciphers` 与必要的 noble 配套库可以作为第三候选。
+1. 平台 Web Crypto `SubtleCrypto`，由项目 wrapper `0.1.0` 统一接口；
+2. `@noble/ciphers@2.3.0` 与 `@noble/hashes@2.3.0`。
+
+`libsodium-wrappers` 不属于本轮矩阵。若后续要加入，必须先显式修改 smoke 合同并实现对应适配器，不能把未运行候选写成已比较。
 
 官方资料：
 
 - Web Crypto 提供低层密码操作，部分算法支持可能不同，调用者必须正确组合：<https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto>；
-- `libsodium.js` 提供 WebAssembly 和纯 JavaScript 包装，并支持浏览器与服务端：<https://github.com/jedisct1/libsodium.js/>；
 - `@noble/ciphers` 是无运行时依赖的 TypeScript/JavaScript 实现，但其官方文档也明确说明 JavaScript/JIT 环境存在常数时间限制：<https://github.com/paulmillr/noble-ciphers>。
 
 候选比较必须覆盖：
@@ -457,7 +457,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - `3b9f8d3` 提交其余 Phase 0 文档；
 - `b8f15fc` 补充验收项草案、Manifest 定位符、smoke 条件和 Git 忽略规则。
 
-`b8f15fc` 是历史 v0.2 复审基线，不是当前 Git 基线，也不是 Phase 0 已通过的证据。随后 gate-repair commits 到 `583a3a1` 已提交；本轮 v1.0 修复前基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`。本轮设计合同与验证器升级已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`，当前 `main...origin/main` 为 `0 0` 且工作树 clean；“未提交 diff”只属于 commit 前的中间状态，不再适用。
+`b8f15fc` 是历史 v0.2 复审基线，不是当前 Git 基线，也不是 Phase 0 已通过的证据。随后 gate-repair commits 到 `583a3a1` 已提交；本轮 v1.0 修复前基线是 `583a3a167258bbc223f5f2f78bf4ca04fd5fd847`。本轮设计合同与验证器升级已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0` 且工作树 clean。“未提交 diff”只属于该历史提交前的中间状态，不再适用。
 
 ### 11.2 工作单元
 
@@ -494,16 +494,16 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 
 ### 11.4 当前复审状态
 
-2026-08-27 本轮修复后的当前状态：
+截至 2026-08-29 的当前状态：
 
 - ADR-0011 消除 Manifest AAD/recovery material 循环依赖，冻结 wire bytes/HKDF/object ID；
 - ADR-0012 冻结 5 份 JSON Schema、缺项失败规则和数值 oracle；
 - registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
 - `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
-- Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；当前 Phase 1 实施尚未提交，工作树 dirty、Git index 为空；
-- Phase 1 已获用户单独授权，并严格限制为工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和三环境 smoke harness；Windows 已产出 dirty-source dev-only 报告，Android 真机 verified binding 和 `cross_env_pass` 仍缺失。
+- Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；Phase 1 实现与 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`；
+- Phase 1 已获用户单独授权，并严格限制为工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和三环境 smoke harness；Windows 与 Android 均已产出 dirty-source dev-only 报告，Android 真机 verified binding 已独立验签有效，但正式 clean-source 候选矩阵与 `cross_env_pass` 仍缺失。
 
-因此当前裁决仍是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。Phase 1 scaffold/KAT dev smoke 已开始并通过 Windows 开发证据，但生产实现、fixture、Android 真机和 37 项 ACC 运行证据仍未开始或未通过。
+因此当前裁决仍是 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，都还不是 P0-R1 PASS。Phase 1 scaffold/KAT dev smoke 已取得 Windows 与 Android 开发证据，但正式 clean-source smoke、生产实现、fixture 和 37 项 ACC 运行证据仍未开始或未通过。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 
@@ -744,7 +744,7 @@ feat: add localhost HTTP ObjectStore adapter
 | I4 对象 ID | 采纳 | 位数、CSPRNG、编码和碰撞策略在实现前冻结 |
 | I5 fixture 代表性 | 部分采纳 | 生成结构合理 Markdown，但不把它误写成无压缩加密性能的必要证据 |
 | R6 TypeScript 学习 | 采纳 | 学习成本纳入阶段 1，不假设 1–2 小时即可掌握完整工程边界 |
-| R7 密码候选 | 采纳并核实 | 比较 Web Crypto、libsodium.js、noble 中至少两条路径，依官方资料和实测选择 |
+| R7 密码候选 | 采纳并核实 | 从 Web Crypto、libsodium.js、noble 中比较至少两条路径；本轮矩阵已明确为 Web Crypto + Noble，依正式三环境实测选择 |
 | R8 Android 环境 | 采纳原则 | 不依赖“应该可用”或未核实运行时标签，直接在真实 Android Obsidian 测试 |
 | R9 Windows 大小写 | 采纳 | P0 正式往返限定 NTFS 默认行为，恶意大小写碰撞用合成输入拒绝 |
 | R10 一小时矩阵 | 采纳 | 阶段 0 扩为 10–14 个工作单元，不把完整矩阵挤进一小时 |

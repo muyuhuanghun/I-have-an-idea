@@ -2,7 +2,7 @@
 
 > 文档版本：v1.0
 > 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 工程骨架与三环境密码 smoke harness 已按用户单独授权完成首次实施；Windows Node/Obsidian/Android 三环境均已产出 dirty-source dev-only 运行证据，Android 设备签名经独立验签有效；`cross_env_pass` 仍未取得（报告绑定 dirty source）；P0-R1 未实现/未测试；DP-001..005 仍开放**
-> 日期：2026-08-28
+> 日期：2026-08-29
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
 >
@@ -256,10 +256,10 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 |---|---|---|---|
 | Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | 未实现/未测试 |
 | recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | 未实现/未测试 |
-| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | KAT 未生成 |
+| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | 14 个密码 smoke required vectors 已生成并用于 dev-only 运行；生产 wire codec 仍未实现/未测试，DP-004 仍 open |
 | HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | CSPRNG/codec 未实现 |
 | 37/16/THR 追踪 | 37 ACC、16 INV、5 THR 双向 registry；非安全 ACC 不伪造威胁链接 | 静态检查通过 | 37 ACC 全 untested |
-| smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | harness/报告不存在 |
+| smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | harness 与 dirty-source dev-only 报告已存在；正式两候选六单元矩阵和 `cross_env_pass` 不存在 |
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | fixture/generator 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
 | 延期参数 | DP-001..026 均有 owner/phase/close artifact/hard stop | 静态检查通过 | 均未越权关闭 |
@@ -309,7 +309,8 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 ```text
 PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY
 PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY_AND_SAMPLES
-PHASE_1_PENDING_AUTHORIZATION
+PHASE_1_ENGINEERING_SCAFFOLD_IMPLEMENTED_DEV_ONLY
+PHASE_1_FORMAL_SMOKE_PENDING
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -319,9 +320,9 @@ CRYPTO_SUITE_NOT_SELECTED
 含义：
 
 - 这轮用户要求的协议/追踪/schema/延期项/状态一致性已经形成机器可检查设计合同；
-- Phase 1 仍需用户另行授权，只能先做工程骨架和 smoke harness；
+- Phase 1 工程骨架和 smoke harness 已按单独授权实施并取得 dirty-source dev-only 证据，但正式 clean-source 候选矩阵尚未执行；
 - DP-001..005 未关闭前，生产 Recovery/Manifest/Object codec 是硬停止；
-- 没有实现、fixture、KAT、Android 真机或 performance evidence；
+- 已有固定 KAT 与 Android 真机 dev-only evidence；仍没有 P0-R1、fixture、performance evidence 或任何正式 `cross_env_pass`；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 
 ## 15. 当前状态一致性
@@ -335,4 +336,4 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `PASS design-only`：只指静态合同检查，绝不等同 P0-R1 PASS；
 - `PASS design-only+samples`：design-only 加上 5 份 schema 的 5 对正/负样本反身校验通过，证明 schema 强制路径在 work；仍非 P0-R1 PASS。
 
-本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`，当前 `main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，两者都不等于 P0-R1 PASS。
+本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，两者都不等于 P0-R1 PASS。

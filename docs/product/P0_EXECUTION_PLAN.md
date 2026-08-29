@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 工程骨架、统一门、最小插件和 Web Crypto/Noble 两候选六单元正式矩阵已经完成，两个 aggregate 均为 `cross_env_pass`。ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭。P0-R1 未实现、未测试，37 ACC 仍为 `untested`；后续 Manifest/Object/Recovery 编码、fixture、独立验证、10 000 文件压力测试与 localhost HTTP ObjectStore 尚未授权或开始
+> 当前状态：Phase 0 设计合同门和 Phase 1 正式矩阵已完成，ADR-0013 已关闭 DP-001..005。Phase 2 已单独授权并完成未提交复审实现：deterministic Tiny fixture、顺序只读 Node Vault 扫描器、Canonical Manifest plaintext v1 codec 及测试；不含 Manifest/Object 加密、Recovery File、对象密钥包装或 ObjectStore。DP-006..009 与 37 ACC 尚未获得 clean-source 正式证据，P0-R1 仍未实现/未测试；Phase 3 及以后未获授权
 >
 > 日期：2026-08-29
 >
@@ -503,7 +503,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；Phase 1 实现与 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`；
 - Phase 1 已按用户单独授权完成工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和正式三环境 smoke；六份 source report 绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，Android 两份 verified binding 已独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 已选择 Web Crypto 并关闭 DP-001..005。
 
-因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成，但仍不是 P0-R1 PASS。生产实现、fixture 和 37 项 ACC 运行证据仍未开始或未通过。
+因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成。Phase 2 的窄范围实现已进入未提交复审态，但仍不是 P0-R1 PASS；review fixture 和单元测试不升级任何 DP/ACC，Manifest/Object 加密、Recovery、ObjectStore、恢复和压力证据均不存在。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 
@@ -541,6 +541,8 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 
 ## 13. 阶段 2：扫描、Manifest 和 fixture
 
+2026-08-29 用户单独授权的实施切片只包含 deterministic Tiny fixture、只读扫描器和 Manifest plaintext codec。为保持精简，本切片不生成 10,000 文件 representative/performance fixture；DP-008、性能基线和 ACC-26/29/30/31 继续保持 open/untested。
+
 扫描器必须：
 
 - 只读源 Vault；
@@ -562,7 +564,7 @@ Manifest 必须严格实现 ADR-0011 的 canonical plaintext，并把完整明�
 
 P0 不保存本地修改时间；因此不会把它以明文泄漏，也不在 v1 Manifest 中发明未冻结字段。
 
-通过条件：Tiny fixture 稳定；Representative fixture 可扫描；源 Vault 零写入；扫描中变化的文件不会进入伪一致快照。
+本次授权切片的通过条件：Tiny fixture 稳定；源 Vault 零写入；未知文件和重解析点失败关闭；扫描中变化的文件不会产生扫描结果；Manifest plaintext 严格闭合。原计划的 Representative fixture 条件延期到另行授权的性能工作，不得由 Tiny 结果替代。
 
 ## 14. 阶段 3：恢复文件、加密对象和目录存储
 

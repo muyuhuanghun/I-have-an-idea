@@ -161,8 +161,8 @@
 **ACC-16：Manifest 篡改被拒绝**
 - 来源：执行计划 §17
 - 测试类型：负面
-- 测试方法：分别翻转 Manifest ciphertext、tag 和 Recovery File 中用于 Manifest AAD 的 snapshot/object ID 字段，并测试 Manifest 尾随字节
-- 错误判定：AEAD/AAD 变体返回 `MANIFEST_AEAD_FAILED` 或更早的 recovery HMAC 失败；尾随字节返回 `MANIFEST_TRAILING_BYTES`；不返回部分 entries
+- 测试方法：分别翻转 Manifest ciphertext、tag 和 Recovery File 中用于 Manifest AAD 的 snapshot/object ID 字段，并测试 plaintext 非法长度/字段和 Manifest 尾随字节
+- 错误判定：AEAD/AAD 变体返回 `MANIFEST_AEAD_FAILED` 或更早的 recovery HMAC 失败；plaintext 非法格式返回 `MANIFEST_FORMAT_INVALID`；尾随字节返回 `MANIFEST_TRAILING_BYTES`；不返回部分 entries
 - 证据路径：`artifacts/test-reports/acc-16-manifest-tamper.json`
 - 状态：untested
 

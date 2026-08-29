@@ -1,13 +1,13 @@
 /** A byte sequence exchanged at a platform boundary. */
 export type Bytes = Uint8Array;
 
-/** A file observed by a VaultSource. The path is relative to the source root. */
+/** A file observed by a VaultSource. Bytes are loaded only after core accepts its path. */
 export interface VaultEntry {
   readonly relativePath: string;
-  readonly bytes: Bytes;
+  readonly readBytes: () => Promise<Bytes>;
 }
 
-/** Read-only access to a Vault. Scanning policy belongs to a later phase. */
+/** Read-only access to a Vault. Platform adapters must not write to the source root. */
 export interface VaultSource {
   readonly listFiles: () => AsyncIterable<VaultEntry>;
 }
@@ -35,10 +35,10 @@ export interface AeadResult {
 }
 
 /**
- * Byte-level candidate primitive surface for Phase 1 smoke tests.
+ * Byte-level primitive surface selected by the Phase 1 smoke tests.
  *
  * The concrete candidate, suite selection, wire format, and protocol codecs remain
- * deliberately unconfigured until the deferred-parameter gate is closed.
+ * deliberately separate from the Phase 2 plaintext Manifest codec.
  */
 export interface CryptoProvider {
   readonly randomBytes: (length: number) => Bytes;

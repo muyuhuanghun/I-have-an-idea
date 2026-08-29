@@ -105,3 +105,5 @@ python tools/verify_phase0_contracts.py --validate-samples
 Phase 1 授权范围已经完成：工程骨架、统一门、最小插件、六个正式矩阵单元、两个 `cross_env_pass`、ADR-0013 和 DP-001..005 registry 状态均已形成。当前只做关闭材料复审，不自动提交或推送。
 
 P0-R1 仍未实现，37 个 ACC 仍为 `untested`，fixture、生产 Recovery/Manifest/Object codec、压力测试和 HTTP ObjectStore 均未开始。必须停在此处；Phase 2/3 需要用户另行明确授权。
+
+> 后续状态：2026-08-29 用户已另行授权窄范围 Phase 2；其实施和证据见 `phase2-fixture-scanner-manifest-report.md`。本节继续作为 Phase 1 停止点的历史记录，不授权 Phase 3。

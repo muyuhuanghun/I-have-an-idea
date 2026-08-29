@@ -4,7 +4,7 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 工程骨架、统一门、最小插件和 Web Crypto/Noble 两候选六单元正式矩阵已经完成。正式证据绑定 clean source commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，两个候选均取得 `cross_env_pass`；ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，关闭 DP-001..005。P0-R1 仍未实现、未测试，37 个 ACC 仍为 `untested`；生产 Recovery/Manifest/Object codec、fixture、压力测试和 HTTP ObjectStore 尚未授权或开始，当前停在 Phase 1 关闭复审点
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已单独授权并完成未提交复审实现：20 文件 deterministic Tiny fixture、顺序只读 Node Vault 扫描器和 Canonical Manifest plaintext v1 codec；不含 Manifest/Object 加密、Recovery File、密钥包装或 ObjectStore。当前证据仍是 dirty-source review evidence，DP-006..009 与 37 个 ACC 均未升级；P0-R1 仍未实现、未测试，Phase 3 及以后未获授权
 >
 > 最后更新：2026-08-29
 

@@ -20,8 +20,8 @@ const ports: CorePorts = {
 };
 
 describe("shared core scaffold", () => {
-  it("exposes a stable non-protocol version", () => {
-    expect(CORE_VERSION).toBe("phase1-scaffold-v1");
+  it("exposes the Phase 2 core version", () => {
+    expect(CORE_VERSION).toBe("phase2-scanner-manifest-v1");
   });
 
   it("keeps the supplied ports as the only wiring surface", () => {

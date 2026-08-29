@@ -312,6 +312,7 @@ PHASE0_CONTRACT_CHECK_PASS_DESIGN_ONLY_AND_SAMPLES
 PHASE_1_ENGINEERING_SCAFFOLD_COMPLETE
 PHASE_1_FORMAL_SMOKE_CROSS_ENV_PASS
 PHASE_1_CRYPTO_SUITE_SELECTED
+PHASE_2_SCANNER_MANIFEST_FIXTURE_REVIEW_IMPLEMENTED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -322,7 +323,8 @@ ACC_37_OF_37_UNTESTED
 - 这轮用户要求的协议/追踪/schema/延期项/状态一致性已经形成机器可检查设计合同；
 - Phase 1 工程骨架和 smoke harness 已按单独授权完成，正式 clean-source 六单元矩阵中两个候选均取得 `cross_env_pass`；
 - ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭；
-- 仍没有 P0-R1、fixture、performance evidence 或任何 passed ACC，且 Phase 2/3 未获授权；
+- Phase 2 已单独授权；deterministic Tiny fixture、Node 只读扫描器和 Manifest plaintext codec 已进入未提交复审态，但 review evidence 不关闭 DP-006..009 或任何 ACC；
+- 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC，且 Phase 3 及以后未获授权；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 
 ## 15. 当前状态一致性

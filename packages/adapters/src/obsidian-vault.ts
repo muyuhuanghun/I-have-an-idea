@@ -6,7 +6,7 @@ export interface ObsidianVaultLike {
   readonly getMarkdownFiles: () => readonly unknown[];
 }
 
-/** Obsidian Vault port placeholder. The plugin owns the real API binding in a later step. */
+/** Obsidian Vault port placeholder. Product scanner binding remains a later plugin phase. */
 export class ObsidianVaultSource implements VaultSource {
   constructor(readonly vault: ObsidianVaultLike) {}
 

@@ -1,7 +1,7 @@
 # P0 Fixture 与性能基线合同
 
 > 文档版本：v1.0
-> 当前状态：schema、profile 范围和数值 oracle 已冻结；fixture、generator 和报告尚不存在
+> 当前状态：schema、profile 范围和数值 oracle 已冻结；Tiny generator/fixture 已实现并通过 review validation，representative/performance fixture 与正式报告尚不存在
 > 日期：2026-08-27
 > 权威：ADR-0012、`fixture-manifest-v1.schema.json`、`perf-report-v1.schema.json`
 
@@ -97,4 +97,4 @@ ACC-30 不再使用“远小于 Vault”“ratio 标准差 < 未定义阈值”�
 
 ## 8. 当前事实
 
-当前仓库没有 generator、实际 fixture manifest 或 performance report。schema 和门槛存在只证明设计合同可检查；ACC-26/29/30/31 全部仍为 `untested`。
+当前仓库已有 `tools/fixture-generator.mjs` 和 20 文件 Tiny fixture。它在未提交实现上只取得 `review-only` 校验，不能关闭 DP-006/009；representative-small/large generator 产物和 performance report 均不存在，DP-008 与 ACC-26/29/30/31 继续为 open/`untested`。

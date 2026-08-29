@@ -22,6 +22,7 @@
     "MANIFEST_AEAD_FAILED",
     "MANIFEST_VERSION_UNSUPPORTED",
     "MANIFEST_SUITE_UNKNOWN",
+    "MANIFEST_FORMAT_INVALID",
     "MANIFEST_TRAILING_BYTES",
     "OBJECT_AEAD_FAILED",
     "OBJECT_AAD_MISMATCH",
@@ -187,7 +188,7 @@
     {
       "id": "ACC-16", "title": "Manifest 篡改被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-04", "INV-14"],
       "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-16-manifest-tamper.json", "status": "untested",
-      "oracle": {"required_checks": ["schema_valid", "manifest_ciphertext_bitflip_rejected", "manifest_aad_field_bitflip_rejected", "manifest_trailing_bytes_rejected"], "required_error_code_groups": [["MANIFEST_AEAD_FAILED"], ["MANIFEST_TRAILING_BYTES"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
+      "oracle": {"required_checks": ["schema_valid", "manifest_ciphertext_bitflip_rejected", "manifest_aad_field_bitflip_rejected", "manifest_plaintext_format_invalid_rejected", "manifest_trailing_bytes_rejected"], "required_error_code_groups": [["MANIFEST_AEAD_FAILED"], ["MANIFEST_FORMAT_INVALID"], ["MANIFEST_TRAILING_BYTES"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
     },
     {
       "id": "ACC-17", "title": "错误域或密钥被当成失败", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-04", "INV-14"],

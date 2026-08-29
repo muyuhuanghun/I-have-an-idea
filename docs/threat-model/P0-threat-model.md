@@ -1,7 +1,7 @@
 # P0 威胁模型
 
 > 文档版本：v1.0
-> 当前状态：5 个 THR 的设计合同与处置已冻结；实现和运行证据不存在
+> 当前状态：5 个 THR 的设计合同与处置已冻结；Phase 2 scanner/Manifest plaintext 有 review tests，但没有正式 ACC 运行证据
 > 日期：2026-08-27
 > 机器追踪：`docs/contracts/p0-traceability-v1.json`
 

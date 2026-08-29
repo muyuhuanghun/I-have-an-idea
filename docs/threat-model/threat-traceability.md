@@ -66,7 +66,7 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 
 错误码唯一权威是 registry 的 `error_codes` 数组。当前包含恢复文件、Manifest、对象、路径、扫描、系统和报告 schema 错误。重要新增边界包括：
 
-- 固定长度/尾随字节：`RECOVERY_TRAILING_BYTES`、`MANIFEST_TRAILING_BYTES`、`OBJECT_TRAILING_BYTES`；
+- 固定长度/非法格式/尾随字节：`RECOVERY_TRAILING_BYTES`、`MANIFEST_FORMAT_INVALID`、`MANIFEST_TRAILING_BYTES`、`OBJECT_TRAILING_BYTES`；
 - object ID canonicalization：`OBJECT_ID_INVALID`；
 - 对象截断和重复引用：`OBJECT_TRUNCATED`、`DUPLICATE_OBJECT_REFERENCE`；
 - 报告缺项：`REPORT_SCHEMA_INVALID`；

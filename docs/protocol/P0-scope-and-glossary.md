@@ -1,7 +1,7 @@
 # P0 范围与术语表
 
 > 文档版本：v0.2
-> 当前状态：P0 范围与术语设计合同已冻结；实现/测试未开始
+> 当前状态：P0 范围与术语设计合同已冻结；Phase 2 scanner/Manifest plaintext 切片已实现并处于未提交复审，P0-R1 仍未实现/未测试
 > 日期：2026-08-27
 > 权威来源：README.md、docs/product/P0_EXECUTION_PLAN.md
 

@@ -1,7 +1,7 @@
 # P0 Fixture 与性能基线合同
 
 > 文档版本：v1.0
-> 当前状态：schema、profile 范围和数值 oracle 已冻结；Tiny generator/fixture 已实现并通过 review validation，representative/performance fixture 与正式报告尚不存在
+> 当前状态：schema、profile 范围和数值 oracle 已冻结；Tiny generator/fixture 已取得 commit-bound formal provenance，ADR-0014 关闭 DP-006/009；representative/performance fixture 与正式报告尚不存在
 > 日期：2026-08-27
 > 权威：ADR-0012、`fixture-manifest-v1.schema.json`、`perf-report-v1.schema.json`
 
@@ -26,7 +26,7 @@
 - Markdown 至少覆盖 frontmatter、标题、wikilink、中文段落和附件引用；
 - 小型内容与 manifest 提交 Git，每次快速测试运行。
 
-精确清单、seed 和 hash 由 DP-006 关闭。
+精确清单、seed 和 hash 已由 ADR-0014 关闭 DP-006。
 
 ## 3. Edge-case Fixture
 
@@ -57,7 +57,7 @@
 | representative-small | 10,000 | 127,506,842..140,928,614（约 128 MiB ±5%） | 内存增长基准 |
 | representative-large | 10,000 | 1,020,054,733..1,127,428,915（1 GiB ±5%） | P0-R1 规模与上限 |
 
-两个 profile 必须由同一 generator 版本生成，内容类型/路径分布一致，仅扩大文件内容体量。两者都包含中文路径、`.c` 和 `.py`，不含未支持文件。精确分布、seed 和 hash 由 DP-008/009 关闭。
+两个 profile 必须由同一 generator 版本生成，内容类型/路径分布一致，仅扩大文件内容体量。两者都包含中文路径、`.c` 和 `.py`，不含未支持文件。generator 的身份与确定性算法已由 ADR-0014 关闭 DP-009；两个 representative profile 的精确分布、seed 和 hash 仍由 DP-008 关闭。
 
 ## 5. 性能采集合同
 
@@ -88,7 +88,8 @@ ACC-30 不再使用“远小于 Vault”“ratio 标准差 < 未定义阈值”�
 
 ## 7. 调整与延期参数
 
-- DP-006/007/008/009：fixture 清单、恶意输入、分布和 generator；
+- DP-006/009：Tiny fixture 清单和 generator，已由 ADR-0014 关闭；
+- DP-007/008：edge-case 恶意输入和 representative fixture 分布，保持 open；
 - DP-010：实际测量主机与运行清单；
 - DP-011：512 MiB 上限的可选一次性调整；
 - DP-012：chunk、并发和队列上限。
@@ -97,4 +98,4 @@ ACC-30 不再使用“远小于 Vault”“ratio 标准差 < 未定义阈值”�
 
 ## 8. 当前事实
 
-当前仓库已有 `tools/fixture-generator.mjs` 和 20 文件 Tiny fixture。它在未提交实现上只取得 `review-only` 校验，不能关闭 DP-006/009；representative-small/large generator 产物和 performance report 均不存在，DP-008 与 ACC-26/29/30/31 继续为 open/`untested`。
+当前仓库已有 `tools/fixture-generator.mjs` 和 20 文件、794 字节的 Tiny fixture。manifest 绑定 generator 实现提交 `dc41fe435b7df95208ffb334dae9a90080bbbb3a`，并取得 `PHASE2_FIXTURE_CHECK_PASS mode=formal`；ADR-0014 已关闭 DP-006/009。representative-small/large 产物和 performance report 均不存在，DP-008 与 ACC-26/29/30/31 继续为 `open`/`untested`。

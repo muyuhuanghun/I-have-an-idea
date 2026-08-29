@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门和 Phase 1 正式矩阵已完成，ADR-0013 已关闭 DP-001..005。Phase 2 已单独授权并完成未提交复审实现：deterministic Tiny fixture、顺序只读 Node Vault 扫描器、Canonical Manifest plaintext v1 codec 及测试；不含 Manifest/Object 加密、Recovery File、对象密钥包装或 ObjectStore。DP-006..009 与 37 ACC 尚未获得 clean-source 正式证据，P0-R1 仍未实现/未测试；Phase 3 及以后未获授权
+> 当前状态：Phase 0 设计合同门和 Phase 1 正式矩阵已完成，ADR-0013 已关闭 DP-001..005。Phase 2 已实现 deterministic Tiny fixture、顺序只读 Node Vault 扫描器和 Canonical Manifest plaintext v1 codec；fixture 已取得 commit-bound formal provenance，ADR-0014 关闭 DP-006/009。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试，Phase 3 及以后未获授权
 >
 > 日期：2026-08-29
 >
@@ -502,8 +502,9 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
 - Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；Phase 1 实现与 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`；
 - Phase 1 已按用户单独授权完成工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和正式三环境 smoke；六份 source report 绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，Android 两份 verified binding 已独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 已选择 Web Crypto 并关闭 DP-001..005。
+- Phase 2 实现提交为 `dc41fe435b7df95208ffb334dae9a90080bbbb3a`；fixture 绑定修正提交 `d170d97bce59f991dc180319c12a7127cc3dc1bd` 后取得 `mode=formal`，ADR-0014 关闭 DP-006/009。
 
-因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成。Phase 2 的窄范围实现已进入未提交复审态，但仍不是 P0-R1 PASS；review fixture 和单元测试不升级任何 DP/ACC，Manifest/Object 加密、Recovery、ObjectStore、恢复和压力证据均不存在。
+因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成，Phase 2 的 Tiny fixture 参数已正式关闭。scanner 和 Manifest plaintext 的单元测试仍不升级任何 ACC，当前仍不是 P0-R1 PASS；Manifest/Object 加密、Recovery、ObjectStore、恢复和压力证据均不存在。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 

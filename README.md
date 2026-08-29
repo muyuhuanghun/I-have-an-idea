@@ -4,7 +4,7 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已单独授权并完成未提交复审实现：20 文件 deterministic Tiny fixture、顺序只读 Node Vault 扫描器和 Canonical Manifest plaintext v1 codec；不含 Manifest/Object 加密、Recovery File、密钥包装或 ObjectStore。当前证据仍是 dirty-source review evidence，DP-006..009 与 37 个 ACC 均未升级；P0-R1 仍未实现、未测试，Phase 3 及以后未获授权
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 的 20 文件 deterministic Tiny fixture、顺序只读 Node Vault 扫描器和 Canonical Manifest plaintext v1 codec 已实现；fixture 已取得 commit-bound formal provenance，ADR-0014 关闭 DP-006/009。DP-007/008/010/012 仍为 `open`，DP-011 仍为 `conditional`，37 个 ACC 全部保持 `untested`；P0-R1 仍未实现、未测试，Phase 3 及以后未获授权
 >
 > 最后更新：2026-08-29
 
@@ -972,6 +972,6 @@ docs/
 tools/
 ```
 
-Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 Obsidian 插件、固定密码向量和统一门禁配置已纳管。正式 runtime evidence 位于 `.gitignore` 忽略的 `artifacts/test-reports/crypto-smoke/formal-63db4eeb/`；ADR-0013 记录两个 aggregate 的路径和 SHA-256。P0-R1、fixture generator 和所有 ACC evidence 仍不存在。
+Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 Obsidian 插件、固定密码向量和统一门禁配置已纳管。正式 runtime evidence 位于 `.gitignore` 忽略的 `artifacts/test-reports/crypto-smoke/formal-63db4eeb/`；ADR-0013 记录两个 aggregate 的路径和 SHA-256。Phase 2 已纳管 Tiny fixture generator、20 文件 fixture、只读 scanner 和 Manifest plaintext codec；P0-R1 与全部 ACC evidence 仍不存在。
 
 当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)，密码选择见 ADR-0013。权威结论是：Phase 0 design-only/design-only+samples 门通过；Phase 1 两候选正式矩阵均为 `cross_env_pass`，DP-001..005 已关闭；P0-R1 仍未实现且 37 ACC 全部未测试。前两项不等于 P0-R1、生产安全或后续阶段授权；在完整实现、测试和独立审计以前，不承诺生产可用。

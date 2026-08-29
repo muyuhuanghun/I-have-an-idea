@@ -62,8 +62,9 @@
       "name": "Tiny fixture 的精确文件清单和固定 seed",
       "owner": "OWNER-P0",
       "phase": "Phase 2 fixture",
-      "status": "open",
-      "close_artifact": "fixtures/tiny/ + fixture-manifest-v1.json",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0014-p0-phase2-fixture-closure.md",
+      "close_artifact": "docs/decisions/0014-p0-phase2-fixture-closure.md + fixtures/tiny/ + fixture-manifest-v1.json",
       "hard_stop": "20-50 文件、<=5 MiB 和必需内容类别未通过 schema 时，不得作为 smoke/ACC fixture"
     },
     {
@@ -89,8 +90,9 @@
       "name": "Fixture generator 版本、源码 hash 和确定性算法",
       "owner": "OWNER-P0",
       "phase": "Phase 2 fixture",
-      "status": "open",
-      "close_artifact": "提交到 Git 的 generator + 两次生成 hash 一致报告",
+      "status": "closed",
+      "closure_adr": "docs/decisions/0014-p0-phase2-fixture-closure.md",
+      "close_artifact": "docs/decisions/0014-p0-phase2-fixture-closure.md + 提交到 Git 的 generator + 确定性双生成测试",
       "hard_stop": "同 seed 同 commit 不能生成相同 entries_sha256 时，停止所有性能比较"
     },
     {

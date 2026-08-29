@@ -5,7 +5,7 @@
   "seed": "ekd-tiny-v1",
   "generator": {
     "path": "tools/fixture-generator.mjs",
-    "git_commit": "c783135ad02c4d92ae0fb05110758292238d1fa4",
+    "git_commit": "dc41fe435b7df95208ffb334dae9a90080bbbb3a",
     "sha256": "500028874cc00239746fc6b05411aa5128caa2e18ada5b997f7f11a85215970c",
     "version": "1.0.0"
   },

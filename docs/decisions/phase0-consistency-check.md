@@ -335,7 +335,7 @@ ACC_37_OF_37_UNTESTED
 - Phase 3A 已单独授权并由提交 `454afdd` 落库：只实现 SHA-256/HMAC-SHA-256、Recovery File v1 codec 和 Vault 外 Node 落盘回读，不含对象加密、ObjectStore 或恢复流程，也不升级任何 ACC；
 - Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：只实现冻结的纯内存 HKDF、object ID、AAD/Envelope、对象密钥包装及文件/Manifest AEAD；ObjectStore、pipeline、快照、恢复和所有 ACC 状态均未实施；
 - Phase 3C-0 已单独授权并冻结 Directory ObjectStore v1 合同（ADR-0015）：不可变写入、原子发布、碰撞返回、路径 containment、Windows reparse point、部分写入清理、耐久性平台边界与错误归一化；机器 registry 仅新增 `OBJECT_STORE_IO_FAILED`；DP-014 与 HTTP ObjectStore 边界不变；
-- Phase 3C-A 已单独授权：Directory ObjectStore Node adapter 已实现并测试，进入未提交复审；HTTP ObjectStore、snapshot pipeline、恢复流程、插件接线与 Phase 4 仍被禁止；
+- Phase 3C-A 已单独授权：Directory ObjectStore Node adapter 已实现并测试，已由提交 `684af1e` 纳管；HTTP ObjectStore、snapshot pipeline、恢复流程、插件接线与 Phase 4 仍被禁止；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

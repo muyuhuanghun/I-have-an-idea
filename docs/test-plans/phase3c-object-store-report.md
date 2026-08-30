@@ -2,7 +2,7 @@
 
 > 日期：2026-08-30
 >
-> 状态：授权切片实现完成，GLM 独立复审验收通过、无阻塞项；未提交、未推送
+> 状态：实现提交 `684af1e` 已由开发者显式授权纳管；本文保留提交前 dirty-source 历史并附提交后复核
 > 基线：`39922c76d884eaa1ab6acdfaa4a243ea5e7fa038`（推送 `696e199` + `39922c7` 之后）
 
 ## 1. 授权范围
@@ -65,4 +65,4 @@ GLM 独立复跑全部门禁并逐项核对合同/实现/文档后判定：**验
 
 本报告在 GLM 验收之后补写，不属于验收时的 12 文件集合；验收对象是本报告之外的 9 个修改 + 3 个新文件。全部结果是 dirty-source implementation review evidence，不是正式 ACC evidence；DP-001..026 状态零变化，37 个 ACC 全部保持 `untested`，P0-R1 未实现、未测试。
 
-Phase 3C-0 + 3C-A 停在未提交复审边界：没有 commit，没有 push，等待开发者显式提交授权。
+开发者已于 2026-08-30 显式授权两笔提交与推送。提交前 staged 检查（`git diff --cached --check`）发现并修正了本报告 blockquote 的行尾空格，实现提交 `684af1e`（13 文件 = 验收时 9 修改 + 3 新增 + 本报告）已包含该修正。提交后在 clean HEAD 复跑统一门禁 68/68（core 25 / crypto 18 / adapters 20 / smoke 5）、shared-core import gate、build 与 design-only 合同校验（ACC=37 INV=16 THR=5 DP=26）全部 PASS，随后按 3B 惯例以 reconcile 提交回写状态措辞。这些仍不是正式 ACC evidence；Phase 3 剩余项（服务器可见性报告等）与 Phase 4 及以后仍需各自明确授权。

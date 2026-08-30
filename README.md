@@ -4,7 +4,7 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已实现并由 ADR-0014 关闭 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID 与 canonical base64url、Object AAD/Envelope v1、文件对象密钥包装及文件/Manifest 纯内存 AES-256-GCM seal/open。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，进入未提交复审；HTTP ObjectStore、snapshot pipeline、恢复流程、插件接线与 Phase 4 仍被禁止。DP-007/008/010/012 仍为 `open`，DP-011 仍为 `conditional`，37 个 ACC 全部保持 `untested`；P0-R1 仍未实现、未测试，Phase 3 剩余工作与 Phase 4 及以后未获授权
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已实现并由 ADR-0014 关闭 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID 与 canonical base64url、Object AAD/Envelope v1、文件对象密钥包装及文件/Manifest 纯内存 AES-256-GCM seal/open。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管；HTTP ObjectStore、snapshot pipeline、恢复流程、插件接线与 Phase 4 仍被禁止。DP-007/008/010/012 仍为 `open`，DP-011 仍为 `conditional`，37 个 ACC 全部保持 `untested`；P0-R1 仍未实现、未测试，Phase 3 剩余工作与 Phase 4 及以后未获授权
 >
 > 最后更新：2026-08-30
 

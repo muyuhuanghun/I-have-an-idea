@@ -1,6 +1,6 @@
 {
   "schema_version": "p0-wire-contract-v1",
-  "status": "frozen_design_contract_recovery_manifest_plaintext_object_crypto_implemented_no_acc_evidence",
+  "status": "frozen_design_contract_recovery_manifest_plaintext_object_crypto_implemented_object_store_directory_contract_frozen_no_acc_evidence",
   "protocol_version": 1,
   "encoding": {
     "unsigned_integer_byte_order": "big-endian",

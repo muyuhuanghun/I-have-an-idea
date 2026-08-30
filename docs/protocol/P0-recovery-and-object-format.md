@@ -1,9 +1,9 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。ObjectStore、快照/恢复编排和 37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
+> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。Phase 3C-0 已冻结 Directory ObjectStore v1 合同（ADR-0015），Phase 3C-A 的 Directory ObjectStore Node adapter 进入未提交复审。快照/恢复编排和 37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
 > 日期：2026-08-30
-> 当前权威：ADR-0011、ADR-0012、ADR-0013、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`
+> 当前权威：ADR-0011、ADR-0012、ADR-0013、ADR-0015、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`
 
 ## 1. 职责和权威顺序
 
@@ -114,6 +114,10 @@ object ID 不得是内容哈希或带域前缀。10,000 对象规模下 128 位�
 
 调用方先把 ObjectStore 文本键 canonical 解码为 16 字节，并与 Manifest/Recovery File 中期望 ID 比较；随后该 ID 进入 101 字节 AAD。把合法对象复制到新 ID 并改写未认证引用时，ID 比较或 AEAD 必须失败，返回 `OBJECT_ID_INVALID`、`OBJECT_AAD_MISMATCH` 或 `MANIFEST_AEAD_FAILED`，不得返回部分明文。
 
+### 4.3 Directory ObjectStore（ADR-0015）
+
+Directory ObjectStore 是 `ObjectStore` 端口的文件系统目录实现：一个扁平目录，文件名恰为 canonical ObjectStore key，任何 key 先过共享核心 canonical 校验（失败 `OBJECT_ID_INVALID`）。put 以"写 `<key>.tmp` + 文件 fsync + 原子硬链接发布 + 删除临时文件"实现不可变发布：目标已存在返回 `OBJECT_ID_COLLISION`（§4.1 编排循环消费的同一信号），永不覆盖；get 缺失返回"未定义"（`MISSING_OBJECT` 仍是恢复层的协议违反码），同 key 幂等读取。root 与目标条目按 ADR-0009 §4 拒绝所有重解析点（`REPARSE_POINT_FOUND`）。耐久性为文件 fsync 强制加 POSIX 目录 fsync；Windows 上 Node 无法对目录句柄 fsync，冻结边界是"文件 fsync + 原子发布 + NTFS 日志"。其余文件系统错误归一化为 registry 新增的 `OBJECT_STORE_IO_FAILED`。完整语义权威是 ADR-0015；HTTP ObjectStore 属 Phase 7，受 DP-014 阻挡。
+
 ## 5. Object Envelope 与 AAD
 
 Object Envelope v1 的 header 固定 19 字节，后接 nonce/ciphertext/tag。总文件长度必须严格等于三段声明长度与 19 之和。suite registry 是 nonce/tag 长度的外部权威；对象自报长度不能扩大或改变 suite 参数。
@@ -144,6 +148,7 @@ P0 Manifest 只列文件对象，因此 entry 不重复携带 object type。若�
 - `RECOVERY_VERSION_UNSUPPORTED`、`RECOVERY_SUITE_UNKNOWN`；
 - `MANIFEST_AEAD_FAILED`、`MANIFEST_VERSION_UNSUPPORTED`、`MANIFEST_SUITE_UNKNOWN`、`MANIFEST_FORMAT_INVALID`、`MANIFEST_TRAILING_BYTES`；
 - `OBJECT_ID_INVALID`、`OBJECT_AAD_MISMATCH`、`OBJECT_AEAD_FAILED`、`OBJECT_TRUNCATED`、`OBJECT_TRAILING_BYTES`；
+- `OBJECT_ID_COLLISION`、`OBJECT_STORE_IO_FAILED`；
 - `MISSING_OBJECT`、`DUPLICATE_OBJECT_REFERENCE`、`ENTRY_PATH_DUPLICATE`、`ENTRY_SIZE_MISMATCH`。
 
 三个 `RANDOM_SOURCE_*` 是共享公共错误码：请求字节数不符、随机源调用失败或返回全零哨兵值时，Recovery File、object ID、object key 和 nonce 生成都必须失败关闭并保留对应码。它们在 Phase 1 `random-source-errors` 冻结向量和正式三环境报告中已经使用；2026-08-30 只把既有语义补入机器 registry。provider 内部 `OBJECT_KEY_UNWRAP_FAILED` 不属于公共 codec 合同，必须在核心边界收敛为 `OBJECT_AEAD_FAILED`。

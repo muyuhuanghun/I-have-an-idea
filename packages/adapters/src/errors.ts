@@ -14,6 +14,24 @@ export class VaultAdapterError extends Error {
   }
 }
 
+export type ObjectStoreAdapterErrorCode =
+  | "OBJECT_ID_COLLISION"
+  | "OBJECT_ID_INVALID"
+  | "OBJECT_STORE_IO_FAILED"
+  | "REPARSE_POINT_FOUND";
+
+export class ObjectStoreAdapterError extends Error {
+  constructor(
+    readonly code: ObjectStoreAdapterErrorCode,
+    readonly key: string,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = "ObjectStoreAdapterError";
+  }
+}
+
 /** Stable error retained for adapters that are still outside the authorized phase. */
 export class AdapterNotImplementedError extends Error {
   readonly code = "ADAPTER_NOT_IMPLEMENTED" as const;

@@ -4,9 +4,9 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已实现并由 ADR-0014 关闭 DP-006/009；Phase 3A Recovery File v1 已提交。Phase 3B 已单独授权并完成未提交复审实现：冻结的三条 HKDF、随机 object ID 与 canonical base64url、Object AAD/Envelope v1、文件对象密钥包装及文件/Manifest 纯内存 AES-256-GCM seal/open；不含 ObjectStore、完整 pipeline、快照、恢复或插件产品功能。DP-007/008/010/012 仍为 `open`，DP-011 仍为 `conditional`，37 个 ACC 全部保持 `untested`；P0-R1 仍未实现、未测试，Phase 3C/4 及以后未获授权
+> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已实现并由 ADR-0014 关闭 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID 与 canonical base64url、Object AAD/Envelope v1、文件对象密钥包装及文件/Manifest 纯内存 AES-256-GCM seal/open；不含 ObjectStore、完整 pipeline、快照、恢复或插件产品功能。DP-007/008/010/012 仍为 `open`，DP-011 仍为 `conditional`，37 个 ACC 全部保持 `untested`；P0-R1 仍未实现、未测试，Phase 3C/4 及以后未获授权
 >
-> 最后更新：2026-08-29
+> 最后更新：2026-08-30
 
 ## 1. 项目一句话定义
 

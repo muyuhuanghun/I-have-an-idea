@@ -2,9 +2,9 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已提交。Phase 3B 已单独授权并完成未提交复审实现：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope v1、对象密钥包装及文件/Manifest 纯内存 AEAD；不含 ObjectStore、完整 pipeline、快照、恢复或插件产品功能。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试，Phase 3C/4 及以后未获授权
+> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope v1、对象密钥包装及文件/Manifest 纯内存 AEAD；不含 ObjectStore、完整 pipeline、快照、恢复或插件产品功能。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试，Phase 3C/4 及以后未获授权
 >
-> 日期：2026-08-29
+> 日期：2026-08-30
 >
 > 适用仓库：`I_have_an_idea`
 
@@ -372,7 +372,7 @@ Recovery File 是 bearer file；recovery root 不再以“用其自身派生密�
 
 ### 8.4 对象 ID
 
-ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。碰撞必须在加密前检查并重新生成 ID/nonce/ciphertext。Suite 1 与 wrap 参数已由 ADR-0013 冻结；生产 codec 尚未实现，也未因选型完成而自动获得授权。
+ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。碰撞必须在加密前检查并重新生成 ID/nonce/ciphertext。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。ObjectStore 碰撞检查、完整 pipeline、快照与恢复编排仍未实现，也未获得 Phase 3C/4 授权。
 
 ## 9. Fixture 与性能基线
 
@@ -569,7 +569,7 @@ P0 不保存本地修改时间；因此不会把它以明文泄漏，也不在 v
 
 ## 14. 阶段 3：恢复文件、加密对象和目录存储
 
-2026-08-30 用户单独授权的 Phase 3A 只包含 SHA-256/HMAC-SHA-256、Recovery File v1 和 Node 侧 Vault 外落盘回读；该切片已由提交 `454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8` 纳管。随后单独授权的 Phase 3B 只包含冻结的 HKDF、object ID/base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Directory/HTTP ObjectStore、完整 pipeline、快照、服务器可见性报告和 fresh-process 恢复继续禁止，必须另行授权。
+2026-08-30 用户单独授权的 Phase 3A 只包含 SHA-256/HMAC-SHA-256、Recovery File v1 和 Node 侧 Vault 外落盘回读；该切片已由提交 `454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8` 纳管。随后单独授权的 Phase 3B 只包含冻结的 HKDF、object ID/base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD；该切片已由提交 `696e199908e865f296e9e0fb822d431d98caae93` 纳管并获开发者追认。Directory/HTTP ObjectStore、完整 pipeline、快照、服务器可见性报告和 fresh-process 恢复继续禁止，必须另行授权。
 
 实现顺序：
 

@@ -27,6 +27,8 @@ ADR-0008/0010 曾用示例 JSON 和字段清单宣称 schema 已冻结，但它�
 
 每个 candidate × suite × environment 恰有 14 个 required 向量：3 AEAD KAT、4 类 AEAD tamper、2 HKDF KAT、1 HKDF label isolation、1 random roundtrip、1 random-source-errors、1 wrap KAT、1 bad-wrap-material。required 向量 skipped 产生 `incomplete`；failed/error 产生 `fail`；schema 无效产生 invalid，不进入 aggregate。
 
+`random-source-errors` 冻结的三个公共错误码是 `RANDOM_SOURCE_SHORT_READ`、`RANDOM_SOURCE_FAILED` 和 `RANDOM_SOURCE_ALL_ZERO`。它们分别表示随机源返回字节数不符、随机源调用失败和返回全零哨兵值；适用于 provider、Recovery File 生成和 object ID/key/nonce 生成边界。2026-08-30 的 registry 对账把这三个既有 Phase 1 向量错误码补入 `p0-traceability-v1.json#error_codes`，没有新增错误语义或改变正式向量。
+
 三环境 source report 必须各一份且 schema valid。只有三个 verdict 都是 pass、candidate/suite/vector/bundle/commit 绑定一致、Android device binding 已验证时才产生 `cross_env_pass`。
 
 ### 3. Fixture 必填和阈值
@@ -56,7 +58,7 @@ perf report 必须绑定 fixture、环境、缓存状态、测量工具、idle R
 
 ### 5. 37/16/THR 稳定追踪
 
-`p0-traceability-v1.json` 固定 37 ACC、16 INV 和 5 THR。每个 ACC 有唯一 evidence path、required checks、error-code groups 和 forbidden side effects。安全映射必须双向一致；非安全 ACC 必须说明 THR/INV 不适用原因。THR-02/04/05 用明确 deferred/accepted-limitation/out-of-scope disposition，不伪装成已测试缓解。
+`p0-traceability-v1.json` 固定 37 ACC、16 INV 和 5 THR，也是公共规范错误码的机器 registry。每个 ACC 有唯一 evidence path、required checks、error-code groups 和 forbidden side effects。安全映射必须双向一致；非安全 ACC 必须说明 THR/INV 不适用原因。THR-02/04/05 用明确 deferred/accepted-limitation/out-of-scope disposition，不伪装成已测试缓解。provider 内部诊断若不在 registry 中，不得越过核心边界成为 ACC oracle 或公共 codec 错误；例如 `OBJECT_KEY_UNWRAP_FAILED` 必须在核心边界收敛为 `OBJECT_AEAD_FAILED`。
 
 ### 6. 延期项
 
@@ -88,5 +90,6 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 
 - ADR-0008/0010 的示例字段清单保留为历史背景，不能再作为 schema 权威；
 - threat-traceability.md 的旧摘要表由 registry 取代；
+- Phase 1 正式 `random-source-errors` 向量已经冻结并验证的 `RANDOM_SOURCE_SHORT_READ`、`RANDOM_SOURCE_FAILED`、`RANDOM_SOURCE_ALL_ZERO` 是共享公共错误码；2026-08-30 的 registry 对账只补齐机器权威，不重跑或改写既有正式报告；
 - 任何必填缺项、未知字段、未定义阈值或人工模糊判定都是硬停止条件；
-- 本 ADR 建立时实现、fixture 和运行报告尚未开始；截至 2026-08-29，Phase 1 正式矩阵与 ADR-0013 选型已完成，DP-001..005 已关闭。后续窄范围 Phase 2 已实现 Tiny fixture、Node 只读扫描器和 Manifest plaintext codec；Tiny fixture 已取得 commit-bound formal provenance，ADR-0014 关闭 DP-006/009。P0-R1、representative/performance fixture 和 37 份正式 ACC evidence 仍未实现，全部 ACC 保持 `untested`。
+- 本 ADR 建立时实现、fixture 和运行报告尚未开始；截至 2026-08-30，Phase 1 正式矩阵与 ADR-0013 选型已完成，DP-001..005 已关闭。后续窄范围 Phase 2 已实现 Tiny fixture、Node 只读扫描器和 Manifest plaintext codec；Tiny fixture 已取得 commit-bound formal provenance，ADR-0014 关闭 DP-006/009。Phase 3A/3B 分别实现 Recovery File v1 和冻结的纯内存 Object/Manifest crypto codec，但 P0-R1、representative/performance fixture 和 37 份正式 ACC evidence 仍未实现，全部 ACC 保持 `untested`。

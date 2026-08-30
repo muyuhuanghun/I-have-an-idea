@@ -1,9 +1,9 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已进入未提交复审。ObjectStore、快照/恢复编排和 37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
-> 日期：2026-08-29
-> 当前权威：ADR-0011、ADR-0013、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-deferred-parameters.json`
+> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。ObjectStore、快照/恢复编排和 37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
+> 日期：2026-08-30
+> 当前权威：ADR-0011、ADR-0012、ADR-0013、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`
 
 ## 1. 职责和权威顺序
 
@@ -139,11 +139,14 @@ P0 Manifest 只列文件对象，因此 entry 不重复携带 object type。若�
 
 当前错误码权威是 `docs/contracts/p0-traceability-v1.json#error_codes`。与本格式直接相关的错误至少包括：
 
+- `RANDOM_SOURCE_SHORT_READ`、`RANDOM_SOURCE_FAILED`、`RANDOM_SOURCE_ALL_ZERO`；
 - `RECOVERY_FIELD_MISSING`、`RECOVERY_TRUNCATED`、`RECOVERY_TRAILING_BYTES`、`RECOVERY_INTEGRITY_FAILED`；
 - `RECOVERY_VERSION_UNSUPPORTED`、`RECOVERY_SUITE_UNKNOWN`；
 - `MANIFEST_AEAD_FAILED`、`MANIFEST_VERSION_UNSUPPORTED`、`MANIFEST_SUITE_UNKNOWN`、`MANIFEST_FORMAT_INVALID`、`MANIFEST_TRAILING_BYTES`；
 - `OBJECT_ID_INVALID`、`OBJECT_AAD_MISMATCH`、`OBJECT_AEAD_FAILED`、`OBJECT_TRUNCATED`、`OBJECT_TRAILING_BYTES`；
 - `MISSING_OBJECT`、`DUPLICATE_OBJECT_REFERENCE`、`ENTRY_PATH_DUPLICATE`、`ENTRY_SIZE_MISMATCH`。
+
+三个 `RANDOM_SOURCE_*` 是共享公共错误码：请求字节数不符、随机源调用失败或返回全零哨兵值时，Recovery File、object ID、object key 和 nonce 生成都必须失败关闭并保留对应码。它们在 Phase 1 `random-source-errors` 冻结向量和正式三环境报告中已经使用；2026-08-30 只把既有语义补入机器 registry。provider 内部 `OBJECT_KEY_UNWRAP_FAILED` 不属于公共 codec 合同，必须在核心边界收敛为 `OBJECT_AEAD_FAILED`。
 
 解析/认证失败时不得用异常文本代替稳定错误码；不得返回部分解析结构或部分明文。
 

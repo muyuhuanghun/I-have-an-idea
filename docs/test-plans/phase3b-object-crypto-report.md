@@ -1,7 +1,9 @@
 # Phase 3B Object / Manifest 纯内存加密复审报告
 
-> 日期：2026-08-30  
-> 状态：授权切片实现完成，Sol 二次复审 PASS；未提交、未推送  
+> 日期：2026-08-30
+>
+> 状态：实现提交 `696e199` 已获开发者追认；本文保留提交前 dirty-source 历史并附提交后复核
+>
 > 基线：`454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8`
 
 ## 1. 授权范围
@@ -101,6 +103,8 @@ build PASS（6 workspace projects）
 
 ## 6. 证据边界与停止点
 
-这些结果是 dirty-source implementation review evidence，不是正式 ACC evidence。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 个 ACC 全部保持 `untested`。本切片没有声称 object ID 全局碰撞已处理、内存有界、ObjectStore 可用、快照完成或恢复可执行。
+提交前结果是 dirty-source implementation review evidence。提交 `696e199` 后的独立复核在 clean local HEAD 上再次得到相同的 lint/typecheck、57/57 test、shared-core import gate 和 build PASS，并用 Node/Python 独立重算三条 HKDF 向量；这些仍不是正式 ACC evidence。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 个 ACC 全部保持 `untested`。本切片没有声称 object ID 全局碰撞已处理、内存有界、ObjectStore 可用、快照完成或恢复可执行。
 
-Phase 3B 已到授权停止点。不得自动 commit/push，不进入 ObjectStore、pipeline、快照、恢复、插件或网页端工作。
+提交后复核还发现并修正两类合同/文档问题：一是原报告 blockquote 的行尾空格未被 untracked 阶段的默认 `git diff --check` 覆盖；二是 `RANDOM_SOURCE_SHORT_READ`、`RANDOM_SOURCE_FAILED`、`RANDOM_SOURCE_ALL_ZERO` 虽已被 Phase 1 冻结向量、正式报告和 Phase 3A/3B 实现共同使用，却漏列于规范错误码机器 registry。本次只补齐既有公共错误码的机器权威和当前状态措辞，不新增错误语义；provider 内部 `OBJECT_KEY_UNWRAP_FAILED` 继续在核心边界收敛为 `OBJECT_AEAD_FAILED`。
+
+Phase 3B 已到授权停止点。提交、推送或进入 ObjectStore、pipeline、快照、恢复、插件、网页端及 Phase 3C/4 以后工作仍需各自的明确授权。

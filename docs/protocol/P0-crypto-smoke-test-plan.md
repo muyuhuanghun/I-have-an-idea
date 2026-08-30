@@ -60,7 +60,7 @@ invalid report 不进入跨环境裁决，也不能作为“基本通过”的�
 | HKDF KAT | 2 | 与固定 expected bytes 一致 |
 | HKDF label isolation | 1 | ADR-0011 四个 canonical label 的派生输出互异并匹配向量 |
 | random roundtrip | 1 | CSPRNG key/nonce + 随机明文逐字节往返 |
-| random-source-errors | 1 | 短读、失败和全零三个子检查全部失败关闭；生产无 `Math.random` 回退 |
+| random-source-errors | 1 | 短读、失败和全零分别返回 `RANDOM_SOURCE_SHORT_READ`、`RANDOM_SOURCE_FAILED`、`RANDOM_SOURCE_ALL_ZERO`；生产无 `Math.random` 回退 |
 | wrap KAT | 1 | wrap/unwrap 固定向量一致 |
 | bad wrap material | 1 | 稳定错误、无对象密钥输出 |
 

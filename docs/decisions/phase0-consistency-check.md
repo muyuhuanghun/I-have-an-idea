@@ -254,9 +254,9 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 
 | 修复面 | 当前合同 | 静态状态 | 运行状态 |
 |---|---|---|---|
-| Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | Recovery File v1 已有 dirty-source review implementation；Manifest AEAD 未实现/未测试 |
-| recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | Phase 3A codec/HMAC review tests 已完成；尚无正式 ACC evidence |
-| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | Recovery/Manifest plaintext 已实现；Object Envelope/AAD 与纯内存 AEAD 已有 dirty-source review implementation，全部 ACC 仍 `untested` |
+| Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | Recovery File v1 与 Manifest 纯内存 AEAD 已分别由 `454afdd` / `696e199` 纳管并通过实现级复审；尚无正式 ACC evidence |
+| recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | Phase 3A codec/HMAC 已由 `454afdd` 纳管并通过实现级测试；尚无正式 ACC evidence |
+| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | Recovery/Manifest plaintext、Object Envelope/AAD 与纯内存 AEAD 已实现并纳管，全部 ACC 仍 `untested` |
 | HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | 4 条 HKDF、随机 raw ID/canonical 文本和对象密钥包装已有实现；全局碰撞检查与 ObjectStore 编排未实现 |
 | 37/16/THR 追踪 | 37 ACC、16 INV、5 THR 双向 registry；非安全 ACC 不伪造威胁链接 | 静态检查通过 | 37 ACC 全 untested |
 | smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
@@ -327,10 +327,11 @@ ACC_37_OF_37_UNTESTED
 - 这轮用户要求的协议/追踪/schema/延期项/状态一致性已经形成机器可检查设计合同；
 - Phase 1 工程骨架和 smoke harness 已按单独授权完成，正式 clean-source 六单元矩阵中两个候选均取得 `cross_env_pass`；
 - ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭；
+- Phase 1 正式 `random-source-errors` 向量既有的 `RANDOM_SOURCE_SHORT_READ` / `RANDOM_SOURCE_FAILED` / `RANDOM_SOURCE_ALL_ZERO` 已补入规范错误码机器 registry；没有新增错误语义或重写正式报告；
 - Phase 2 已单独授权；deterministic Tiny fixture、Node 只读扫描器和 Manifest plaintext codec 已实现，Tiny fixture 已取得 commit-bound formal provenance，ADR-0014 只关闭 DP-006/009；
 - DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`；scanner/Manifest 单元测试不升级任何 ACC；
 - Phase 3A 已单独授权并由提交 `454afdd` 落库：只实现 SHA-256/HMAC-SHA-256、Recovery File v1 codec 和 Vault 外 Node 落盘回读，不含对象加密、ObjectStore 或恢复流程，也不升级任何 ACC；
-- Phase 3B 已单独授权并进入未提交复审：只实现冻结的纯内存 HKDF、object ID、AAD/Envelope、对象密钥包装及文件/Manifest AEAD；ObjectStore、pipeline、快照、恢复和所有 ACC 状态均未实施；
+- Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：只实现冻结的纯内存 HKDF、object ID、AAD/Envelope、对象密钥包装及文件/Manifest AEAD；ObjectStore、pipeline、快照、恢复和所有 ACC 状态均未实施；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC，且 Phase 3C、Phase 4 及以后未获授权；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

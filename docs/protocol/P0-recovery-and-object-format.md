@@ -1,9 +1,9 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。Phase 3C-0 已冻结 Directory ObjectStore v1 合同（ADR-0015），Phase 3C-A 的 Directory ObjectStore Node adapter 已由提交 `684af1e` 纳管。Phase 3D-0 已冻结存储可见性扫描合同（ADR-0016），Phase 3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。Phase 4-0 已完成：snapshot 创建流水线合同（ADR-0017）已接受，runtime-limits v1 已接入机器门。Phase 4-A 已单独授权并实现 snapshot 创建编排（`createSnapshotV1` + Node 日志 sink 与 Recovery File 目标 + `snapshot-log-v1` 机器门），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成：恢复流水线合同（ADR-0018）已接受，Phase 4-B-A 已获授权；fresh-process 恢复编排实现进行中，37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
+> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。Phase 3C-0 已冻结 Directory ObjectStore v1 合同（ADR-0015），Phase 3C-A 的 Directory ObjectStore Node adapter 已由提交 `684af1e` 纳管。Phase 3D-0 已冻结存储可见性扫描合同（ADR-0016），Phase 3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。Phase 4-0 已完成：snapshot 创建流水线合同（ADR-0017）已接受，runtime-limits v1 已接入机器门。Phase 4-A 已单独授权并实现 snapshot 创建编排（`createSnapshotV1` + Node 日志 sink 与 Recovery File 目标 + `snapshot-log-v1` 机器门），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：ADR-0018 保持 v1 不使用 `INCOMPLETE_RESTORE`，新增 `RESTORE_TARGET_WRITE_FAILED` 并同步 ACC-25 oracle。Phase 4-B-A 已单独授权并实现恢复编排（`restoreSnapshotV1` + `NodeRestoreTarget` + fresh-process worker 与纯 stdlib Python 验证器）；复审错误已修正，仍处于未提交复审边界；37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
 > 日期：2026-08-30
-> 当前权威：ADR-0011、ADR-0012、ADR-0013、ADR-0015、ADR-0016、ADR-0017、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`、`docs/contracts/p0-runtime-limits-v1.json`、`docs/schemas/storage-visibility-scan-v1.schema.json`、`docs/schemas/p0-runtime-limits-v1.schema.json`
+> 当前权威：ADR-0011、ADR-0012、ADR-0013、ADR-0015、ADR-0016、ADR-0017、ADR-0018、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`、`docs/contracts/p0-runtime-limits-v1.json`、`docs/schemas/storage-visibility-scan-v1.schema.json`、`docs/schemas/p0-runtime-limits-v1.schema.json`
 
 ## 1. 职责和权威顺序
 
@@ -150,6 +150,7 @@ P0 Manifest 只列文件对象，因此 entry 不重复携带 object type。若�
 - `OBJECT_ID_INVALID`、`OBJECT_AAD_MISMATCH`、`OBJECT_AEAD_FAILED`、`OBJECT_TRUNCATED`、`OBJECT_TRAILING_BYTES`；
 - `OBJECT_ID_COLLISION`、`OBJECT_STORE_IO_FAILED`；
 - `MISSING_OBJECT`、`DUPLICATE_OBJECT_REFERENCE`、`ENTRY_PATH_DUPLICATE`、`ENTRY_SIZE_MISMATCH`。
+- `RESTORE_TARGET_WRITE_FAILED`：恢复目标创建父目录或写文件失败；失败结果必须带不含原始路径的部分输出 inventory。
 
 三个 `RANDOM_SOURCE_*` 是共享公共错误码：请求字节数不符、随机源调用失败或返回全零哨兵值时，Recovery File、object ID、object key 和 nonce 生成都必须失败关闭并保留对应码。它们在 Phase 1 `random-source-errors` 冻结向量和正式三环境报告中已经使用；2026-08-30 只把既有语义补入机器 registry。provider 内部 `OBJECT_KEY_UNWRAP_FAILED` 不属于公共 codec 合同，必须在核心边界收敛为 `OBJECT_AEAD_FAILED`。
 

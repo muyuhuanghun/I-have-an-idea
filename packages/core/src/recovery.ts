@@ -112,6 +112,7 @@ async function integrityKey(
     INTEGRITY_TAG_LENGTH
   );
   if (key.byteLength !== INTEGRITY_TAG_LENGTH) {
+    key.fill(0);
     fail("RECOVERY_INTEGRITY_FAILED", "HKDF provider returned an invalid recovery integrity key length.");
   }
   return key;
@@ -158,12 +159,16 @@ export async function encodeRecoveryFileV1(
   output.set(nonSecretFingerprint, FINGERPRINT_OFFSET);
 
   const key = await integrityKey(cryptoProvider, recoveryRoot, domainId);
-  const tag = await cryptoProvider.hmacSha256(key, output.slice(0, HMAC_COVERED_LENGTH));
-  if (tag.byteLength !== INTEGRITY_TAG_LENGTH) {
-    fail("RECOVERY_INTEGRITY_FAILED", "HMAC provider returned an invalid tag length.");
+  try {
+    const tag = await cryptoProvider.hmacSha256(key, output.slice(0, HMAC_COVERED_LENGTH));
+    if (tag.byteLength !== INTEGRITY_TAG_LENGTH) {
+      fail("RECOVERY_INTEGRITY_FAILED", "HMAC provider returned an invalid tag length.");
+    }
+    output.set(tag, INTEGRITY_TAG_OFFSET);
+    return output;
+  } finally {
+    key.fill(0);
   }
-  output.set(tag, INTEGRITY_TAG_OFFSET);
-  return output;
 }
 
 export async function generateRecoveryFileV1(
@@ -213,30 +218,38 @@ export async function decodeRecoveryFileV1(
     FINGERPRINT_OFFSET + FINGERPRINT_LENGTH
   );
   const integrityTag = bytes.slice(INTEGRITY_TAG_OFFSET);
-  const key = await integrityKey(cryptoProvider, recoveryRoot, domainId);
-  const authentic = await cryptoProvider.verifyHmacSha256(
-    key,
-    bytes.slice(0, HMAC_COVERED_LENGTH),
-    integrityTag
-  );
-  if (!authentic) fail("RECOVERY_INTEGRITY_FAILED", "Recovery File HMAC validation failed.");
-  if (recoveryRoot.every((byte) => byte === 0)) {
-    fail("RECOVERY_INTEGRITY_FAILED", "Recovery File contains an invalid all-zero recovery root.");
-  }
+  let returnRecoveryRoot = false;
+  let key: Uint8Array | undefined;
+  try {
+    key = await integrityKey(cryptoProvider, recoveryRoot, domainId);
+    const authentic = await cryptoProvider.verifyHmacSha256(
+      key,
+      bytes.slice(0, HMAC_COVERED_LENGTH),
+      integrityTag
+    );
+    if (!authentic) fail("RECOVERY_INTEGRITY_FAILED", "Recovery File HMAC validation failed.");
+    if (recoveryRoot.every((byte) => byte === 0)) {
+      fail("RECOVERY_INTEGRITY_FAILED", "Recovery File contains an invalid all-zero recovery root.");
+    }
 
-  const expectedFingerprint = await fingerprint(cryptoProvider, domainId);
-  if (!fixedLengthEqual(nonSecretFingerprint, expectedFingerprint)) {
-    fail("RECOVERY_INTEGRITY_FAILED", "Recovery File fingerprint is not canonical for its domain ID.");
-  }
+    const expectedFingerprint = await fingerprint(cryptoProvider, domainId);
+    if (!fixedLengthEqual(nonSecretFingerprint, expectedFingerprint)) {
+      fail("RECOVERY_INTEGRITY_FAILED", "Recovery File fingerprint is not canonical for its domain ID.");
+    }
 
-  return {
-    recoveryFormatVersion: RECOVERY_FORMAT_VERSION,
-    protocolVersion: PROTOCOL_VERSION,
-    domainId,
-    suiteId: SUITE_ID,
-    recoveryRoot,
-    snapshotId,
-    manifestObjectId,
-    nonSecretFingerprint
-  };
+    returnRecoveryRoot = true;
+    return {
+      recoveryFormatVersion: RECOVERY_FORMAT_VERSION,
+      protocolVersion: PROTOCOL_VERSION,
+      domainId,
+      suiteId: SUITE_ID,
+      recoveryRoot,
+      snapshotId,
+      manifestObjectId,
+      nonSecretFingerprint
+    };
+  } finally {
+    key?.fill(0);
+    if (!returnRecoveryRoot) recoveryRoot.fill(0);
+  }
 }

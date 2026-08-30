@@ -236,7 +236,7 @@
 - 来源：INV-13
 - 测试类型：负面
 - 测试方法：在恢复过程中模拟磁盘不足（填充目标盘），验证恢复器报告失败而非部分成功
-- 错误判定：恢复器报告成功但目标目录文件不完整即失败
+- 错误判定：必须返回 `RESTORE_TARGET_WRITE_FAILED`，不得返回成功；机器结果必须记录不含原始路径的部分输出 inventory（已完成 Manifest entry index 与当前 `possibly_partial` index），缺 inventory 或目标目录文件不完整却报告成功即失败
 - 证据路径：`artifacts/test-reports/acc-25-partial-write.json`
 - 状态：untested
 

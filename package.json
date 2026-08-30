@@ -13,8 +13,9 @@
     "lint": "eslint .",
     "typecheck": "pnpm --recursive --sort run typecheck",
     "test": "pnpm --recursive --sort --if-present run test",
+    "test:restore-verifier": "python -B -m unittest tools.test_verify_restore",
     "build": "pnpm run check:imports && pnpm --recursive --sort run build",
-    "test:all": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
+    "test:all": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run test:restore-verifier && pnpm run build",
     "verify:fixture:tiny:review": "python -B tools/verify_phase2_fixture.py --manifest fixtures/tiny/fixture-manifest-v1.json --allow-dirty-dev"
   },
   "devDependencies": {

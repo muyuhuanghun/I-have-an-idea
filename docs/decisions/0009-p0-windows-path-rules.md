@@ -36,6 +36,7 @@ Windows NTFS 默认行为是大小写不敏感但大小写保留。P0 规则：
 2. 恢复器在写入目标前对所有 entry 路径段做 Windows 风格大小写折叠比较，碰撞返回 `CASE_COLLISION`（ACC-21）；
 3. 合成 Manifest（恶意输入）测试中包含 `README.md` 和 `readme.md`，验证恢复器拒绝；
 4. 实际 Windows 目录中不要求物理创建两个冲突文件，合成输入即足以验证（执行计划 §5.4）。
+5. v1 的确定性折叠键按 Unicode scalar value 逐个计算：使用无 locale 的一对一大写映射；若大写映射会扩展成多个 scalar value，则保留原 scalar value，不做多字符合并，也不做 NFC/NFD 规范化。最低锚点为 `A/a` 与 `Å/å` 必须碰撞，`k/K` 与 `ss/ß` 必须保持不同。该规则用于共享核心的扫描预检和恢复全量 Manifest 预检，取代只覆盖 ASCII 的实现。
 
 ### 3. Unicode 处理
 
@@ -78,4 +79,4 @@ Manifest 中 entry 的 `relative_path_utf8` 是 `u32be` 长度前缀后的严格
 
 ## 当前参数状态
 
-本 ADR 已冻结路径有效性、大小写、Unicode、重解析点和路径编码；没有本地自由文本待定参数。P0 无论 OS long-path 开关如何都按 §1.10 拒绝超过 32,767 字符的逻辑路径，隐藏路径按 §1.6 默认拒绝。若未来改变，必须新建 ADR 和 DP 项，不能在实现中自行探测后静默改变合同。
+本 ADR 已冻结路径有效性、大小写、Unicode、重解析点和路径编码；没有本地自由文本待定参数。P0 无论 OS long-path 开关如何都按 §1.10 拒绝超过 32,767 个 UTF-16 code unit 的逻辑路径，隐藏路径按 §1.6 默认拒绝。Node Windows 恢复适配器除 `lstat().isSymbolicLink()` 外还必须检查 `FILE_ATTRIBUTE_REPARSE_POINT`；属性探针不可用或结果不可判定时失败关闭，不得继续写入——探针不可用视为 reparse 风险，按 `REPARSE_POINT_FOUND` 处理，不得报为目标非空。若未来改变，必须新建 ADR 和 DP 项，不能在实现中自行探测后静默改变合同。

@@ -16,7 +16,7 @@
 
 `packages/core/src/snapshot.ts` 新增 `createSnapshotV1`，严格按 ADR-0017 §4 执行六阶段：
 
-1. 预检。Recovery File 目标校验（§4.1 第 1 步）先于日志打开（第 2 步）：目标不可用时运行失败，不创建日志文件、不写对象、不创建 Recovery File，因此也不存在失败事件。日志 sink 打开失败收敛为 `LOG_WRITE_FAILED`。完整 Vault 枚举复用 `scanVault`，本切片为其新增 case-collision 检查（§4.1.3，`CASE_COLLISION`）：仅 ASCII 大小写不同的路径无法在大小写不敏感目标上恢复，扫描期失败关闭。
+1. 预检。Recovery File 目标校验（§4.1 第 1 步）先于日志打开（第 2 步）：目标不可用时运行失败，不创建日志文件、不写对象、不创建 Recovery File，因此也不存在失败事件。日志 sink 打开失败收敛为 `LOG_WRITE_FAILED`。完整 Vault 枚举复用 `scanVault`，本切片为其新增 case-collision 检查（§4.1.3，`CASE_COLLISION`）；Phase 4-B 独立复审随后发现 ASCII-only fold 不足以描述 Windows/NTFS，现已按 ADR-0009 §2 的确定性一对一大写折叠键修正，扫描期仍保持失败关闭。
 2. 根材料。单一 recovery root 经 `deriveDomainDataRootV1` → `deriveManifestKeyV1` / `deriveObjectWrapKeyV1` 派生全部密钥；Recovery File 用显式 `encodeRecoveryFileV1` 编码并传入同一 root，§4.2 指出的 `generateRecoveryFileV1` 内部再生成 root 的陷阱在结构上被绕开。
 3. 逐文件 seal + 原子 put。仅 `ObjectStore.put` 返回 `OBJECT_ID_COLLISION` 时整对象重试（每次重新生成 object ID/key/nonce/AAD/wrapped key/ciphertext），file 与 Manifest 对象各 8 次总尝试；其余错误立即终止。二次遍历读取（scan 定长、文件阶段重读）尺寸不一致映射为 `FILE_CHANGED_DURING_SCAN`；深度稳定性由 adapter 的 stamp 机制承担。
 4. Manifest 对象。parent snapshot ID 全零；编码器预检一次，格式违规在任何发布尝试前失败。

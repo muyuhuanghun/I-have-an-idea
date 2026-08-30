@@ -257,7 +257,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | Recovery File v1 与 Manifest 纯内存 AEAD 已分别由 `454afdd` / `696e199` 纳管并通过实现级复审；尚无正式 ACC evidence |
 | recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | Phase 3A codec/HMAC 已由 `454afdd` 纳管并通过实现级测试；尚无正式 ACC evidence |
 | Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | Recovery/Manifest plaintext、Object Envelope/AAD 与纯内存 AEAD 已实现并纳管，全部 ACC 仍 `untested` |
-| HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | 4 条 HKDF、随机 raw ID/canonical 文本和对象密钥包装已有实现；全局碰撞检查与 ObjectStore 编排未实现 |
+| HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | 4 条 HKDF、随机 raw ID/canonical 文本、对象密钥包装、碰撞后整对象重试与 Directory ObjectStore 编排已有实现；正式 ACC evidence 尚未生成 |
 | 37/16/THR 追踪 | 37 ACC、16 INV、5 THR 双向 registry；非安全 ACC 不伪造威胁链接 | 静态检查通过 | 37 ACC 全 untested |
 | smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
@@ -325,6 +325,7 @@ PHASE_4_0_SNAPSHOT_PIPELINE_CONTRACT_ACCEPTED
 RUNTIME_LIMITS_V1_ACCEPTED_AND_MACHINE_GATED
 PHASE_4_A_SNAPSHOT_CREATE_ORCHESTRATION_IMPLEMENTED
 PHASE_4_B0_RESTORE_PIPELINE_CONTRACT_ACCEPTED
+PHASE_4_B_A_RESTORE_ORCHESTRATION_IMPLEMENTED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -346,7 +347,8 @@ ACC_37_OF_37_UNTESTED
 - Phase 3D-A 已单独授权：扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管；ACC-32/33 保持 `untested`，正式证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行；
 - Phase 4-0 已完成：ADR-0017 经开发者四点确认接受（DP-012 拟议值、Recovery File complete 定义、日志封口顺序、注册两个新错误码）；runtime-limits v1（`contract_status=accepted`）已接入 `verify_phase0_contracts.py` schema/样例机器门；机器 registry 新增 `SOURCE_FILE_READ_FAILED`、`RECOVERY_FILE_WRITE_FAILED`（+2）；`P0_EXECUTION_PLAN.md` §8.4 碰撞措辞已按 ADR-0017 §6 修订；DP-012 保持 `open`，DP 状态零变化；
 - Phase 4-A 已单独授权：snapshot 创建编排（core `createSnapshotV1`，严格按 ADR-0017 §4 顺序、§6 碰撞循环、§7 日志绑定、§8 orphan 语义、§9 错误收敛）与 Node 日志 sink/Recovery File 目标适配器、1 MiB 分块稳定读取、`snapshot-log-v1` schema 机器门及 ADR-0017 §10 测试边界已实现，已由提交 `fbdf325` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
-- Phase 4-B-0 已完成：恢复流水线合同（ADR-0018）经开发者四点确认接受（目标空目录语义与失败残留、逐文件无 read-back/fsync、`INCOMPLETE_RESTORE` v1 不使用、fresh-process worker 与纯 stdlib Python 验证器形态）；registry 零新增；Phase 4-B-A 已获授权，恢复编排实现进行中；
+- Phase 4-B-0 已完成并经独立复审纠错：保持 `INCOMPLETE_RESTORE` v1 不使用，机器 registry 新增 `RESTORE_TARGET_WRITE_FAILED`（+1），ACC-25 oracle 同步到该码，并冻结不含原始路径的 `partialOutputInventory`；
+- Phase 4-B-A 已单独授权：恢复编排（core `restoreSnapshotV1`，ADR-0018 §4 顺序与拒绝规则映射、全量校验先于任何写入）与 `NodeRestoreTarget`、fresh-process worker CLI、纯 stdlib Python 验证器已实现；独立复审指出的错误码闭包、验证器 missing-root 假 PASS/fingerprint 漏检、ASCII fold、清零时序和负面测试缺口已修正，仍处于未提交复审边界；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

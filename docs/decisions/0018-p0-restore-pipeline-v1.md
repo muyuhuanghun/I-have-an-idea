@@ -54,13 +54,13 @@ writeRestoredFile(relativePath, bytes): Promise<void>
   按需创建父目录并写出字节；任何失败向上传播。
 ```
 
-路径 containment：canonical 相对路径在构造上不含 `\0`、`\`、前导 `/`、盘符、空段/`.`/`..`/冒号段（`paths.ts` 冻结），target join 后逃逸不可能；合成 Manifest 的 `../` 条目在 Manifest 解码即被 `ENTRY_PATH_ESCAPE` 拒绝（ACC-19）。
+路径 containment：canonical 相对路径在构造上不含 `\0`、`\`、前导 `/`、盘符、空段/`.`/`..`/冒号段（`paths.ts` 冻结），target join 后逃逸不可能；合成 Manifest 的 `../` 条目在 Manifest 解码即被 `ENTRY_PATH_ESCAPE` 拒绝（ACC-19）。v1 的调用前提是恢复期间没有另一进程修改或替换目标树；恶意本机终端属于 THR-05 明确范围外，因此本版本不宣称抵抗校验后的本地 TOCTOU。后续若把并发或恶意本机写入纳入范围，必须改用具备目录句柄相对寻址与 no-follow 语义的平台适配合同，不能把一次 `lstat` 描述为完整防护。
 
 ### 3.3 输出：`RestoreResultV1`
 
 - `status`: `complete` 或 `failed`；
 - `recoveryFileValid`（严格解码是否通过，失败时也为 false 但解码错误码优先）；
-- `manifestEntryCount`、`restoredFileCount`、`totalBytesWritten`；
+- `manifestEntryCount`、`restoredFileCount`、`totalBytesWritten`；失败结果还必须带 `partialOutputInventory`：按已认证 Manifest 的 0-based `manifestEntryIndex` 记录已完成项为 `complete`，发生目标写失败的当前项保守记录为 `possibly_partial`，不得包含原始路径；
 - 失败时的稳定 `error_code` 与 `failedPhase`（`validate_recovery` / `fetch_manifest` / `validate_target` / `write_files`）；
 - 禁止返回或记录：明文、原始路径、密钥材料、nonce、OS/provider 原始错误消息。
 
@@ -70,9 +70,9 @@ writeRestoredFile(relativePath, bytes): Promise<void>
 
 1. **validate_recovery**：`decodeRecoveryFileV1` 严格解码（167 字节、magic、version、suite、HMAC）。任何失败按既有码返回（`RECOVERY_TRUNCATED` / `RECOVERY_TRAILING_BYTES` / `RECOVERY_MAGIC_MISMATCH` / `RECOVERY_VERSION_UNSUPPORTED` / `RECOVERY_SUITE_UNKNOWN` / `RECOVERY_INTEGRITY_FAILED`）。
 2. **fetch_manifest**：`get(encodeObjectStoreKeyV1(manifestObjectId))`；缺席 → `MISSING_OBJECT`（恢复层协议违反码在此首次使用）；`openManifestObjectV1` 校验上下文与 AEAD（`OBJECT_AEAD_FAILED` / `MANIFEST_*`）。
-3. **Manifest 全量校验（任何写入之前）**：解码器已拒绝非 canonical 路径（`ENTRY_PATH_ESCAPE`）、重复路径（`ENTRY_PATH_DUPLICATE`）、重复 object ID（`DUPLICATE_OBJECT_REFERENCE`）；本编排新增 ASCII 大小写折叠碰撞检查 → `CASE_COLLISION`（ACC-21）；父 snapshot ID 必须全零（`MANIFEST_FORMAT_INVALID`）。
+3. **Manifest 全量校验（任何写入之前）**：解码器已按 ADR-0009 拒绝非 canonical Windows 路径（`ENTRY_PATH_ESCAPE`，含隐藏段、保留名/字符、尾随点空格与长度上限）、重复路径（`ENTRY_PATH_DUPLICATE`）、重复 object ID（`DUPLICATE_OBJECT_REFERENCE`）；本编排使用 ADR-0009 §2 的确定性 Windows 一对一大写折叠键检查碰撞 → `CASE_COLLISION`（ACC-21）；父 snapshot ID 必须全零（`MANIFEST_FORMAT_INVALID`）。
 4. **validate_target**：`verifyEmptyTarget()`（`NON_EMPTY_TARGET` / `REPARSE_POINT_FOUND`，INV-08：任何写入前拒绝）。
-5. **write_files**：按 Manifest canonical 顺序逐条：`get(objectKey)`（缺席 → `MISSING_OBJECT`）；`openFileObjectV1`（`OBJECT_AEAD_FAILED` / `ENTRY_SIZE_MISMATCH` / `OBJECT_TRUNCATED` / `OBJECT_TRAILING_BYTES`）；`writeRestoredFile`；明文 buffer 在 `finally` 中原位清零。任何失败即 `failed`，已写文件保留（§2），`restoredFileCount` 如实报告（INV-13：部分写入永不报告为完整成功，ACC-25）。
+5. **write_files**：按 Manifest canonical 顺序逐条：`get(objectKey)`（缺席 → `MISSING_OBJECT`）；`openFileObjectV1`（`OBJECT_AAD_MISMATCH` / `OBJECT_AEAD_FAILED` / `ENTRY_SIZE_MISMATCH` / `OBJECT_TRUNCATED` / `OBJECT_TRAILING_BYTES`）；`writeRestoredFile`；明文 buffer 在 `finally` 中原位清零。目标创建父目录或写文件失败 → `RESTORE_TARGET_WRITE_FAILED`。任何失败即 `failed`，已写文件保留（§2），`restoredFileCount` 与 path-free `partialOutputInventory` 如实报告（INV-13：部分写入永不报告为完整成功，ACC-25）。
 
 对象截断/篡改由 AEAD 认证失败或 envelope 结构校验拒绝（`OBJECT_TRUNCATED` / `OBJECT_TRAILING_BYTES` / `OBJECT_AEAD_FAILED`）；错误恢复文件由第 1 步拒绝；派生密钥全程来自 Recovery File 内的 recovery root，使用的 root 与创建侧一致这一事实由 HMAC 与 AEAD 认证闭合（错误 root 解不出 Manifest）。
 
@@ -92,7 +92,7 @@ vitest 单元/集成测试直接测编排（fake 端口注入）；fresh-process
 
 ## 6. `INCOMPLETE_RESTORE` 码的处置（已确认：v1 不使用）
 
-registry 既有 `INCOMPLETE_RESTORE`，但在既有文档中没有使用定义（ADR-0017 §11 明确推迟"restore journal 或 INCOMPLETE_RESTORE 流程"）。本草案提议：**v1 不使用该码**。写入开始后的失败返回具体稳定原因码（`OBJECT_AEAD_FAILED` / `MISSING_OBJECT` / `OBJECT_STORE_IO_FAILED` 等），"不完整"这一事实由 `status=failed` + `restoredFileCount > 0` 机器可读表达（满足 INV-13 的"稳定错误码 + 部分输出清单"）。该码保留给未来恢复日志/续传设计，registry 不动。替代方案（写入期失败一律改报 `INCOMPLETE_RESTORE`、具体原因降级为次要字段）会导致原因丢失，不建议。
+registry 既有 `INCOMPLETE_RESTORE`，但在既有文档中没有使用定义（ADR-0017 §11 明确推迟"restore journal 或 INCOMPLETE_RESTORE 流程"）。**v1 不使用该码**。写入开始后的失败返回具体稳定原因码（`OBJECT_AEAD_FAILED` / `MISSING_OBJECT` / `OBJECT_STORE_IO_FAILED` / `RESTORE_TARGET_WRITE_FAILED` 等）；"不完整"这一事实由 `status=failed`、`restoredFileCount` 与 path-free `partialOutputInventory` 机器可读表达。`partialOutputInventory` 以已认证 Manifest 的 0-based index 标识已完成项；目标写失败的当前项必须标为 `possibly_partial`，因为底层写入可能在返回错误前已经创建或部分写入文件。`INCOMPLETE_RESTORE` 保留给未来恢复日志/续传设计。替代方案（写入期失败一律改报 `INCOMPLETE_RESTORE`、具体原因降级为次要字段）会导致原因丢失，不采用。
 
 ## 7. 拒绝规则 → 验收锚点对照
 
@@ -107,8 +107,9 @@ registry 既有 `INCOMPLETE_RESTORE`，但在既有文档中没有使用定义�
 | 不支持版本 | `RECOVERY_VERSION_UNSUPPORTED` | §15 负面 |
 | 部分写入不报成功 | 状态 + `restoredFileCount` | ACC-25 / INV-13 |
 | 重解析点 | `REPARSE_POINT_FOUND` | ACC-20 / INV-07 |
+| 目标创建父目录或写文件失败 | `RESTORE_TARGET_WRITE_FAILED` + `partialOutputInventory` | ACC-25 / INV-13 |
 
-预计不需要新增任何错误码。
+2026-08-30 独立复审发现原稿误读了 ACC-25 的机器 oracle：原 oracle 要求 `INCOMPLETE_RESTORE` 与 `partial_output_inventory_recorded`，但已确认决策是不使用 `INCOMPLETE_RESTORE`。本次纠错保持该确认不变，registry 新增 `RESTORE_TARGET_WRITE_FAILED`（+1），ACC-25 的 required error group 同步改为该码，并冻结上述 path-free inventory；`INCOMPLETE_RESTORE` 仍保留但 v1 不使用。
 
 ## 8. 恢复侧测试清单（4-B-A 若获批执行）
 
@@ -120,27 +121,27 @@ registry 既有 `INCOMPLETE_RESTORE`，但在既有文档中没有使用定义�
 6. 截断/篡改对象 → AEAD/结构码，部分写入如实报告；
 7. 错误 recovery file / 不支持版本 → 对应 `RECOVERY_*` 码，零写入；
 8. 恢复对 ObjectStore 零写入（fake store 记录 put 调用为 0）；
-9. 写入期明文与派生密钥 best-effort 清零；结果对象无路径/明文/密钥；
+9. Recovery integrity key、Manifest 编解码明文、写入期文件明文与派生密钥均 best-effort 原位清零；失败结果的 `partialOutputInventory` 只有 Manifest index/state，无路径/明文/密钥；
 10. fresh-process harness：进程 B 仅凭三个路径参数完成恢复，Python 验证器 PASS；
-11. 磁盘满/写失败 → `failed` + 已写计数，不报完整成功（ACC-25 形态）；
+11. 磁盘满/写失败 → `RESTORE_TARGET_WRITE_FAILED` + `failed` + 已写计数 + `partialOutputInventory`，不报完整成功（ACC-25）；
 12. Windows 正式环境与后续真实环境证据仍按既有证据规则分开。
 
 ## 9. 确认记录与已完成的文档动作
 
 开发者已于 2026-08-30 确认接受全部四项：
 
-1. 目标目录语义：调用方预建空目录，恢复器在任何写入前校验空/真实目录/非重解析点（INV-08）；失败残留保留在目标目录，`restoredFileCount` 如实报告，重试前须清空目标；
+1. 目标目录语义：调用方预建空目录，恢复器在任何写入前校验空/真实目录/非重解析点（INV-08）；失败残留保留在目标目录，`restoredFileCount` 与 path-free `partialOutputInventory` 如实报告，重试前须清空目标；
 2. 逐文件不做 read-back、不做 fsync：独立完整性由 Python 验证器（源↔恢复逐字节对比）承担；
-3. `INCOMPLETE_RESTORE` 在 v1 不使用，失败返回具体原因码 + `restoredFileCount`；
+3. `INCOMPLETE_RESTORE` 在 v1 不使用，失败返回具体原因码 + `restoredFileCount` + path-free `partialOutputInventory`；目标写失败的具体码经独立复审纠错冻结为 `RESTORE_TARGET_WRITE_FAILED`；
 4. fresh-process harness 与 Python 验证器按 §5 形态实现为构建后可独立运行的工具，是否并入 `pnpm run test:all` 在 4-B-A 获批时单独决定。
 
 随接受提交完成的文档动作（不假装证据存在）：
 
 - 本 ADR 状态改为已接受；
 - 拒绝规则映射与 Python 验证器范围按 §5/§7 冻结，无改动；
-- registry 零变化（§7）；ACC-01..37 全部维持现状；
+- 原接受提交时误记为 registry 零变化；独立复审纠错后 registry 新增 `RESTORE_TARGET_WRITE_FAILED`（+1）并同步 ACC-25 oracle，ACC-01..37 的状态仍全部维持 `untested`；
 - Phase 4-B-A 已由开发者同日授权，实现结果与测试以 4-B-A 复审报告为准；P0-R1 证据门仍等待明确授权。
 
 ## 当前参数状态
 
-`docs/contracts/p0-runtime-limits-v1` 不适用于恢复侧（解密路径无随机量、并发为 1 由顺序遍历结构保证）。本 ADR 没有产生实现文件、测试结果或 ACC evidence 之外的状态变化；Phase 4-B-A 实现由开发者同日授权。
+`docs/contracts/p0-runtime-limits-v1` 不适用于恢复侧（解密路径无随机量、并发为 1 由顺序遍历结构保证）。本 ADR 的独立复审纠错只新增 `RESTORE_TARGET_WRITE_FAILED`、修正 ACC-25 oracle、补齐 path-free inventory 与既有 codec 错误码闭包；不修改 ACC 状态、不生成正式 evidence、不关闭 DP。Phase 4-B-A 实现由开发者同日授权。

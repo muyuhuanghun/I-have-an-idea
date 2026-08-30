@@ -42,6 +42,7 @@
     "ENTRY_SIZE_MISMATCH",
     "CASE_COLLISION",
     "NON_EMPTY_TARGET",
+    "RESTORE_TARGET_WRITE_FAILED",
     "FILE_CHANGED_DURING_SCAN",
     "SOURCE_FILE_READ_FAILED",
     "UNSUPPORTED_FILES_FOUND",
@@ -239,7 +240,7 @@
     {
       "id": "ACC-25", "title": "部分写入不被报告为成功", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-13"],
       "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-25-partial-write.json", "status": "untested",
-      "oracle": {"required_checks": ["schema_valid", "disk_full_injected", "restore_failed", "success_marker_absent", "partial_output_inventory_recorded"], "required_error_code_groups": [["INCOMPLETE_RESTORE"]], "forbidden_side_effects": ["partial_success_reported", "write_outside_target"]}
+      "oracle": {"required_checks": ["schema_valid", "disk_full_injected", "restore_failed", "success_marker_absent", "partial_output_inventory_recorded"], "required_error_code_groups": [["RESTORE_TARGET_WRITE_FAILED"]], "forbidden_side_effects": ["partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-26", "title": "10000 文件约 1 GiB 完整往返", "kind": "performance", "threat_ids": [], "invariant_ids": [],

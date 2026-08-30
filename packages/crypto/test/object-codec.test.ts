@@ -9,6 +9,7 @@ import {
   sealFileObjectV1,
   sealManifestObjectV1,
   type ManifestPlaintextV1,
+  type ObjectCryptoProvider,
   type RandomSource
 } from "../../core/src/index.js";
 import { WebCryptoAes256Provider } from "../src/webcrypto.js";
@@ -144,6 +145,45 @@ describe("Phase 3B file objects", () => {
     ))).toBe("ENTRY_SIZE_MISMATCH");
   });
 
+  it("clears authenticated plaintext when the Manifest size claim is inconsistent", async () => {
+    const provider = new WebCryptoAes256Provider();
+    const domainId = filled(32, 0x11);
+    const snapshotId = filled(32, 0x22);
+    const objectId = filled(16, 0x33);
+    const domainDataRoot = await deriveDomainDataRootV1(filled(32, 0x44), domainId, provider);
+    const objectWrapKey = await deriveObjectWrapKeyV1(domainDataRoot, domainId, provider);
+    const sealed = await sealFileObjectV1(
+      { domainId, snapshotId, objectId, objectWrapKey, plaintext: new Uint8Array([1, 2, 3]) },
+      {
+        cryptoProvider: provider,
+        randomSource: new SequenceRandomSource(filled(32, 0x55), filled(12, 0x66))
+      }
+    );
+    let borrowedPlaintext: Uint8Array | undefined;
+    const trackingProvider: ObjectCryptoProvider = {
+      aeadEncrypt: provider.aeadEncrypt.bind(provider),
+      aeadDecrypt: async (...args) => {
+        borrowedPlaintext = await provider.aeadDecrypt(...args);
+        return borrowedPlaintext;
+      },
+      wrapKey: provider.wrapKey.bind(provider),
+      unwrapKey: provider.unwrapKey.bind(provider)
+    };
+    expect(await rejectionCode(() => openFileObjectV1(
+      {
+        domainId,
+        snapshotId,
+        objectId,
+        objectWrapKey,
+        envelope: sealed.envelope,
+        wrappedObjectKey: sealed.wrappedObjectKey,
+        expectedPlaintextSize: 4n
+      },
+      trackingProvider
+    ))).toBe("ENTRY_SIZE_MISMATCH");
+    expect(borrowedPlaintext).toEqual(new Uint8Array(3));
+  });
+
   it("rejects ciphertext, tag, nonce, context, and wrapped-key tampering without plaintext", async () => {
     const provider = new WebCryptoAes256Provider();
     const domainId = filled(32, 1);
@@ -228,15 +268,31 @@ describe("Phase 3B Manifest objects", () => {
         wrappedObjectKey: filled(40, 0x66)
       }]
     };
+    let borrowedSealPlaintext: Uint8Array | undefined;
+    let borrowedOpenPlaintext: Uint8Array | undefined;
+    const trackingProvider: ObjectCryptoProvider = {
+      aeadEncrypt: async (...args) => {
+        borrowedSealPlaintext = args[2];
+        return provider.aeadEncrypt(...args);
+      },
+      aeadDecrypt: async (...args) => {
+        borrowedOpenPlaintext = await provider.aeadDecrypt(...args);
+        return borrowedOpenPlaintext;
+      },
+      wrapKey: provider.wrapKey.bind(provider),
+      unwrapKey: provider.unwrapKey.bind(provider)
+    };
     const envelope = await sealManifestObjectV1(
       { domainId, snapshotId, objectId, manifestKey, manifest },
-      { cryptoProvider: provider, randomSource: new SequenceRandomSource(filled(12, 0x77)) }
+      { cryptoProvider: trackingProvider, randomSource: new SequenceRandomSource(filled(12, 0x77)) }
     );
+    expect(borrowedSealPlaintext?.every((byte) => byte === 0)).toBe(true);
     const opened = await openManifestObjectV1(
       { domainId, snapshotId, objectId, manifestKey, envelope },
-      provider
+      trackingProvider
     );
     expect(opened.entries.map((entry) => entry.relativePath)).toEqual(["note.md"]);
+    expect(borrowedOpenPlaintext?.every((byte) => byte === 0)).toBe(true);
 
     const tampered = envelope.slice();
     tampered[tampered.byteLength - 1] ^= 1;
@@ -248,6 +304,17 @@ describe("Phase 3B Manifest objects", () => {
       { domainId, snapshotId: filled(32, 9), objectId, manifestKey, envelope },
       provider
     ))).toBe("MANIFEST_AEAD_FAILED");
+
+    const malformedPlaintext = new Uint8Array([1, 2, 3]);
+    const malformedProvider: ObjectCryptoProvider = {
+      ...trackingProvider,
+      aeadDecrypt: async () => malformedPlaintext
+    };
+    expect(await rejectionCode(() => openManifestObjectV1(
+      { domainId, snapshotId, objectId, manifestKey, envelope },
+      malformedProvider
+    ))).toBe("MANIFEST_FORMAT_INVALID");
+    expect(malformedPlaintext).toEqual(new Uint8Array(3));
   });
 
   it("rejects a Manifest whose plaintext identity disagrees with its AAD context", async () => {

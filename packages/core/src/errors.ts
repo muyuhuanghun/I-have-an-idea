@@ -135,3 +135,83 @@ export class SnapshotCreateError extends Error {
     this.name = "SnapshotCreateError";
   }
 }
+
+/**
+ * Stable codes the ADR-0018 restore orchestration can return. Every value is a frozen
+ * registry code; unexpected internal errors converge to `HONEST_CLAIM_VIOLATION` at the
+ * orchestration boundary. `INCOMPLETE_RESTORE` is deliberately absent: ADR-0018 §6 freezes
+ * that v1 reports the specific cause plus `restoredFileCount` instead.
+ */
+export type RestoreErrorCode =
+  | "CASE_COLLISION"
+  | "DUPLICATE_OBJECT_REFERENCE"
+  | "ENTRY_PATH_DUPLICATE"
+  | "ENTRY_PATH_ESCAPE"
+  | "ENTRY_SIZE_MISMATCH"
+  | "HONEST_CLAIM_VIOLATION"
+  | "MANIFEST_AEAD_FAILED"
+  | "MANIFEST_FORMAT_INVALID"
+  | "MANIFEST_SUITE_UNKNOWN"
+  | "MANIFEST_TRAILING_BYTES"
+  | "MANIFEST_VERSION_UNSUPPORTED"
+  | "MISSING_OBJECT"
+  | "NON_EMPTY_TARGET"
+  | "OBJECT_AAD_MISMATCH"
+  | "OBJECT_AEAD_FAILED"
+  | "OBJECT_STORE_IO_FAILED"
+  | "OBJECT_TRAILING_BYTES"
+  | "OBJECT_TRUNCATED"
+  | "RECOVERY_FIELD_MISSING"
+  | "RECOVERY_INTEGRITY_FAILED"
+  | "RECOVERY_MAGIC_MISMATCH"
+  | "RECOVERY_SUITE_UNKNOWN"
+  | "RECOVERY_TRAILING_BYTES"
+  | "RECOVERY_TRUNCATED"
+  | "RECOVERY_VERSION_UNSUPPORTED"
+  | "REPARSE_POINT_FOUND"
+  | "RESTORE_TARGET_WRITE_FAILED";
+
+const RESTORE_ERROR_CODES: ReadonlySet<string> = new Set<string>([
+  "CASE_COLLISION",
+  "DUPLICATE_OBJECT_REFERENCE",
+  "ENTRY_PATH_DUPLICATE",
+  "ENTRY_PATH_ESCAPE",
+  "ENTRY_SIZE_MISMATCH",
+  "HONEST_CLAIM_VIOLATION",
+  "MANIFEST_AEAD_FAILED",
+  "MANIFEST_FORMAT_INVALID",
+  "MANIFEST_SUITE_UNKNOWN",
+  "MANIFEST_TRAILING_BYTES",
+  "MANIFEST_VERSION_UNSUPPORTED",
+  "MISSING_OBJECT",
+  "NON_EMPTY_TARGET",
+  "OBJECT_AAD_MISMATCH",
+  "OBJECT_AEAD_FAILED",
+  "OBJECT_STORE_IO_FAILED",
+  "OBJECT_TRAILING_BYTES",
+  "OBJECT_TRUNCATED",
+  "RECOVERY_FIELD_MISSING",
+  "RECOVERY_INTEGRITY_FAILED",
+  "RECOVERY_MAGIC_MISMATCH",
+  "RECOVERY_SUITE_UNKNOWN",
+  "RECOVERY_TRAILING_BYTES",
+  "RECOVERY_TRUNCATED",
+  "RECOVERY_VERSION_UNSUPPORTED",
+  "REPARSE_POINT_FOUND",
+  "RESTORE_TARGET_WRITE_FAILED"
+]);
+
+export function isRestoreErrorCode(code: string): code is RestoreErrorCode {
+  return RESTORE_ERROR_CODES.has(code);
+}
+
+export class RestoreError extends Error {
+  constructor(
+    readonly code: RestoreErrorCode,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = "RestoreError";
+  }
+}

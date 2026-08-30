@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍待 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`。Phase 4-A 已单独授权并实现 snapshot 创建编排（共享核心 `createSnapshotV1`、Node 日志 sink 与 Recovery File 目标、1 MiB 分块稳定读取、`snapshot-log-v1` 机器门、ADR-0017 §10 测试边界），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成：恢复流水线合同（ADR-0018）经开发者四点确认接受，registry 零新增；Phase 4-B-A 已获授权，恢复编排实现进行中；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
+> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍须在 snapshot pipeline 实现后另按 P0-R1 证据门执行，当前未生成。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`。Phase 4-A 已单独授权并实现 snapshot 创建编排（共享核心 `createSnapshotV1`、Node 日志 sink 与 Recovery File 目标、1 MiB 分块稳定读取、`snapshot-log-v1` 机器门、ADR-0017 §10 测试边界），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：恢复流水线合同（ADR-0018）保持 v1 不使用 `INCOMPLETE_RESTORE`，registry 新增 `RESTORE_TARGET_WRITE_FAILED`，ACC-25 oracle 同步到该码并冻结 path-free `partialOutputInventory`。Phase 4-B-A 已单独授权并实现恢复编排（共享核心 `restoreSnapshotV1`、Node `NodeRestoreTarget`、fresh-process worker 与纯 stdlib Python 验证器）；复审错误已修正，仍处于未提交复审边界。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
 >
 > 日期：2026-08-30
 >
@@ -372,7 +372,7 @@ Recovery File 是 bearer file；recovery root 不再以“用其自身派生密�
 
 ### 8.4 对象 ID
 
-ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。每个对象先用新 ID/key/nonce 完整 seal，再调用不可变 ObjectStore 的原子 put；只有 put 返回 `OBJECT_ID_COLLISION` 才整对象重新生成。不得覆盖、不得只换文件名、不得复用 key/nonce/ciphertext，且不得把其他 I/O 错误当碰撞重试（ADR-0017 §6）。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。Directory ObjectStore v1 合同已由 ADR-0015 冻结，Node adapter 已实现并由提交 `684af1e` 纳管；HTTP ObjectStore、完整 pipeline、快照与恢复编排仍未实现，也未获得 Phase 4 授权。
+ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。每个对象先用新 ID/key/nonce 完整 seal，再调用不可变 ObjectStore 的原子 put；只有 put 返回 `OBJECT_ID_COLLISION` 才整对象重新生成。不得覆盖、不得只换文件名、不得复用 key/nonce/ciphertext，且不得把其他 I/O 错误当碰撞重试（ADR-0017 §6）。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。Directory ObjectStore v1 合同已由 ADR-0015 冻结，Node adapter 已实现并由提交 `684af1e` 纳管；Phase 4 已获单独授权并实现共享核心 snapshot/restore 编排与 fresh-process harness，其中恢复侧仍处于未提交复审边界。HTTP ObjectStore、CLI/插件产品接线和 P0-R1 正式证据仍未实现或未获授权。
 
 ## 9. Fixture 与性能基线
 
@@ -504,7 +504,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - Phase 1 已按用户单独授权完成工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和正式三环境 smoke；六份 source report 绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，Android 两份 verified binding 已独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 已选择 Web Crypto 并关闭 DP-001..005。
 - Phase 2 实现提交为 `dc41fe435b7df95208ffb334dae9a90080bbbb3a`；fixture 绑定修正提交 `d170d97bce59f991dc180319c12a7127cc3dc1bd` 后取得 `mode=formal`，ADR-0014 关闭 DP-006/009。
 
-因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成，Phase 2 的 Tiny fixture 参数已正式关闭。scanner 和 Manifest plaintext 的单元测试仍不升级任何 ACC，当前仍不是 P0-R1 PASS；Manifest/Object 加密、Recovery、ObjectStore、恢复和压力证据均不存在。
+因此当前裁决是 Phase 0 design-only/design-only+samples 门通过，Phase 1 正式矩阵与选型关闭完成，Phase 2 的 Tiny fixture 参数已正式关闭。随后已实现 Manifest/Object 加密、Recovery、Directory ObjectStore 与共享核心 snapshot/restore，但这些实现/单元测试和本轮 dirty-source fresh-process 冒烟仍不升级任何 ACC。正式 ACC evidence、representative/performance fixture 与压力报告尚不存在，当前仍不是 P0-R1 PASS。
 
 ## 12. 阶段 1：工程骨架和移动兼容性
 
@@ -569,7 +569,7 @@ P0 不保存本地修改时间；因此不会把它以明文泄漏，也不在 v
 
 ## 14. 阶段 3：恢复文件、加密对象和目录存储
 
-2026-08-30 用户单独授权的 Phase 3A 只包含 SHA-256/HMAC-SHA-256、Recovery File v1 和 Node 侧 Vault 外落盘回读；该切片已由提交 `454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8` 纳管。随后单独授权的 Phase 3B 只包含冻结的 HKDF、object ID/base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD；该切片已由提交 `696e199908e865f296e9e0fb822d431d98caae93` 纳管并获开发者追认。再随后单独授权的 Phase 3C 分两步：Phase 3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，机器 registry 仅新增 `OBJECT_STORE_IO_FAILED`），Phase 3C-A 实现并测试 Directory ObjectStore Node adapter；该切片已由提交 `684af1eef4dc5122b0140c43ed24009c2f651e21` 纳管。服务器可见性报告按 Phase 3D 分两步执行：3D-0 冻结扫描合同（ADR-0016），3D-A 实现扫描器、CLI 与机器 Schema；直接修正后的实现已通过独立复审并由提交 `1f5e27473336b150165889106a6562653dd49a89` 纳管。其正式 ACC-32/33 证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 已完成：ADR-0017 已由开发者四点确认接受（含 `SOURCE_FILE_READ_FAILED`/`RECOVERY_FILE_WRITE_FAILED` 注册与 §8.4 碰撞措辞修订）。Phase 4-A 已单独授权并实现 snapshot 创建编排与 ADR-0017 §10 测试边界；该切片已由提交 `fbdf3250859030c433e44376a75340458ee13da1` 纳管。Phase 4-B-0 已完成：恢复流水线合同（ADR-0018）已接受；Phase 4-B-A 已获授权，实现进行中。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门继续禁止。
+2026-08-30 用户单独授权的 Phase 3A 只包含 SHA-256/HMAC-SHA-256、Recovery File v1 和 Node 侧 Vault 外落盘回读；该切片已由提交 `454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8` 纳管。随后单独授权的 Phase 3B 只包含冻结的 HKDF、object ID/base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD；该切片已由提交 `696e199908e865f296e9e0fb822d431d98caae93` 纳管并获开发者追认。再随后单独授权的 Phase 3C 分两步：Phase 3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，机器 registry 仅新增 `OBJECT_STORE_IO_FAILED`），Phase 3C-A 实现并测试 Directory ObjectStore Node adapter；该切片已由提交 `684af1eef4dc5122b0140c43ed24009c2f651e21` 纳管。服务器可见性报告按 Phase 3D 分两步执行：3D-0 冻结扫描合同（ADR-0016），3D-A 实现扫描器、CLI 与机器 Schema；直接修正后的实现已通过独立复审并由提交 `1f5e27473336b150165889106a6562653dd49a89` 纳管。其正式 ACC-32/33 证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 已完成：ADR-0017 已由开发者四点确认接受（含 `SOURCE_FILE_READ_FAILED`/`RECOVERY_FILE_WRITE_FAILED` 注册与 §8.4 碰撞措辞修订）。Phase 4-A 已单独授权并实现 snapshot 创建编排与 ADR-0017 §10 测试边界；该切片已由提交 `fbdf3250859030c433e44376a75340458ee13da1` 纳管。Phase 4-B-0 已完成并经独立复审纠错：保持 `INCOMPLETE_RESTORE` v1 不使用，新增 `RESTORE_TARGET_WRITE_FAILED`、修正 ACC-25 oracle 并冻结 path-free partial-output inventory。Phase 4-B-A 已单独授权并实现恢复编排与 fresh-process harness，复审错误已修正，仍在未提交复审边界。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门继续禁止。
 
 实现顺序：
 
@@ -756,12 +756,13 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 已完成并停在关闭复审点。下一授权门槛是用户复审关闭材料后，另行决定是否授权 Phase 2；`cross_env_pass` 只是解除 DP-001..005 的前置硬停止，不是 Phase 2/3 的自动授权。
+Phase 1 至 Phase 4-A 已完成各自获授权的合同与实现切片。Phase 4-B-0 合同已接受，Phase 4-B-A 恢复编排与 fresh-process harness 已获授权并实现；第一轮独立复审返回 `REQUEST CHANGES`，Windows 路径/case-fold/reparse 与 cleanup finding 正在修正，仍处于未提交的第二轮复审门前。
 
-1. 复审 ADR-0013、两个 aggregate hash 和 deferred registry 的关闭状态；
-2. 由用户自行决定是否提交/推送 Phase 1 关闭材料；
-3. 未获得新的明确授权前，不实现 Manifest/Recovery/Object codec、fixture、压力测试或 HTTP ObjectStore；
-4. 任何偏离 ADR-0011 bytes、ADR-0012 schema 或 ADR-0013 Suite 1 的修改都先停下并写新 ADR；
-5. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
+1. 第二轮独立复审必须确认 Phase 4-B 的合同、实现、测试与已知限制一致；有阻断 finding 时不得编写关闭报告；
+2. 复审 PASS 后才编写 `docs/test-plans/phase4b-restore-report.md`，且只能称为 dirty-source implementation review evidence；
+3. Phase 4-B 关闭报告完成后，由用户另行决定是否授权提交/推送，以及是否进入 Phase 5-0 的 CLI/极薄 Obsidian 插件接线合同；
+4. 未获得新的明确授权前，不实施 CLI/插件产品接线、representative/performance fixture、正式 ACC evidence、P0-R1 关闭或 HTTP ObjectStore；
+5. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义的修改都必须先停下并形成明确合同裁决；
+6. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
 
 本计划不授权自动提交或推送。本轮修改已经由用户显式授权后通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；之后的 README/一致性/执行计划 stale 措辞修订也属于用户显式授权下的小补丁提交。

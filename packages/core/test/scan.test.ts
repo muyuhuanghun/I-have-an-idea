@@ -66,5 +66,34 @@ describe("read-only Vault scanner", () => {
       name: VaultScanError.name,
       code: "ENTRY_PATH_DUPLICATE"
     });
+
+    for (const escapedConfigurationPath of [
+      ".obsidian/../escape.md",
+      ".obsidian//bad.md"
+    ]) {
+      await expect(scanVault(source([
+        file(escapedConfigurationPath, new Uint8Array())
+      ]))).rejects.toMatchObject({ code: "ENTRY_PATH_ESCAPE" });
+    }
+  });
+
+  it("matches Windows one-code-point case folding without multi-character expansion", async () => {
+    await expect(scanVault(source([
+      file("A.md", new Uint8Array()),
+      file("a.md", new Uint8Array())
+    ]))).rejects.toMatchObject({ code: "CASE_COLLISION" });
+
+    await expect(scanVault(source([
+      file("Å.md", new Uint8Array()),
+      file("å.md", new Uint8Array())
+    ]))).rejects.toMatchObject({ code: "CASE_COLLISION" });
+
+    const result = await scanVault(source([
+      file("k.md", new Uint8Array([1])),
+      file("K.md", new Uint8Array([2])),
+      file("ss.md", new Uint8Array([3])),
+      file("ß.md", new Uint8Array([4]))
+    ]));
+    expect(result.files).toHaveLength(4);
   });
 });

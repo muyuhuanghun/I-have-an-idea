@@ -51,6 +51,18 @@ export interface RecoveryFileTarget {
   readonly writeExclusiveAndReadBack: (bytes: Bytes) => Promise<void>;
 }
 
+/**
+ * ADR-0018 §3.2: restore output boundary. The target must be a caller-created empty real
+ * directory; `verifyEmptyTarget` is enforced before any write (INV-08). `relativePath` is a
+ * canonical relative Vault path; adapters re-validate defensively (INV-06/ACC-19). Written
+ * files are never read back and never fsynced — independent verification is the external
+ * Python verifier's job.
+ */
+export interface RestoreTarget {
+  readonly verifyEmptyTarget: () => Promise<void>;
+  readonly writeRestoredFile: (relativePath: string, bytes: Bytes) => Promise<void>;
+}
+
 /** Result shape shared by candidate implementations during the smoke spike. */
 export interface AeadResult {
   readonly ciphertext: Bytes;

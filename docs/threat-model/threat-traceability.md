@@ -69,6 +69,7 @@ python tools/verify_phase0_contracts.py --evidence-root artifacts
 - 固定长度/非法格式/尾随字节：`RECOVERY_TRAILING_BYTES`、`MANIFEST_FORMAT_INVALID`、`MANIFEST_TRAILING_BYTES`、`OBJECT_TRAILING_BYTES`；
 - object ID canonicalization：`OBJECT_ID_INVALID`；
 - 对象截断和重复引用：`OBJECT_TRUNCATED`、`DUPLICATE_OBJECT_REFERENCE`；
+- 恢复目标写入失败：`RESTORE_TARGET_WRITE_FAILED`（`INCOMPLETE_RESTORE` 继续保留给未来 journal/续传设计）；
 - 报告缺项：`REPORT_SCHEMA_INVALID`；
 - 越界声明：`HONEST_CLAIM_VIOLATION`。
 

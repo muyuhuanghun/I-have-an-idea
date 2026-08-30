@@ -394,6 +394,7 @@ export async function openFileObjectV1(
     requireLength(objectKey, OBJECT_KEY_LENGTH, "objectKey");
     const plaintext = await decryptEnvelope(input.envelope, objectKey, input, "file", cryptoProvider);
     if (BigInt(plaintext.byteLength) !== input.expectedPlaintextSize) {
+      plaintext.fill(0);
       return fail("ENTRY_SIZE_MISMATCH", "Decrypted file size does not match its authenticated Manifest entry.");
     }
     return plaintext;
@@ -421,7 +422,11 @@ export async function sealManifestObjectV1(
   requireLength(input.manifestKey, OBJECT_KEY_LENGTH, "manifestKey");
   requireManifestContext(input.manifest, input);
   const plaintext = encodeManifestPlaintextV1(input.manifest);
-  return encryptEnvelope(plaintext, input.manifestKey, input, "manifest", dependencies);
+  try {
+    return await encryptEnvelope(plaintext, input.manifestKey, input, "manifest", dependencies);
+  } finally {
+    plaintext.fill(0);
+  }
 }
 
 export async function openManifestObjectV1(
@@ -431,7 +436,11 @@ export async function openManifestObjectV1(
   requireContext(input);
   requireLength(input.manifestKey, OBJECT_KEY_LENGTH, "manifestKey");
   const plaintext = await decryptEnvelope(input.envelope, input.manifestKey, input, "manifest", cryptoProvider);
-  const manifest = decodeManifestPlaintextV1(plaintext);
-  requireManifestContext(manifest, input);
-  return manifest;
+  try {
+    const manifest = decodeManifestPlaintextV1(plaintext);
+    requireManifestContext(manifest, input);
+    return manifest;
+  } finally {
+    plaintext.fill(0);
+  }
 }

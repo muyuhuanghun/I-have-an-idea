@@ -64,6 +64,28 @@ describe("Canonical Manifest plaintext v1", () => {
     expect(errorCode(() => encodeManifestPlaintextV1(manifest([entry("../outside.md", 1)])))).toBe("ENTRY_PATH_ESCAPE");
   });
 
+  it("rejects every frozen ADR-0009 Windows path class before encoding", () => {
+    const invalidPaths = [
+      "",
+      "/absolute.md",
+      "C:/drive.md",
+      "a/../escape.md",
+      "nul\0.md",
+      "a\\b.md",
+      "hidden/.secret.md",
+      "CON.md",
+      "aux/ok.md",
+      "bad?.md",
+      "trail./a.md",
+      "trail.md ",
+      `${"a".repeat(32_765)}.md`
+    ];
+    for (const invalidPath of invalidPaths) {
+      expect(errorCode(() => encodeManifestPlaintextV1(manifest([entry(invalidPath, 1)]))))
+        .toBe("ENTRY_PATH_ESCAPE");
+    }
+  });
+
   it("rejects malformed fixed fields without invoking any crypto provider", () => {
     expect(errorCode(() => encodeManifestPlaintextV1(manifest([
       { ...entry("a.md", 1), wrappedObjectKey: filled(39, 1) }

@@ -16,10 +16,14 @@ export class VaultAdapterError extends Error {
   }
 }
 
-/** ADR-0017 §3.1: stable codes for the snapshot log sink and Recovery File target adapters. */
+/** ADR-0017 §3.1 / ADR-0018 §3.2: stable codes for the snapshot/restore adapters. */
 export type SnapshotAdapterErrorCode =
+  | "ENTRY_PATH_ESCAPE"
   | "LOG_WRITE_FAILED"
-  | "RECOVERY_FILE_WRITE_FAILED";
+  | "NON_EMPTY_TARGET"
+  | "RECOVERY_FILE_WRITE_FAILED"
+  | "REPARSE_POINT_FOUND"
+  | "RESTORE_TARGET_WRITE_FAILED";
 
 export class SnapshotAdapterError extends Error {
   constructor(

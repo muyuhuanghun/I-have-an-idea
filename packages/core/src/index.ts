@@ -3,6 +3,7 @@ export {
   ManifestCodecError,
   ObjectCodecError,
   RecoveryFileCodecError,
+  RestoreError,
   SnapshotCreateError,
   VaultScanError
 } from "./errors.js";
@@ -12,6 +13,7 @@ export {
   deriveObjectWrapKeyV1
 } from "./keys.js";
 export { decodeManifestPlaintextV1, encodeManifestPlaintextV1 } from "./manifest.js";
+export { windowsCaseFoldV1, canonicalRelativePathBytes, decodeCanonicalRelativePath } from "./paths.js";
 export {
   OBJECT_AAD_V1_LENGTH,
   OBJECT_ENVELOPE_V1_HEADER_LENGTH,
@@ -35,11 +37,13 @@ export {
 } from "./recovery.js";
 export { scanVault } from "./scan.js";
 export { createSnapshotV1 } from "./snapshot.js";
+export { restoreSnapshotV1 } from "./restore.js";
 export type { Core } from "./core.js";
 export type {
   ManifestCodecErrorCode,
   ObjectCodecErrorCode,
   RecoveryFileCodecErrorCode,
+  RestoreErrorCode,
   SnapshotCreateErrorCode,
   VaultScanErrorCode
 } from "./errors.js";
@@ -66,6 +70,15 @@ export type {
   RecoveryFileV1Material
 } from "./recovery.js";
 export type {
+  RestoreDependencies,
+  RestoreInputV1,
+  RestoreOutputInventoryEntryV1,
+  RestoreOutputStateV1,
+  RestorePhase,
+  RestoreResultV1,
+  RestoreStatus
+} from "./restore.js";
+export type {
   SnapshotCreateDependencies,
   SnapshotCreateInputV1,
   SnapshotCreatePhase,
@@ -82,6 +95,7 @@ export type {
   ObjectStore,
   RandomSource,
   RecoveryFileTarget,
+  RestoreTarget,
   SnapshotLogSink,
   VaultEntry,
   VaultSource

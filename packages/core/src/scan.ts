@@ -1,5 +1,5 @@
 import { VaultScanError } from "./errors.js";
-import { canonicalRelativePathBytes, compareBytes } from "./paths.js";
+import { canonicalRelativePathBytes, compareBytes, windowsCaseFoldV1 } from "./paths.js";
 import type { VaultSource } from "./ports.js";
 
 export type ContentClass = "canvas" | "c" | "image" | "markdown" | "other-supported" | "pdf" | "python";
@@ -38,8 +38,9 @@ function contentClass(relativePath: string): ContentClass | undefined {
   return CONTENT_CLASSES[fileName.slice(dot).toLowerCase()];
 }
 
-function isObsidianConfigurationPath(relativePath: string): boolean {
-  return relativePath.split("/").includes(".obsidian");
+function obsidianConfigurationSuffix(relativePath: string): string | undefined {
+  const prefix = ".obsidian/";
+  return relativePath.startsWith(prefix) ? relativePath.slice(prefix.length) : undefined;
 }
 
 export async function scanVault(source: VaultSource): Promise<VaultScanResult> {
@@ -50,6 +51,22 @@ export async function scanVault(source: VaultSource): Promise<VaultScanResult> {
   let totalBytes = 0n;
 
   for await (const entry of source.listFiles()) {
+    // The root Obsidian configuration tree is explicitly outside the content set. Its hidden
+    // root is allowed only for exclusion; the suffix is validated under a legal placeholder
+    // root first so `.obsidian/../x` and malformed separators cannot be silently skipped.
+    const obsidianSuffix = obsidianConfigurationSuffix(entry.relativePath);
+    if (obsidianSuffix !== undefined) {
+      try {
+        canonicalRelativePathBytes(`obsidian-config/${obsidianSuffix}`);
+      } catch {
+        throw new VaultScanError(
+          "ENTRY_PATH_ESCAPE",
+          "Obsidian configuration entry is not a contained canonical relative path.",
+          [entry.relativePath]
+        );
+      }
+      continue;
+    }
     let pathBytes: Uint8Array;
     try {
       pathBytes = canonicalRelativePathBytes(entry.relativePath);
@@ -60,8 +77,6 @@ export async function scanVault(source: VaultSource): Promise<VaultScanResult> {
         [entry.relativePath]
       );
     }
-
-    if (isObsidianConfigurationPath(entry.relativePath)) continue;
     if (seenPaths.has(entry.relativePath)) {
       throw new VaultScanError(
         "ENTRY_PATH_DUPLICATE",
@@ -73,12 +88,12 @@ export async function scanVault(source: VaultSource): Promise<VaultScanResult> {
 
     // ADR-0017 §4.1.3: vaults whose files differ only by case cannot restore onto
     // case-insensitive targets, so they fail closed before any object is written.
-    const caseFolded = entry.relativePath.toLowerCase();
+    const caseFolded = windowsCaseFoldV1(entry.relativePath);
     const caseConflict = caseFoldedPaths.get(caseFolded);
     if (caseConflict !== undefined) {
       throw new VaultScanError(
         "CASE_COLLISION",
-        "Vault contains paths that differ only by ASCII case folding.",
+        "Vault contains paths that collide under the frozen Windows case-folding rule.",
         [caseConflict, entry.relativePath]
       );
     }

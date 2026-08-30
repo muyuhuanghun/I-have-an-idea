@@ -21,6 +21,7 @@ export type {
 } from "./storage-visibility-scanner.js";
 export { writeRecoveryFileAndReadBack } from "./node-recovery-file.js";
 export { NodeRecoveryFileTarget, NodeSnapshotLogSink } from "./node-snapshot-io.js";
+export { NodeRestoreTarget, type NodeRestoreTargetOptions, type ReparsePointProbe } from "./node-restore-io.js";
 export { NodeVaultSource, readStableFile, VAULT_SOURCE_READ_CHUNK_BYTES } from "./node-vault.js";
 export type {
   ObjectStoreAdapterErrorCode,

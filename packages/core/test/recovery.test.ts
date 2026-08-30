@@ -190,4 +190,29 @@ describe("Recovery File v1", () => {
       manifestObjectId: filled(15, 1)
     }, provider))).toBe("RECOVERY_FIELD_MISSING");
   });
+
+  it("clears the exact Recovery integrity-key buffer on encode, decode success, and decode failure", async () => {
+    const provider = cryptoProvider();
+    const borrowedKeys: Uint8Array[] = [];
+    const trackingProvider: RecoveryCryptoProvider = {
+      ...provider,
+      hkdfSha256: async (...args) => {
+        const key = await provider.hkdfSha256(...args);
+        borrowedKeys.push(key);
+        return key;
+      }
+    };
+
+    const encoded = await encodeRecoveryFileV1(material(), trackingProvider);
+    expect(borrowedKeys[0]).toEqual(filled(32, 0));
+
+    await decodeRecoveryFileV1(encoded, trackingProvider);
+    expect(borrowedKeys[1]).toEqual(filled(32, 0));
+
+    const tampered = encoded.slice();
+    tampered[135] ^= 1;
+    expect(await errorCode(() => decodeRecoveryFileV1(tampered, trackingProvider)))
+      .toBe("RECOVERY_INTEGRITY_FAILED");
+    expect(borrowedKeys[2]).toEqual(filled(32, 0));
+  });
 });

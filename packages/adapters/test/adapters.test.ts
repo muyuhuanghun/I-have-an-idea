@@ -8,6 +8,7 @@ import {
   ObsidianVaultSource,
   VaultAdapterError,
   readStableFile,
+  writeRecoveryFileAndReadBack,
   type StableReadDependencies
 } from "../src/index.js";
 
@@ -75,5 +76,43 @@ describe("adapter phase boundaries", () => {
 
   it("exposes stable adapter errors", () => {
     expect(new VaultAdapterError("ENTRY_PATH_ESCAPE", "../x", "bad path").code).toBe("ENTRY_PATH_ESCAPE");
+  });
+});
+
+describe("Node Recovery File adapter", () => {
+  it("exclusively writes outside the Vault, closes the handle, and returns disk bytes", async () => {
+    const vaultRoot = await temporaryRoot();
+    const recoveryRoot = await temporaryRoot();
+    const recoveryPath = join(recoveryRoot, "domain-recovery.ekdr");
+    const bytes = new Uint8Array(167).fill(0x5a);
+
+    expect(await writeRecoveryFileAndReadBack(vaultRoot, recoveryPath, bytes)).toEqual(bytes);
+    expect(new Uint8Array(await readFile(recoveryPath))).toEqual(bytes);
+  });
+
+  it("rejects a path inside the Vault before creating a file", async () => {
+    const vaultRoot = await temporaryRoot();
+    const recoveryPath = join(vaultRoot, "must-not-exist.ekdr");
+    await expect(writeRecoveryFileAndReadBack(
+      vaultRoot,
+      recoveryPath,
+      new Uint8Array(167).fill(1)
+    )).rejects.toBeInstanceOf(RangeError);
+    await expect(readFile(recoveryPath)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("does not overwrite an existing Recovery File", async () => {
+    const vaultRoot = await temporaryRoot();
+    const recoveryRoot = await temporaryRoot();
+    const recoveryPath = join(recoveryRoot, "existing.ekdr");
+    const existing = new Uint8Array([1, 2, 3]);
+    await writeFile(recoveryPath, existing);
+
+    await expect(writeRecoveryFileAndReadBack(
+      vaultRoot,
+      recoveryPath,
+      new Uint8Array(167).fill(2)
+    )).rejects.toMatchObject({ code: "EEXIST" });
+    expect(new Uint8Array(await readFile(recoveryPath))).toEqual(existing);
   });
 });

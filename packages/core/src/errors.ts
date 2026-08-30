@@ -29,3 +29,22 @@ export class ManifestCodecError extends Error {
     this.name = "ManifestCodecError";
   }
 }
+
+export type RecoveryFileCodecErrorCode =
+  | "RANDOM_SOURCE_ALL_ZERO"
+  | "RANDOM_SOURCE_FAILED"
+  | "RANDOM_SOURCE_SHORT_READ"
+  | "RECOVERY_FIELD_MISSING"
+  | "RECOVERY_INTEGRITY_FAILED"
+  | "RECOVERY_MAGIC_MISMATCH"
+  | "RECOVERY_SUITE_UNKNOWN"
+  | "RECOVERY_TRAILING_BYTES"
+  | "RECOVERY_TRUNCATED"
+  | "RECOVERY_VERSION_UNSUPPORTED";
+
+export class RecoveryFileCodecError extends Error {
+  constructor(readonly code: RecoveryFileCodecErrorCode, message: string) {
+    super(message);
+    this.name = "RecoveryFileCodecError";
+  }
+}

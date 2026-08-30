@@ -42,6 +42,9 @@ export interface AeadResult {
  */
 export interface CryptoProvider {
   readonly randomBytes: (length: number) => Bytes;
+  readonly sha256: (message: Bytes) => Promise<Bytes>;
+  readonly hmacSha256: (key: Bytes, message: Bytes) => Promise<Bytes>;
+  readonly verifyHmacSha256: (key: Bytes, message: Bytes, tag: Bytes) => Promise<boolean>;
   readonly aeadEncrypt: (
     key: Bytes,
     nonce: Bytes,

@@ -133,7 +133,7 @@ wrapped_object_key       wrapped_key_length bytes
 
 本 ADR 建立时只冻结 recovery root、object ID、HMAC、字段顺序、端序、标签和覆盖字节；AEAD suite、key/nonce/tag 长度、对象密钥 wrap 算法和 wrapped bytes 当时仍需实测选择。2026-08-29，ADR-0013 根据正式三环境矩阵冻结 Suite 1 并关闭 DP-001..005。
 
-关闭前只允许实现 schema、KAT harness 和候选适配器。关闭后是否进入生产 Recovery/Manifest/Object 编解码仍由后续阶段授权决定；ADR-0013 本身不授权实现。
+关闭前只允许实现 schema、KAT harness 和候选适配器。关闭后是否进入生产 Recovery/Manifest/Object 编解码仍由后续阶段授权决定；ADR-0013 本身不授权实现。2026-08-30 的 Phase 3A 单独授权仅覆盖 Recovery File v1 与所需 SHA-256/HMAC-SHA-256，Manifest/Object AEAD 和 Object Envelope 仍未获授权。
 
 ## 8. 后果与迁移
 

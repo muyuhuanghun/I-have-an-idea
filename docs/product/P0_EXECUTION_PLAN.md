@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门和 Phase 1 正式矩阵已完成，ADR-0013 已关闭 DP-001..005。Phase 2 已实现 deterministic Tiny fixture、顺序只读 Node Vault 扫描器和 Canonical Manifest plaintext v1 codec；fixture 已取得 commit-bound formal provenance，ADR-0014 关闭 DP-006/009。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试，Phase 3 及以后未获授权
+> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009。Phase 3A 已单独授权并完成未提交复审实现：SHA-256/HMAC-SHA-256 provider 原语、Recovery File v1 严格 codec、Vault 外独占写入与关闭句柄后回读；不含 Manifest/Object AEAD、对象密钥包装、Object Envelope、ObjectStore 或恢复流程。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试，Phase 3B/4 及以后未获授权
 >
 > 日期：2026-08-29
 >
@@ -568,6 +568,8 @@ P0 不保存本地修改时间；因此不会把它以明文泄漏，也不在 v
 本次授权切片的通过条件：Tiny fixture 稳定；源 Vault 零写入；未知文件和重解析点失败关闭；扫描中变化的文件不会产生扫描结果；Manifest plaintext 严格闭合。原计划的 Representative fixture 条件延期到另行授权的性能工作，不得由 Tiny 结果替代。
 
 ## 14. 阶段 3：恢复文件、加密对象和目录存储
+
+2026-08-30 用户单独授权的 Phase 3A 只包含现有 provider 所需的 SHA-256/HMAC-SHA-256、Recovery File v1 生成/严格 codec/HMAC 验证，以及 Node 侧 Vault 外独占写入和关闭句柄后回读。Manifest/Object AEAD、对象密钥包装、Object Envelope、Directory/HTTP ObjectStore、完整快照和 fresh-process 恢复继续禁止，必须另行授权。
 
 实现顺序：
 

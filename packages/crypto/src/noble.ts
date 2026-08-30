@@ -1,6 +1,7 @@
 import type { AeadResult, Bytes, CryptoProvider } from "@ekd/core";
 import { aeskw, gcm } from "@noble/ciphers/aes.js";
 import { hkdf } from "@noble/hashes/hkdf.js";
+import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { CryptoPrimitiveError } from "./errors.js";
 import {
@@ -31,6 +32,24 @@ export class NobleAes256Provider implements CryptoProvider {
 
   randomBytes(length: number): Bytes {
     return checkedRandomBytes(this.#randomBytes, length);
+  }
+
+  async sha256(message: Bytes): Promise<Bytes> {
+    return sha256(message);
+  }
+
+  async hmacSha256(key: Bytes, message: Bytes): Promise<Bytes> {
+    return hmac(sha256, key, message);
+  }
+
+  async verifyHmacSha256(key: Bytes, message: Bytes, tag: Bytes): Promise<boolean> {
+    if (tag.byteLength !== 32) return false;
+    const expected = hmac(sha256, key, message);
+    let difference = 0;
+    for (let index = 0; index < expected.byteLength; index += 1) {
+      difference |= (expected[index] ?? 0) ^ (tag[index] ?? 0);
+    }
+    return difference === 0;
   }
 
   async aeadEncrypt(key: Bytes, nonce: Bytes, plaintext: Bytes, aad: Bytes): Promise<AeadResult> {

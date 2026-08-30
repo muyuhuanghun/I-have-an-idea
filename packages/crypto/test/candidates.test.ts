@@ -12,6 +12,21 @@ const providers = [
 ] as const;
 
 describe.each(providers)("%s candidate", (_name, createProvider) => {
+  it("matches SHA-256 and RFC 4231 HMAC-SHA-256 vectors", async () => {
+    const provider = createProvider();
+    expect(await provider.sha256(new TextEncoder().encode("abc")))
+      .toEqual(bytes("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"));
+
+    const key = bytes("0b".repeat(20));
+    const message = new TextEncoder().encode("Hi There");
+    const tag = await provider.hmacSha256(key, message);
+    expect(tag).toEqual(bytes("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"));
+    expect(await provider.verifyHmacSha256(key, message, tag)).toBe(true);
+    const tampered = tag.slice();
+    tampered[0] ^= 1;
+    expect(await provider.verifyHmacSha256(key, message, tampered)).toBe(false);
+  });
+
   it("matches the NIST AES-256-GCM empty-message vector", async () => {
     const provider = createProvider();
     const result = await provider.aeadEncrypt(

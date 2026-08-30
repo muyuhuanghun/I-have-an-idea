@@ -1,7 +1,7 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext v1 codec 已实现，Recovery/Object/AEAD codec 未实现，37 ACC 仍为 `untested`
+> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext v1 已实现，Recovery File v1 codec 与 Vault 外 Node 落盘回读已进入未提交复审；Object/AEAD codec 未实现，37 ACC 仍为 `untested`
 > 日期：2026-08-29
 > 当前权威：ADR-0011、ADR-0013、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-deferred-parameters.json`
 

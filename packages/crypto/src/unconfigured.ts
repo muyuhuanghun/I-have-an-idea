@@ -2,13 +2,30 @@ import type { AeadResult, Bytes, CryptoProvider } from "@ekd/core";
 import { CryptoProviderUnavailableError } from "./errors.js";
 
 /**
- * Explicit guard used by the scaffold until a smoke-tested candidate is selected.
- * It prevents callers from accidentally treating the package skeleton as a
- * production crypto implementation.
+ * Explicit guard for runtimes that have not selected a concrete provider.
+ * It prevents accidental fallback to an implicit or weak implementation.
  */
 export class UnconfiguredCryptoProvider implements CryptoProvider {
   randomBytes(_length: number): Bytes {
     void _length;
+    throw new CryptoProviderUnavailableError();
+  }
+
+  async sha256(_message: Bytes): Promise<Bytes> {
+    void _message;
+    throw new CryptoProviderUnavailableError();
+  }
+
+  async hmacSha256(_key: Bytes, _message: Bytes): Promise<Bytes> {
+    void _key;
+    void _message;
+    throw new CryptoProviderUnavailableError();
+  }
+
+  async verifyHmacSha256(_key: Bytes, _message: Bytes, _tag: Bytes): Promise<boolean> {
+    void _key;
+    void _message;
+    void _tag;
     throw new CryptoProviderUnavailableError();
   }
 

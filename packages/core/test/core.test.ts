@@ -5,6 +5,9 @@ const ports: CorePorts = {
   vaultSource: { listFiles: async function* () {} },
   cryptoProvider: {
     randomBytes: () => new Uint8Array(),
+    sha256: async () => new Uint8Array(),
+    hmacSha256: async () => new Uint8Array(),
+    verifyHmacSha256: async () => false,
     aeadEncrypt: async () => ({ ciphertext: new Uint8Array(), tag: new Uint8Array() }),
     aeadDecrypt: async () => new Uint8Array(),
     hkdfSha256: async () => new Uint8Array(),
@@ -20,8 +23,8 @@ const ports: CorePorts = {
 };
 
 describe("shared core scaffold", () => {
-  it("exposes the Phase 2 core version", () => {
-    expect(CORE_VERSION).toBe("phase2-scanner-manifest-v1");
+  it("exposes the Phase 3A core version", () => {
+    expect(CORE_VERSION).toBe("phase3a-recovery-file-v1");
   });
 
   it("keeps the supplied ports as the only wiring surface", () => {

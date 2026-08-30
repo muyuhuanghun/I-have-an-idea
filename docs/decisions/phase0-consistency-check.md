@@ -254,15 +254,15 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 
 | 修复面 | 当前合同 | 静态状态 | 运行状态 |
 |---|---|---|---|
-| Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | 未实现/未测试 |
-| recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | 未实现/未测试 |
-| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | 14 个密码 smoke required vectors 已由六份正式 clean-source 报告绑定，DP-004 已由 ADR-0013 关闭；生产 wire codec 仍未实现/未测试 |
-| HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | CSPRNG/codec 未实现 |
+| Manifest AAD 循环 | Recovery File v1 先提供受 HMAC 覆盖的 snapshot ID；Manifest AAD 全部字段解密前可得 | 已关闭（ADR-0011） | Recovery File v1 已有 dirty-source review implementation；Manifest AEAD 未实现/未测试 |
+| recovery material AEAD 循环 | bearer file 直接携带 32 字节 root，固定 HMAC-SHA256；明确无独立静态保护 | 已关闭（ADR-0011） | Phase 3A codec/HMAC review tests 已完成；尚无正式 ACC evidence |
+| Canonical bytes | 167 字节 recovery、19 字节 envelope、101 字节 AAD、长度前缀 Manifest、统一大端/UTF-8/no-NUL/no-trailing | 机器 registry 闭合 | Manifest plaintext 与 Recovery File v1 已有 review implementation；Object Envelope/AAD codec 未实现，全部 ACC 仍 `untested` |
+| HKDF/object ID | 4 个 byte-exact info；salt=domain ID；object ID=16 raw bytes；store key=22 base64url chars | 机器 registry 闭合 | Recovery integrity HKDF 与 recovery root CSPRNG 路径已有 review implementation；对象 ID 生命周期和对象 codec 未实现 |
 | 37/16/THR 追踪 | 37 ACC、16 INV、5 THR 双向 registry；非安全 ACC 不伪造威胁链接 | 静态检查通过 | 37 ACC 全 untested |
 | smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
-| fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | fixture/generator 不存在 |
+| fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
-| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 的 `closed` 状态绑定 ADR-0013；其余项未越权关闭 |
+| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional` |
 | Schema 强制门禁 | `validate_evidence` 用 `acc-evidence-v1` 真校验每份 evidence；`--validate-samples` 用 5 对正/负样本反身校验 5 份 schema 自身 | design+samples PASS | 5 份正样本通过、5 份负样本被拒 |
 
 ## 13. 当前机器门禁
@@ -315,6 +315,7 @@ PHASE_1_CRYPTO_SUITE_SELECTED
 PHASE_2_SCANNER_MANIFEST_IMPLEMENTED_NOT_ACC_VERIFIED
 PHASE_2_TINY_FIXTURE_FORMAL_PROVENANCE_PASS
 DP_006_009_CLOSED_BY_ADR_0014
+PHASE_3A_RECOVERY_FILE_REVIEW_IMPLEMENTED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -327,6 +328,7 @@ ACC_37_OF_37_UNTESTED
 - ADR-0013 选择 Web Crypto wrapper `0.1.0` 和 Suite 1，DP-001..005 已关闭；
 - Phase 2 已单独授权；deterministic Tiny fixture、Node 只读扫描器和 Manifest plaintext codec 已实现，Tiny fixture 已取得 commit-bound formal provenance，ADR-0014 只关闭 DP-006/009；
 - DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`；scanner/Manifest 单元测试不升级任何 ACC；
+- Phase 3A 已单独授权并进入未提交复审：只实现 SHA-256/HMAC-SHA-256、Recovery File v1 codec 和 Vault 外 Node 落盘回读，不含对象加密、ObjectStore 或恢复流程，也不升级任何 ACC；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC，且 Phase 3 及以后未获授权；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

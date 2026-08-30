@@ -1,9 +1,9 @@
-/** Stable error for the intentionally unconfigured Phase 1 provider boundary. */
+/** Stable error for a runtime that has not been wired to an explicit provider. */
 export class CryptoProviderUnavailableError extends Error {
   readonly code = "CRYPTO_PROVIDER_UNAVAILABLE" as const;
 
   constructor() {
-    super("No crypto candidate is configured; complete the Phase 1 smoke gate first.");
+    super("No crypto provider is configured for this runtime.");
     this.name = "CryptoProviderUnavailableError";
   }
 }

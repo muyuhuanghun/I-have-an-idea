@@ -36,6 +36,33 @@ export class WebCryptoAes256Provider implements CryptoProvider {
     return checkedRandomBytes(this.#randomBytes, length);
   }
 
+  async sha256(message: Bytes): Promise<Bytes> {
+    return new Uint8Array(await this.#crypto.subtle.digest("SHA-256", asArrayBuffer(message)));
+  }
+
+  async hmacSha256(key: Bytes, message: Bytes): Promise<Bytes> {
+    const cryptoKey = await this.#crypto.subtle.importKey(
+      "raw",
+      asArrayBuffer(key),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    return new Uint8Array(await this.#crypto.subtle.sign("HMAC", cryptoKey, asArrayBuffer(message)));
+  }
+
+  async verifyHmacSha256(key: Bytes, message: Bytes, tag: Bytes): Promise<boolean> {
+    if (tag.byteLength !== 32) return false;
+    const cryptoKey = await this.#crypto.subtle.importKey(
+      "raw",
+      asArrayBuffer(key),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    return this.#crypto.subtle.verify("HMAC", cryptoKey, asArrayBuffer(tag), asArrayBuffer(message));
+  }
+
   async aeadEncrypt(key: Bytes, nonce: Bytes, plaintext: Bytes, aad: Bytes): Promise<AeadResult> {
     assertByteLength(key, 32, "AES-256-GCM key");
     assertByteLength(nonce, 12, "AES-GCM nonce");

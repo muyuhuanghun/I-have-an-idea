@@ -319,6 +319,8 @@ PHASE_3A_RECOVERY_FILE_REVIEW_IMPLEMENTED
 PHASE_3B_OBJECT_CRYPTO_REVIEW_IMPLEMENTED
 PHASE_3C0_OBJECT_STORE_DIRECTORY_CONTRACT_FROZEN
 PHASE_3C_A_DIRECTORY_OBJECT_STORE_ADAPTER_IMPLEMENTED
+PHASE_3D0_STORAGE_VISIBILITY_SCAN_CONTRACT_FROZEN
+PHASE_3D_A_STORAGE_VISIBILITY_SCANNER_IMPLEMENTED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -336,6 +338,9 @@ ACC_37_OF_37_UNTESTED
 - Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：只实现冻结的纯内存 HKDF、object ID、AAD/Envelope、对象密钥包装及文件/Manifest AEAD；ObjectStore、pipeline、快照、恢复和所有 ACC 状态均未实施；
 - Phase 3C-0 已单独授权并冻结 Directory ObjectStore v1 合同（ADR-0015）：不可变写入、原子发布、碰撞返回、路径 containment、Windows reparse point、部分写入清理、耐久性平台边界与错误归一化；机器 registry 仅新增 `OBJECT_STORE_IO_FAILED`；DP-014 与 HTTP ObjectStore 边界不变；
 - Phase 3C-A 已单独授权：Directory ObjectStore Node adapter 已实现并测试，已由提交 `684af1e` 纳管；HTTP ObjectStore、snapshot pipeline、恢复流程、插件接线与 Phase 4 仍被禁止；
+- Phase 3D-0 已单独授权并冻结存储可见性扫描合同（ADR-0016）：原始字节扫描、目录结构白名单、三族 marker 逐项自测、已知秘密 raw+hex、扩展名 token、offset 0 magic、报告脱敏、`storage-visibility-scan-v1` JSON Schema 与失败关闭；不新增错误码、不改 DP；
+- Phase 3D-A 已单独授权：扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管；ACC-32/33 保持 `untested`，正式证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行；
+- Phase 4-0 仅合同草案已获授权，须在 Phase 3D 推送后开始；Phase 4-A/B、HTTP ObjectStore、恢复实现和插件接线仍被禁止；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

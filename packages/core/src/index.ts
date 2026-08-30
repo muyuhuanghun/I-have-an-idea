@@ -3,6 +3,7 @@ export {
   ManifestCodecError,
   ObjectCodecError,
   RecoveryFileCodecError,
+  SnapshotCreateError,
   VaultScanError
 } from "./errors.js";
 export {
@@ -33,11 +34,13 @@ export {
   generateRecoveryFileV1
 } from "./recovery.js";
 export { scanVault } from "./scan.js";
+export { createSnapshotV1 } from "./snapshot.js";
 export type { Core } from "./core.js";
 export type {
   ManifestCodecErrorCode,
   ObjectCodecErrorCode,
   RecoveryFileCodecErrorCode,
+  SnapshotCreateErrorCode,
   VaultScanErrorCode
 } from "./errors.js";
 export type { ManifestEntryV1, ManifestPlaintextV1 } from "./manifest.js";
@@ -63,6 +66,14 @@ export type {
   RecoveryFileV1Material
 } from "./recovery.js";
 export type {
+  SnapshotCreateDependencies,
+  SnapshotCreateInputV1,
+  SnapshotCreatePhase,
+  SnapshotCreateResultV1,
+  SnapshotCreateStatus,
+  SnapshotRuntimeLimitsV1
+} from "./snapshot.js";
+export type {
   AeadResult,
   Bytes,
   Clock,
@@ -70,6 +81,8 @@ export type {
   CryptoProvider,
   ObjectStore,
   RandomSource,
+  RecoveryFileTarget,
+  SnapshotLogSink,
   VaultEntry,
   VaultSource
 } from "./ports.js";

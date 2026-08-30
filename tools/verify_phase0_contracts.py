@@ -316,6 +316,7 @@ def validate_schema_files() -> None:
         "smoke-aggregate-v1.schema.json",
         "smoke-report-v1.schema.json",
         "p0-runtime-limits-v1.schema.json",
+        "snapshot-log-v1.schema.json",
         "storage-visibility-scan-v1.schema.json",
     }
     actual = {path.name for path in SCHEMAS.glob("*.schema.json")}
@@ -523,6 +524,7 @@ def validate_schema_samples() -> None:
         ("smoke-aggregate-v1.schema.json", "smoke-aggregate"),
         ("smoke-report-v1.schema.json", "smoke-report"),
         ("p0-runtime-limits-v1.schema.json", "p0-runtime-limits"),
+        ("snapshot-log-v1.schema.json", "snapshot-log"),
         ("storage-visibility-scan-v1.schema.json", "storage-visibility-scan"),
     ]
     for schema_name, base in pairs:

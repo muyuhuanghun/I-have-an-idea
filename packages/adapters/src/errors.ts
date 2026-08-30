@@ -1,16 +1,34 @@
 export type VaultAdapterErrorCode =
   | "ENTRY_PATH_ESCAPE"
   | "FILE_CHANGED_DURING_SCAN"
-  | "REPARSE_POINT_FOUND";
+  | "REPARSE_POINT_FOUND"
+  | "SOURCE_FILE_READ_FAILED";
 
 export class VaultAdapterError extends Error {
   constructor(
     readonly code: VaultAdapterErrorCode,
     readonly relativePath: string,
-    message: string
+    message: string,
+    options?: ErrorOptions
   ) {
-    super(message);
+    super(message, options);
     this.name = "VaultAdapterError";
+  }
+}
+
+/** ADR-0017 §3.1: stable codes for the snapshot log sink and Recovery File target adapters. */
+export type SnapshotAdapterErrorCode =
+  | "LOG_WRITE_FAILED"
+  | "RECOVERY_FILE_WRITE_FAILED";
+
+export class SnapshotAdapterError extends Error {
+  constructor(
+    readonly code: SnapshotAdapterErrorCode,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = "SnapshotAdapterError";
   }
 }
 

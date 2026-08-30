@@ -1,7 +1,14 @@
 import type { VaultEntry, VaultSource } from "@ekd/core";
-import { lstat, readFile, readdir } from "node:fs/promises";
+import { Buffer } from "node:buffer";
+import { lstat, open, readdir } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { VaultAdapterError } from "./errors.js";
+
+/**
+ * ADR-0017 §5: the source adapter reads in chunks of exactly the accepted
+ * `p0-runtime-limits-v1` value; tests bind this constant to the contract file.
+ */
+export const VAULT_SOURCE_READ_CHUNK_BYTES = 1_048_576;
 
 interface FileStamp {
   readonly size: bigint;
@@ -36,7 +43,29 @@ async function nodeFileStamp(absolutePath: string): Promise<FileStamp> {
 
 const NODE_STABLE_READ_DEPENDENCIES: StableReadDependencies = {
   stamp: nodeFileStamp,
-  read: async (absolutePath) => new Uint8Array(await readFile(absolutePath))
+  read: async (absolutePath) => {
+    // ADR-0017 §5: one preallocation sized from the file itself, then linear 1 MiB reads;
+    // never repeated concatenation. Any growth or shrink is caught by the stamp comparison.
+    const handle = await open(absolutePath, "r");
+    try {
+      const stats = await handle.stat();
+      const buffer = Buffer.allocUnsafe(stats.size);
+      let offset = 0;
+      while (offset < buffer.length) {
+        const { bytesRead } = await handle.read(
+          buffer,
+          offset,
+          Math.min(VAULT_SOURCE_READ_CHUNK_BYTES, buffer.length - offset),
+          offset
+        );
+        if (bytesRead === 0) break;
+        offset += bytesRead;
+      }
+      return new Uint8Array(buffer.subarray(0, offset));
+    } finally {
+      await handle.close();
+    }
+  }
 };
 
 function stampsEqual(left: FileStamp, right: FileStamp): boolean {
@@ -47,13 +76,36 @@ function stampsEqual(left: FileStamp, right: FileStamp): boolean {
     left.inode === right.inode;
 }
 
+/** ADR-0017 §9.2: read failures other than an observed stability change converge to this code. */
+function toSourceReadFailed(error: unknown, absolutePath: string): VaultAdapterError {
+  if (error instanceof VaultAdapterError) return error;
+  return new VaultAdapterError("SOURCE_FILE_READ_FAILED", absolutePath, "Vault file could not be read.", {
+    cause: error
+  });
+}
+
 export async function readStableFile(
   absolutePath: string,
   dependencies: StableReadDependencies = NODE_STABLE_READ_DEPENDENCIES
 ): Promise<Uint8Array> {
-  const before = await dependencies.stamp(absolutePath);
-  const bytes = await dependencies.read(absolutePath);
-  const after = await dependencies.stamp(absolutePath);
+  let before: FileStamp;
+  try {
+    before = await dependencies.stamp(absolutePath);
+  } catch (error) {
+    throw toSourceReadFailed(error, absolutePath);
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = await dependencies.read(absolutePath);
+  } catch (error) {
+    throw toSourceReadFailed(error, absolutePath);
+  }
+  let after: FileStamp;
+  try {
+    after = await dependencies.stamp(absolutePath);
+  } catch (error) {
+    throw toSourceReadFailed(error, absolutePath);
+  }
   if (!stampsEqual(before, after) || BigInt(bytes.byteLength) !== after.size) {
     throw new VaultAdapterError(
       "FILE_CHANGED_DURING_SCAN",

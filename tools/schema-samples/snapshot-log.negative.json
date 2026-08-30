@@ -1,0 +1,14 @@
+{
+  "schema_version": "snapshot-log-v1",
+  "event": "snapshot_prepared",
+  "run_id": "00112233445566778899aabbccddeeff",
+  "time_utc": "2026-08-30T12:00:00.000Z",
+  "phase": "log_seal",
+  "file_count": 3,
+  "plaintext_bytes_total": 128,
+  "snapshot_id_hex": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+  "manifest_object_id_hex": "00112233445566778899aabbccddeeff",
+  "published_object_count": 4,
+  "runtime_limits_sha256": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+  "vault_relative_path": "notes/leak.md"
+}

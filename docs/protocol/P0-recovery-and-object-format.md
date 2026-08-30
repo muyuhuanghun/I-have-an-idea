@@ -1,7 +1,7 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。Phase 3C-0 已冻结 Directory ObjectStore v1 合同（ADR-0015），Phase 3C-A 的 Directory ObjectStore Node adapter 已由提交 `684af1e` 纳管。Phase 3D-0 已冻结存储可见性扫描合同（ADR-0016），Phase 3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。Phase 4-0 已完成：snapshot 创建流水线合同（ADR-0017）已接受，runtime-limits v1 已接入机器门；快照/恢复编排和 37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
+> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。Phase 3C-0 已冻结 Directory ObjectStore v1 合同（ADR-0015），Phase 3C-A 的 Directory ObjectStore Node adapter 已由提交 `684af1e` 纳管。Phase 3D-0 已冻结存储可见性扫描合同（ADR-0016），Phase 3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。Phase 4-0 已完成：snapshot 创建流水线合同（ADR-0017）已接受，runtime-limits v1 已接入机器门。Phase 4-A 已单独授权并实现 snapshot 创建编排（`createSnapshotV1` + Node 日志 sink 与 Recovery File 目标 + `snapshot-log-v1` 机器门），进入未提交复审；fresh-process 恢复编排和 37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
 > 日期：2026-08-30
 > 当前权威：ADR-0011、ADR-0012、ADR-0013、ADR-0015、ADR-0016、ADR-0017、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`、`docs/contracts/p0-runtime-limits-v1.json`、`docs/schemas/storage-visibility-scan-v1.schema.json`、`docs/schemas/p0-runtime-limits-v1.schema.json`
 

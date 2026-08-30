@@ -28,6 +28,29 @@ export interface ObjectStore {
   readonly get: (key: string) => Promise<Bytes | undefined>;
 }
 
+/**
+ * ADR-0017 §3.1: mandatory snapshot run log. Exclusive creation happens in `open`; any
+ * open/write/flush/close failure must fail the run with `LOG_WRITE_FAILED` before the
+ * Recovery File is written. Implementations must keep the sink outside the Vault and the
+ * ObjectStore; paths stay adapter-side and never enter the orchestration.
+ */
+export interface SnapshotLogSink {
+  readonly open: () => Promise<void>;
+  readonly writeLine: (line: string) => Promise<void>;
+  readonly flushAndClose: () => Promise<void>;
+}
+
+/**
+ * ADR-0017 §4.6: Recovery File target outside the Vault and ObjectStore. `verifyTargetAbsent`
+ * is the preflight fast path; `writeExclusiveAndReadBack` is the authoritative exclusive-create
+ * write with fsync, close, and byte-exact read-back. Any failure fails the run with
+ * `RECOVERY_FILE_WRITE_FAILED`; implementations never overwrite an existing file.
+ */
+export interface RecoveryFileTarget {
+  readonly verifyTargetAbsent: () => Promise<void>;
+  readonly writeExclusiveAndReadBack: (bytes: Bytes) => Promise<void>;
+}
+
 /** Result shape shared by candidate implementations during the smoke spike. */
 export interface AeadResult {
   readonly ciphertext: Bytes;

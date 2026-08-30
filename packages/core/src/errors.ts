@@ -1,4 +1,5 @@
 export type VaultScanErrorCode =
+  | "CASE_COLLISION"
   | "ENTRY_PATH_DUPLICATE"
   | "ENTRY_PATH_ESCAPE"
   | "UNSUPPORTED_FILES_FOUND";
@@ -69,5 +70,68 @@ export class ObjectCodecError extends Error {
   ) {
     super(message, options);
     this.name = "ObjectCodecError";
+  }
+}
+
+/**
+ * Stable codes the ADR-0017 snapshot orchestration can return. Every value is a frozen
+ * registry code; unexpected internal errors converge to `HONEST_CLAIM_VIOLATION` at the
+ * orchestration boundary instead of leaking raw OS or library errors.
+ */
+export type SnapshotCreateErrorCode =
+  | "CASE_COLLISION"
+  | "DUPLICATE_OBJECT_REFERENCE"
+  | "ENTRY_PATH_DUPLICATE"
+  | "ENTRY_PATH_ESCAPE"
+  | "FILE_CHANGED_DURING_SCAN"
+  | "HONEST_CLAIM_VIOLATION"
+  | "LOG_WRITE_FAILED"
+  | "MANIFEST_AEAD_FAILED"
+  | "OBJECT_AEAD_FAILED"
+  | "OBJECT_ID_COLLISION"
+  | "OBJECT_STORE_IO_FAILED"
+  | "RANDOM_SOURCE_ALL_ZERO"
+  | "RANDOM_SOURCE_FAILED"
+  | "RANDOM_SOURCE_SHORT_READ"
+  | "RECOVERY_FILE_WRITE_FAILED"
+  | "RECOVERY_INTEGRITY_FAILED"
+  | "REPARSE_POINT_FOUND"
+  | "SOURCE_FILE_READ_FAILED"
+  | "UNSUPPORTED_FILES_FOUND";
+
+const SNAPSHOT_CREATE_ERROR_CODES: ReadonlySet<string> = new Set<string>([
+  "CASE_COLLISION",
+  "DUPLICATE_OBJECT_REFERENCE",
+  "ENTRY_PATH_DUPLICATE",
+  "ENTRY_PATH_ESCAPE",
+  "FILE_CHANGED_DURING_SCAN",
+  "HONEST_CLAIM_VIOLATION",
+  "LOG_WRITE_FAILED",
+  "MANIFEST_AEAD_FAILED",
+  "OBJECT_AEAD_FAILED",
+  "OBJECT_ID_COLLISION",
+  "OBJECT_STORE_IO_FAILED",
+  "RANDOM_SOURCE_ALL_ZERO",
+  "RANDOM_SOURCE_FAILED",
+  "RANDOM_SOURCE_SHORT_READ",
+  "RECOVERY_FILE_WRITE_FAILED",
+  "RECOVERY_INTEGRITY_FAILED",
+  "REPARSE_POINT_FOUND",
+  "SOURCE_FILE_READ_FAILED",
+  "UNSUPPORTED_FILES_FOUND"
+]);
+
+export function isSnapshotCreateErrorCode(code: string): code is SnapshotCreateErrorCode {
+  return SNAPSHOT_CREATE_ERROR_CODES.has(code);
+}
+
+export class SnapshotCreateError extends Error {
+  constructor(
+    readonly code: SnapshotCreateErrorCode,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = "SnapshotCreateError";
   }
 }

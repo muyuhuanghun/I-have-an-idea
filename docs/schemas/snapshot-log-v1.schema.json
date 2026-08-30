@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/snapshot-log-v1.schema.json",
+  "title": "P0 snapshot log v1 event",
+  "description": "One canonical JSON line of the ADR-0017 mandatory snapshot run log. Paths, filenames, markers, and secret material are structurally impossible: no property accepts them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event", "run_id", "time_utc", "phase"],
+  "properties": {
+    "schema_version": {"const": "snapshot-log-v1"},
+    "event": {"enum": ["preflight_complete", "file_published", "manifest_published", "snapshot_prepared", "snapshot_failed"]},
+    "run_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "time_utc": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"},
+    "phase": {"enum": ["preflight", "root_material", "file_objects", "manifest_object", "log_seal", "recovery_file"]},
+    "file_count": {"type": "integer", "minimum": 0},
+    "vault_plaintext_bytes": {"type": "integer", "minimum": 0},
+    "file_ordinal": {"type": "integer", "minimum": 1},
+    "plaintext_bytes_total": {"type": "integer", "minimum": 0},
+    "object_key": {"type": "string", "pattern": "^[A-Za-z0-9_-]{22}$"},
+    "object_id_hex": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "collision_attempt": {"type": "integer", "minimum": 1, "maximum": 8},
+    "snapshot_id_hex": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "manifest_object_id_hex": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "published_object_count": {"type": "integer", "minimum": 0},
+    "orphan_object_count": {"type": "integer", "minimum": 0},
+    "runtime_limits_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "error_code": {
+      "enum": [
+        "CASE_COLLISION",
+        "DUPLICATE_OBJECT_REFERENCE",
+        "ENTRY_PATH_DUPLICATE",
+        "ENTRY_PATH_ESCAPE",
+        "FILE_CHANGED_DURING_SCAN",
+        "HONEST_CLAIM_VIOLATION",
+        "LOG_WRITE_FAILED",
+        "MANIFEST_AEAD_FAILED",
+        "OBJECT_AEAD_FAILED",
+        "OBJECT_ID_COLLISION",
+        "OBJECT_STORE_IO_FAILED",
+        "RANDOM_SOURCE_ALL_ZERO",
+        "RANDOM_SOURCE_FAILED",
+        "RANDOM_SOURCE_SHORT_READ",
+        "RECOVERY_FILE_WRITE_FAILED",
+        "RECOVERY_INTEGRITY_FAILED",
+        "REPARSE_POINT_FOUND",
+        "SOURCE_FILE_READ_FAILED",
+        "UNSUPPORTED_FILES_FOUND"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"event": {"const": "preflight_complete"}}, "required": ["event"]},
+      "then": {
+        "properties": {"phase": {"const": "preflight"}},
+        "required": ["file_count", "vault_plaintext_bytes", "runtime_limits_sha256"]
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "file_published"}}, "required": ["event"]},
+      "then": {
+        "properties": {"phase": {"const": "file_objects"}},
+        "required": ["file_ordinal", "file_count", "plaintext_bytes_total", "object_key", "object_id_hex", "collision_attempt"]
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "manifest_published"}}, "required": ["event"]},
+      "then": {
+        "properties": {"phase": {"const": "manifest_object"}},
+        "required": ["object_key", "object_id_hex", "collision_attempt"]
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "snapshot_prepared"}}, "required": ["event"]},
+      "then": {
+        "properties": {"phase": {"const": "log_seal"}},
+        "required": ["file_count", "plaintext_bytes_total", "snapshot_id_hex", "manifest_object_id_hex", "published_object_count", "runtime_limits_sha256"]
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "snapshot_failed"}}, "required": ["event"]},
+      "then": {
+        "required": ["error_code", "published_object_count", "orphan_object_count"]
+      }
+    }
+  ]
+}

@@ -45,6 +45,7 @@ function isObsidianConfigurationPath(relativePath: string): boolean {
 export async function scanVault(source: VaultSource): Promise<VaultScanResult> {
   const files: Array<ScannedVaultFile & { readonly pathBytes: Uint8Array }> = [];
   const seenPaths = new Set<string>();
+  const caseFoldedPaths = new Map<string, string>();
   const unsupportedPaths: string[] = [];
   let totalBytes = 0n;
 
@@ -69,6 +70,19 @@ export async function scanVault(source: VaultSource): Promise<VaultScanResult> {
       );
     }
     seenPaths.add(entry.relativePath);
+
+    // ADR-0017 §4.1.3: vaults whose files differ only by case cannot restore onto
+    // case-insensitive targets, so they fail closed before any object is written.
+    const caseFolded = entry.relativePath.toLowerCase();
+    const caseConflict = caseFoldedPaths.get(caseFolded);
+    if (caseConflict !== undefined) {
+      throw new VaultScanError(
+        "CASE_COLLISION",
+        "Vault contains paths that differ only by ASCII case folding.",
+        [caseConflict, entry.relativePath]
+      );
+    }
+    caseFoldedPaths.set(caseFolded, entry.relativePath);
 
     const classified = contentClass(entry.relativePath);
     if (classified === undefined) {

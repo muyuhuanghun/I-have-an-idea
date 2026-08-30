@@ -2,7 +2,7 @@
 
 > 日期：2026-08-30
 >
-> 状态：授权切片实现完成，独立复审 R1 REQUEST CHANGES（3 P1 + 2 P2）→ 补丁 → R2 追加 1 P2 → 补丁 → R2 边界内 PASS；F7 语义细化项经开发者裁决按方案 A 修复；未提交、未推送
+> 状态：实现提交 `a6cd59f` 已由开发者显式授权纳管；本文保留提交前 dirty-source 历史并附提交后复核
 >
 > 基线：`ce22ca2`（Phase 4-B-0 接受提交之后）
 
@@ -45,4 +45,4 @@ registry 变化：+1 `RESTORE_TARGET_WRITE_FAILED`（独立复审经 ACC-25 orac
 
 全部结果是 dirty-source implementation review evidence，不是正式 ACC evidence。DP 状态：DP-001..006/009 closed、DP-011 conditional、DP-007/008/010/012 open（等 R1 性能证据）、DP-014 hard stop 不变；37 个 ACC 全部保持 `untested`；P0-R1 未实现、未测试。
 
-Phase 4-B-A 按开发者预授权在独立复审边界内 PASS 且 F7 修复落地后进入落库序列：`ce22ca2`（4-B-0）+ 本切片 feat + reconcile 三笔一起提交并推送。此后进入 P0-R1 证据阶段（R1-0 证据计划冻结 → 代表性 fixture 与性能门 → 37 份 acc-evidence-v1 生成至 `--evidence-root artifacts` 门禁 PASS → P0-R1 关闭报告）。CLI 产品接线、HTTP ObjectStore（DP-014）、插件与 P0-R1 证据门之外的状态升级仍需各自明确授权。
+开发者已于 2026-08-30 显式授权落库。实现提交 `a6cd59f`（33 文件 = 复审树 24 修改 + 8 新增 + 本报告，含 F7 方案 A 修复与全部复审补丁）创建后，在 clean HEAD 上复跑统一门禁 137/137（core 58 / crypto 19 / adapters 55 / smoke 5）、`test:restore-verifier` 5/5、shared-core import gate、build 与 design-only+samples 合同校验（ACC=37 INV=16 THR=5 DP=26）全部 PASS，随后按既定惯例以 reconcile 提交回写状态措辞与 wire 状态 token（`restore_implemented`）。这些仍不是正式 ACC evidence；下一阶段为 P0-R1 证据阶段（R1-0 证据计划冻结起步）。CLI 产品接线、HTTP ObjectStore（DP-014）与插件仍需各自明确授权。

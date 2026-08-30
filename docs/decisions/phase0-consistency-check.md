@@ -348,7 +348,7 @@ ACC_37_OF_37_UNTESTED
 - Phase 4-0 已完成：ADR-0017 经开发者四点确认接受（DP-012 拟议值、Recovery File complete 定义、日志封口顺序、注册两个新错误码）；runtime-limits v1（`contract_status=accepted`）已接入 `verify_phase0_contracts.py` schema/样例机器门；机器 registry 新增 `SOURCE_FILE_READ_FAILED`、`RECOVERY_FILE_WRITE_FAILED`（+2）；`P0_EXECUTION_PLAN.md` §8.4 碰撞措辞已按 ADR-0017 §6 修订；DP-012 保持 `open`，DP 状态零变化；
 - Phase 4-A 已单独授权：snapshot 创建编排（core `createSnapshotV1`，严格按 ADR-0017 §4 顺序、§6 碰撞循环、§7 日志绑定、§8 orphan 语义、§9 错误收敛）与 Node 日志 sink/Recovery File 目标适配器、1 MiB 分块稳定读取、`snapshot-log-v1` schema 机器门及 ADR-0017 §10 测试边界已实现，已由提交 `fbdf325` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
 - Phase 4-B-0 已完成并经独立复审纠错：保持 `INCOMPLETE_RESTORE` v1 不使用，机器 registry 新增 `RESTORE_TARGET_WRITE_FAILED`（+1），ACC-25 oracle 同步到该码，并冻结不含原始路径的 `partialOutputInventory`；
-- Phase 4-B-A 已单独授权：恢复编排（core `restoreSnapshotV1`，ADR-0018 §4 顺序与拒绝规则映射、全量校验先于任何写入）与 `NodeRestoreTarget`、fresh-process worker CLI、纯 stdlib Python 验证器已实现；独立复审指出的错误码闭包、验证器 missing-root 假 PASS/fingerprint 漏检、ASCII fold、清零时序和负面测试缺口已修正，仍处于未提交复审边界；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
+- Phase 4-B-A 已单独授权：恢复编排（core `restoreSnapshotV1`，ADR-0018 §4 顺序与拒绝规则映射、全量校验先于任何写入）与 `NodeRestoreTarget`、fresh-process worker CLI、纯 stdlib Python 验证器已实现；独立复审指出的错误码闭包、验证器 missing-root 假 PASS/fingerprint 漏检、ASCII fold、清零时序和负面测试缺口已修正；第二轮独立复审边界内 PASS，F7（探针失败错误码语义）经开发者裁决按方案 A 修复（→ `REPARSE_POINT_FOUND`），已由提交 `a6cd59f` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

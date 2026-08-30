@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍须在 snapshot pipeline 实现后另按 P0-R1 证据门执行，当前未生成。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`。Phase 4-A 已单独授权并实现 snapshot 创建编排（共享核心 `createSnapshotV1`、Node 日志 sink 与 Recovery File 目标、1 MiB 分块稳定读取、`snapshot-log-v1` 机器门、ADR-0017 §10 测试边界），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：恢复流水线合同（ADR-0018）保持 v1 不使用 `INCOMPLETE_RESTORE`，registry 新增 `RESTORE_TARGET_WRITE_FAILED`，ACC-25 oracle 同步到该码并冻结 path-free `partialOutputInventory`。Phase 4-B-A 已单独授权并实现恢复编排（共享核心 `restoreSnapshotV1`、Node `NodeRestoreTarget`、fresh-process worker 与纯 stdlib Python 验证器）；复审错误已修正，仍处于未提交复审边界。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
+> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍须在 snapshot pipeline 实现后另按 P0-R1 证据门执行，当前未生成。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`。Phase 4-A 已单独授权并实现 snapshot 创建编排（共享核心 `createSnapshotV1`、Node 日志 sink 与 Recovery File 目标、1 MiB 分块稳定读取、`snapshot-log-v1` 机器门、ADR-0017 §10 测试边界），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：恢复流水线合同（ADR-0018）保持 v1 不使用 `INCOMPLETE_RESTORE`，registry 新增 `RESTORE_TARGET_WRITE_FAILED`，ACC-25 oracle 同步到该码并冻结 path-free `partialOutputInventory`。Phase 4-B-A 已单独授权并实现恢复编排（共享核心 `restoreSnapshotV1`、Node `NodeRestoreTarget`、fresh-process worker 与纯 stdlib Python 验证器）；复审错误已修正；第二轮独立复审边界内 PASS，F7（探针失败错误码语义）经开发者裁决按方案 A 修复后，已由提交 `a6cd59f` 纳管。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
 >
 > 日期：2026-08-30
 >
@@ -372,7 +372,7 @@ Recovery File 是 bearer file；recovery root 不再以“用其自身派生密�
 
 ### 8.4 对象 ID
 
-ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。每个对象先用新 ID/key/nonce 完整 seal，再调用不可变 ObjectStore 的原子 put；只有 put 返回 `OBJECT_ID_COLLISION` 才整对象重新生成。不得覆盖、不得只换文件名、不得复用 key/nonce/ciphertext，且不得把其他 I/O 错误当碰撞重试（ADR-0017 §6）。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。Directory ObjectStore v1 合同已由 ADR-0015 冻结，Node adapter 已实现并由提交 `684af1e` 纳管；Phase 4 已获单独授权并实现共享核心 snapshot/restore 编排与 fresh-process harness，其中恢复侧仍处于未提交复审边界。HTTP ObjectStore、CLI/插件产品接线和 P0-R1 正式证据仍未实现或未获授权。
+ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。每个对象先用新 ID/key/nonce 完整 seal，再调用不可变 ObjectStore 的原子 put；只有 put 返回 `OBJECT_ID_COLLISION` 才整对象重新生成。不得覆盖、不得只换文件名、不得复用 key/nonce/ciphertext，且不得把其他 I/O 错误当碰撞重试（ADR-0017 §6）。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。Directory ObjectStore v1 合同已由 ADR-0015 冻结，Node adapter 已实现并由提交 `684af1e` 纳管；Phase 4 已获单独授权并实现共享核心 snapshot/restore 编排与 fresh-process harness，其中恢复侧已由提交 `a6cd59f` 纳管。HTTP ObjectStore、CLI/插件产品接线和 P0-R1 正式证据仍未实现或未获授权。
 
 ## 9. Fixture 与性能基线
 
@@ -756,7 +756,7 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-A 已完成各自获授权的合同与实现切片。Phase 4-B-0 合同已接受，Phase 4-B-A 恢复编排与 fresh-process harness 已获授权并实现；第一轮独立复审返回 `REQUEST CHANGES`，Windows 路径/case-fold/reparse 与 cleanup finding 正在修正，仍处于未提交的第二轮复审门前。
+Phase 1 至 Phase 4-A 已完成各自获授权的合同与实现切片。Phase 4-B-0 合同已接受，Phase 4-B-A 恢复编排与 fresh-process harness 已实现；独立复审三轮（R1 REQUEST CHANGES → 补丁 → R2 追加 P2 → 补丁 → R2 边界内 PASS），F7 语义细化项经开发者裁决按方案 A 修复后，已由提交 `a6cd59f` 纳管。下一授权门槛为 P0-R1 证据阶段：R1-0 证据计划冻结（DP-007/008/010/012 参数与 37 份 ACC 运行矩阵）→ 代表性 fixture 与性能门 → `--evidence-root artifacts` 门禁 PASS → P0-R1 关闭报告。
 
 1. 第二轮独立复审必须确认 Phase 4-B 的合同、实现、测试与已知限制一致；有阻断 finding 时不得编写关闭报告；
 2. 复审 PASS 后才编写 `docs/test-plans/phase4b-restore-report.md`，且只能称为 dirty-source implementation review evidence；

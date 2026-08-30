@@ -321,6 +321,8 @@ PHASE_3C0_OBJECT_STORE_DIRECTORY_CONTRACT_FROZEN
 PHASE_3C_A_DIRECTORY_OBJECT_STORE_ADAPTER_IMPLEMENTED
 PHASE_3D0_STORAGE_VISIBILITY_SCAN_CONTRACT_FROZEN
 PHASE_3D_A_STORAGE_VISIBILITY_SCANNER_IMPLEMENTED
+PHASE_4_0_SNAPSHOT_PIPELINE_CONTRACT_ACCEPTED
+RUNTIME_LIMITS_V1_ACCEPTED_AND_MACHINE_GATED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -340,7 +342,7 @@ ACC_37_OF_37_UNTESTED
 - Phase 3C-A 已单独授权：Directory ObjectStore Node adapter 已实现并测试，已由提交 `684af1e` 纳管；HTTP ObjectStore、snapshot pipeline、恢复流程、插件接线与 Phase 4 仍被禁止；
 - Phase 3D-0 已单独授权并冻结存储可见性扫描合同（ADR-0016）：原始字节扫描、目录结构白名单、三族 marker 逐项自测、已知秘密 raw+hex、扩展名 token、offset 0 magic、报告脱敏、`storage-visibility-scan-v1` JSON Schema 与失败关闭；不新增错误码、不改 DP；
 - Phase 3D-A 已单独授权：扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管；ACC-32/33 保持 `untested`，正式证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行；
-- Phase 4-0 仅合同草案已获授权，须在 Phase 3D 推送后开始；Phase 4-A/B、HTTP ObjectStore、恢复实现和插件接线仍被禁止；
+- Phase 4-0 已完成：ADR-0017 经开发者四点确认接受（DP-012 拟议值、Recovery File complete 定义、日志封口顺序、注册两个新错误码）；runtime-limits v1（`contract_status=accepted`）已接入 `verify_phase0_contracts.py` schema/样例机器门；机器 registry 新增 `SOURCE_FILE_READ_FAILED`、`RECOVERY_FILE_WRITE_FAILED`（+2）；`P0_EXECUTION_PLAN.md` §8.4 碰撞措辞已按 ADR-0017 §6 修订；DP-012 保持 `open`，DP 状态零变化；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

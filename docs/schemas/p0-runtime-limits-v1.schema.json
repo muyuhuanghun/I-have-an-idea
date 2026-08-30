@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/p0-runtime-limits-v1.schema.json",
+  "title": "P0 runtime limits v1 (accepted)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_status",
+    "proposal_phase",
+    "proposal_date",
+    "accepted_date",
+    "owner",
+    "decision_adr",
+    "implementation_binding",
+    "limits",
+    "memory_model",
+    "collision_model",
+    "evidence_binding",
+    "non_claims"
+  ],
+  "properties": {
+    "schema_version": {"const": "p0-runtime-limits-v1"},
+    "contract_status": {"const": "accepted"},
+    "proposal_phase": {"const": "Phase 4-0"},
+    "proposal_date": {"const": "2026-08-30"},
+    "accepted_date": {"const": "2026-08-30"},
+    "owner": {"const": "OWNER-P0"},
+    "decision_adr": {"const": "docs/decisions/0017-p0-snapshot-pipeline-v1.md"},
+    "implementation_binding": {"const": "Phase 4-A snapshot creation only"},
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vault_read_chunk_bytes",
+        "max_file_processing_concurrency",
+        "max_prefetch_queue_entries",
+        "max_in_flight_plaintext_files",
+        "max_in_flight_ciphertext_files",
+        "file_object_publish_total_attempts",
+        "manifest_object_publish_total_attempts"
+      ],
+      "properties": {
+        "vault_read_chunk_bytes": {"const": 1048576},
+        "max_file_processing_concurrency": {"const": 1},
+        "max_prefetch_queue_entries": {"const": 0},
+        "max_in_flight_plaintext_files": {"const": 1},
+        "max_in_flight_ciphertext_files": {"const": 1},
+        "file_object_publish_total_attempts": {"const": 8},
+        "manifest_object_publish_total_attempts": {"const": 8}
+      }
+    },
+    "memory_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "whole_vault_buffering_forbidden",
+        "plaintext_prefetch_forbidden",
+        "whole_file_aead_buffering_required_by_current_codec",
+        "manifest_entries_may_be_retained_in_memory",
+        "read_chunk_is_not_a_streaming_aead_claim"
+      ],
+      "properties": {
+        "whole_vault_buffering_forbidden": {"const": true},
+        "plaintext_prefetch_forbidden": {"const": true},
+        "whole_file_aead_buffering_required_by_current_codec": {"const": true},
+        "manifest_entries_may_be_retained_in_memory": {"const": true},
+        "read_chunk_is_not_a_streaming_aead_claim": {"const": true}
+      }
+    },
+    "collision_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempt_count_includes_initial_attempt",
+        "retryable_code",
+        "all_other_codes_are_not_collision_retries",
+        "each_retry_regenerates_object_id_key_nonce_and_ciphertext"
+      ],
+      "properties": {
+        "attempt_count_includes_initial_attempt": {"const": true},
+        "retryable_code": {"const": "OBJECT_ID_COLLISION"},
+        "all_other_codes_are_not_collision_retries": {"const": true},
+        "each_retry_regenerates_object_id_key_nonce_and_ciphertext": {"const": true}
+      }
+    },
+    "evidence_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deferred_parameter",
+        "registry_status",
+        "registry_status_while_proposed",
+        "accepted_values_alone_close_dp",
+        "required_before_dp_close",
+        "acc29_peak_rss_max_bytes",
+        "acc30_large_minus_small_peak_rss_max_bytes",
+        "rss_sampling_interval_max_ms"
+      ],
+      "properties": {
+        "deferred_parameter": {"const": "DP-012"},
+        "registry_status": {"const": "open"},
+        "registry_status_while_proposed": {"const": "open"},
+        "accepted_values_alone_close_dp": {"const": false},
+        "required_before_dp_close": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "acc29_peak_rss_max_bytes": {"const": 536870912},
+        "acc30_large_minus_small_peak_rss_max_bytes": {"const": 134217728},
+        "rss_sampling_interval_max_ms": {"const": 100}
+      }
+    },
+    "non_claims": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

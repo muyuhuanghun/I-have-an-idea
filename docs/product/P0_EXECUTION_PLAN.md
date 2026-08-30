@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍待 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 仅合同草案已获授权，须在 Phase 3D 推送后开始；Phase 4-A/B、HTTP ObjectStore、恢复实现和插件接线仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
+> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍待 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`；Phase 4-A/B、HTTP ObjectStore、恢复实现和插件接线仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
 >
 > 日期：2026-08-30
 >
@@ -372,7 +372,7 @@ Recovery File 是 bearer file；recovery root 不再以“用其自身派生密�
 
 ### 8.4 对象 ID
 
-ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。碰撞必须在加密前检查并重新生成 ID/nonce/ciphertext。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。Directory ObjectStore v1 合同已由 ADR-0015 冻结，Node adapter 已实现并由提交 `684af1e` 纳管；HTTP ObjectStore、完整 pipeline、快照与恢复编排仍未实现，也未获得 Phase 4 授权。
+ADR-0011 已冻结：object ID = 16 个 CSPRNG 原始字节；ObjectStore key = 22 字符无 padding base64url；AAD = 101 字节 canonical 结构；禁止裸内容哈希。每个对象先用新 ID/key/nonce 完整 seal，再调用不可变 ObjectStore 的原子 put；只有 put 返回 `OBJECT_ID_COLLISION` 才整对象重新生成。不得覆盖、不得只换文件名、不得复用 key/nonce/ciphertext，且不得把其他 I/O 错误当碰撞重试（ADR-0017 §6）。Suite 1 与 wrap 参数已由 ADR-0013 冻结；Phase 3A/3B 已分别实现 Recovery File v1、Manifest plaintext、Object AAD/Envelope 及文件/Manifest 纯内存 crypto codec。Directory ObjectStore v1 合同已由 ADR-0015 冻结，Node adapter 已实现并由提交 `684af1e` 纳管；HTTP ObjectStore、完整 pipeline、快照与恢复编排仍未实现，也未获得 Phase 4 授权。
 
 ## 9. Fixture 与性能基线
 
@@ -569,7 +569,7 @@ P0 不保存本地修改时间；因此不会把它以明文泄漏，也不在 v
 
 ## 14. 阶段 3：恢复文件、加密对象和目录存储
 
-2026-08-30 用户单独授权的 Phase 3A 只包含 SHA-256/HMAC-SHA-256、Recovery File v1 和 Node 侧 Vault 外落盘回读；该切片已由提交 `454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8` 纳管。随后单独授权的 Phase 3B 只包含冻结的 HKDF、object ID/base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD；该切片已由提交 `696e199908e865f296e9e0fb822d431d98caae93` 纳管并获开发者追认。再随后单独授权的 Phase 3C 分两步：Phase 3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，机器 registry 仅新增 `OBJECT_STORE_IO_FAILED`），Phase 3C-A 实现并测试 Directory ObjectStore Node adapter；该切片已由提交 `684af1eef4dc5122b0140c43ed24009c2f651e21` 纳管。服务器可见性报告按 Phase 3D 分两步执行：3D-0 冻结扫描合同（ADR-0016），3D-A 实现扫描器、CLI 与机器 Schema；直接修正后的实现已通过独立复审并由提交 `1f5e27473336b150165889106a6562653dd49a89` 纳管。其正式 ACC-32/33 证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 仅获合同草案授权；Phase 4-A/B、HTTP ObjectStore、恢复实现和插件接线继续禁止。
+2026-08-30 用户单独授权的 Phase 3A 只包含 SHA-256/HMAC-SHA-256、Recovery File v1 和 Node 侧 Vault 外落盘回读；该切片已由提交 `454afddaa9f4d76ac05a2c8fd38f9c9ebd3a45c8` 纳管。随后单独授权的 Phase 3B 只包含冻结的 HKDF、object ID/base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD；该切片已由提交 `696e199908e865f296e9e0fb822d431d98caae93` 纳管并获开发者追认。再随后单独授权的 Phase 3C 分两步：Phase 3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，机器 registry 仅新增 `OBJECT_STORE_IO_FAILED`），Phase 3C-A 实现并测试 Directory ObjectStore Node adapter；该切片已由提交 `684af1eef4dc5122b0140c43ed24009c2f651e21` 纳管。服务器可见性报告按 Phase 3D 分两步执行：3D-0 冻结扫描合同（ADR-0016），3D-A 实现扫描器、CLI 与机器 Schema；直接修正后的实现已通过独立复审并由提交 `1f5e27473336b150165889106a6562653dd49a89` 纳管。其正式 ACC-32/33 证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行。Phase 4-0 已完成：ADR-0017 已由开发者四点确认接受（含 `SOURCE_FILE_READ_FAILED`/`RECOVERY_FILE_WRITE_FAILED` 注册与 §8.4 碰撞措辞修订）；Phase 4-A/B、HTTP ObjectStore、恢复实现和插件接线继续禁止。
 
 实现顺序：
 

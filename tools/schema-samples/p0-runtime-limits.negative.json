@@ -1,0 +1,56 @@
+{
+  "schema_version": "p0-runtime-limits-v1",
+  "contract_status": "accepted",
+  "proposal_phase": "Phase 4-0",
+  "proposal_date": "2026-08-30",
+  "accepted_date": "2026-08-30",
+  "owner": "OWNER-P0",
+  "decision_adr": "docs/decisions/0017-p0-snapshot-pipeline-v1.md",
+  "implementation_binding": "Phase 4-A snapshot creation only",
+  "limits": {
+    "vault_read_chunk_bytes": 1048576,
+    "max_file_processing_concurrency": 1,
+    "max_prefetch_queue_entries": 0,
+    "max_in_flight_plaintext_files": 1,
+    "max_in_flight_ciphertext_files": 1,
+    "file_object_publish_total_attempts": 8,
+    "manifest_object_publish_total_attempts": 8,
+    "max_concurrent_snapshots": 4
+  },
+  "memory_model": {
+    "whole_vault_buffering_forbidden": true,
+    "plaintext_prefetch_forbidden": true,
+    "whole_file_aead_buffering_required_by_current_codec": true,
+    "manifest_entries_may_be_retained_in_memory": true,
+    "read_chunk_is_not_a_streaming_aead_claim": true
+  },
+  "collision_model": {
+    "attempt_count_includes_initial_attempt": true,
+    "retryable_code": "OBJECT_ID_COLLISION",
+    "all_other_codes_are_not_collision_retries": true,
+    "each_retry_regenerates_object_id_key_nonce_and_ciphertext": true
+  },
+  "evidence_binding": {
+    "deferred_parameter": "DP-012",
+    "registry_status": "open",
+    "registry_status_while_proposed": "open",
+    "accepted_values_alone_close_dp": false,
+    "required_before_dp_close": [
+      "schema-valid perf-report-v1 for small representative fixture",
+      "schema-valid perf-report-v1 for large representative fixture",
+      "report-to-build and report-to-runtime-limits hash binding",
+      "peak RSS at or below 536870912 bytes",
+      "large-minus-small peak RSS at or below 134217728 bytes",
+      "RSS sampling interval at or below 100 milliseconds"
+    ],
+    "acc29_peak_rss_max_bytes": 536870912,
+    "acc30_large_minus_small_peak_rss_max_bytes": 134217728,
+    "rss_sampling_interval_max_ms": 100
+  },
+  "non_claims": [
+    "Acceptance of these limits does not close DP-012; performance evidence is still required.",
+    "Acceptance of these limits does not change any ACC status.",
+    "Acceptance of this contract does not authorize Phase 4-A or Phase 4-B implementation.",
+    "The one-mebibyte read chunk does not make WebCrypto AES-GCM incremental and does not bound a single file to one chunk."
+  ]
+}

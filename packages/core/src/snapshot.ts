@@ -76,6 +76,11 @@ export interface SnapshotCreateResultV1 {
   readonly recoveryFileCreated: boolean;
   readonly requiredLogClosed: boolean;
   readonly runtimeLimits: SnapshotRuntimeLimitsV1;
+  /** ADR-0019 R1-A: measured wall-clock durations for the perf-report phase mapping. */
+  readonly phaseTimings?: {
+    readonly scanMs: number;
+    readonly encryptMs: number;
+  };
 }
 
 const HEX_ALPHABET = "0123456789abcdef";
@@ -230,8 +235,9 @@ export async function createSnapshotV1(
     runId = hex(deps.randomSource.randomBytes(RUN_ID_LENGTH));
 
     // Phase 0: preflight — no ObjectStore writes may happen before this completes.
-    // ADR-0017 §4.1 orders target verification before the log sink is opened, so a bad
+    // ADR-0018 §4.1 orders target verification before the log sink is opened, so a bad
     // Recovery File target leaves no log file behind at all.
+    const scanStart = deps.clock.nowMilliseconds();
     try {
       await deps.recoveryFileTarget.verifyTargetAbsent();
     } catch (error) {
@@ -256,10 +262,12 @@ export async function createSnapshotV1(
       vault_plaintext_bytes: vaultPlaintextBytes,
       runtime_limits_sha256: input.runtimeLimits.sha256Hex
     });
+    const scanMs = deps.clock.nowMilliseconds() - scanStart;
 
     // Phase 1: root material. ADR-0017 §4.2: one recovery root for the whole run; the existing
     // generateRecoveryFileV1 generates its own root and must not be called here.
     phase = "root_material";
+    const encryptStart = deps.clock.nowMilliseconds();
     recoveryRoot = requireNonZeroRandom(deps.randomSource.randomBytes(IDENTIFIER_LENGTH), "recovery root");
     const snapshotId = requireNonZeroRandom(deps.randomSource.randomBytes(IDENTIFIER_LENGTH), "snapshot ID");
     const derivedDomainDataRoot = await deriveDomainDataRootV1(recoveryRoot, input.domainId, deps.cryptoProvider);
@@ -420,7 +428,11 @@ export async function createSnapshotV1(
       orphanObjectCount: 0,
       recoveryFileCreated: true,
       requiredLogClosed: logClosed,
-      runtimeLimits
+      runtimeLimits,
+      phaseTimings: {
+        scanMs: Math.max(0, scanMs),
+        encryptMs: Math.max(0, deps.clock.nowMilliseconds() - encryptStart)
+      }
     };
   } catch (error) {
     const code = structuralCode(error);

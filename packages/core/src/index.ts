@@ -7,6 +7,7 @@ export {
   SnapshotCreateError,
   VaultScanError
 } from "./errors.js";
+export { isRestoreErrorCode, isSnapshotCreateErrorCode } from "./errors.js";
 export {
   deriveDomainDataRootV1,
   deriveManifestKeyV1,

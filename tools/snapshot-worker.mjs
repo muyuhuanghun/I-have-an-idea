@@ -2,6 +2,7 @@
 // ADR-0018 §5.1: snapshot worker — process A of the fresh-process flow. Run after
 // `pnpm build`; exits 0 on complete, 1 on failed, 2 on usage/setup errors.
 import { createHash } from "node:crypto";
+import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -27,7 +28,7 @@ try {
 const { WebCryptoAes256Provider } = await import("../packages/crypto/dist/webcrypto.js");
 
 function usage() {
-  console.error("Usage: node tools/snapshot-worker.mjs --vault <dir> --store <dir> --log <file> --recovery <file> --domain-id <64hex>");
+  console.error("Usage: node tools/snapshot-worker.mjs --vault <dir> --store <dir> --log <file> --recovery <file> --domain-id <64hex> [--rss-sample <file>]");
 }
 
 function parseArgs(argv) {
@@ -37,7 +38,7 @@ function parseArgs(argv) {
     const value = argv[index + 1];
     if (value === undefined) return { error: `Missing value for ${name}.` };
     index += 1;
-    if (["--vault", "--store", "--log", "--recovery", "--domain-id"].includes(name)) {
+    if (["--vault", "--store", "--log", "--recovery", "--domain-id", "--rss-sample"].includes(name)) {
       options[name.slice(2)] = value;
     } else {
       return { error: `Unknown option: ${name}` };
@@ -49,6 +50,22 @@ function parseArgs(argv) {
   return { options };
 }
 
+// ADR-0019 §4: self-sampled RSS at 50 ms; the sample file is written synchronously on exit.
+const rssSamples = [];
+let rssTimer;
+function startRssSampling(sampleFile) {
+  if (sampleFile === undefined) return () => {};
+  rssSamples.push({ epoch_ms: Date.now(), rss_bytes: process.memoryUsage().rss });
+  rssTimer = globalThis.setInterval(() => {
+    rssSamples.push({ epoch_ms: Date.now(), rss_bytes: process.memoryUsage().rss });
+  }, 50);
+  return () => {
+    globalThis.clearInterval(rssTimer);
+    rssSamples.push({ epoch_ms: Date.now(), rss_bytes: process.memoryUsage().rss });
+    writeFileSync(sampleFile, `${JSON.stringify({ interval_ms: 50, samples: rssSamples })}\n`);
+  };
+}
+
 const parsed = parseArgs(process.argv.slice(2));
 if (parsed.error !== undefined) {
   console.error(`snapshot-worker: ${parsed.error}`);
@@ -56,6 +73,7 @@ if (parsed.error !== undefined) {
   process.exit(2);
 }
 const options = parsed.options;
+const flushRss = startRssSampling(options["rss-sample"]);
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // ADR-0017 §3.1: the runtime-limits binding is the SHA-256 of the accepted contract file.
@@ -78,4 +96,5 @@ const result = await createSnapshotV1(
 );
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+flushRss();
 process.exit(result.status === "complete" ? 0 : 1);

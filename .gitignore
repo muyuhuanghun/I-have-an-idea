@@ -40,3 +40,7 @@ artifacts/
 *.recoverykey
 recovery-*.bin
 recovery-files/
+
+# Representative fixture content: regenerable from seed + generator commit (ADR-0019 §2).
+fixtures/representative-small/vault/
+fixtures/representative-large/vault/

@@ -2,7 +2,7 @@
 
 > 日期：2026-08-30
 >
-> 状态：授权切片实现完成，独立复审验收通过、无阻塞项；未提交、未推送
+> 状态：实现提交 `fbdf325` 已由开发者显式授权纳管；本文保留提交前 dirty-source 历史并附提交后复核
 >
 > 基线：`3cbe53d03fdcabd9ef51db3165a9784adfb8617b`（Phase 4-0 接受提交之后）
 
@@ -57,4 +57,4 @@
 
 全部结果是 dirty-source implementation review evidence，不是正式 ACC evidence。DP-001..026 状态零变化，机器 registry 零变化（`SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED` 已随 Phase 4-0 接受注册），37 个 ACC 全部保持 `untested`，P0-R1 未实现、未测试。
 
-Phase 4-A 停在未提交复审边界：没有 commit，没有 push，等待开发者显式提交授权。CLI 接线、Phase 4-B 恢复、HTTP ObjectStore、插件接线与 P0-R1 证据门仍需各自明确授权。
+开发者已于 2026-08-30 显式授权两笔提交与推送。实现提交 `fbdf325`（20 文件 = 复审时 12 修改 + 7 新增 + 本报告）创建后，在 clean HEAD 上复跑统一门禁 113/113（core 40 / crypto 18 / adapters 50 / smoke 5）、shared-core import gate、build 与 design-only+samples 合同校验（ACC=37 INV=16 THR=5 DP=26）全部 PASS，随后按既定惯例以 reconcile 提交回写状态措辞。这些仍不是正式 ACC evidence；CLI 接线、Phase 4-B 恢复、HTTP ObjectStore、插件接线与 P0-R1 证据门仍需各自明确授权。

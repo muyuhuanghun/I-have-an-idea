@@ -41,7 +41,7 @@ function collectEnvironment() {
     filesystem: "NTFS",
     node_version: process.version,
     v8_version: process.versions.v8,
-    pnpm_version: sh("pnpm", ["--version"]),
+    pnpm_version: JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")).packageManager.split("@")[1],
     lockfile_sha256: createHash("sha256").update(readFileSync(join(REPO_ROOT, "pnpm-lock.yaml"))).digest("hex"),
     power_plan: powerPlan
   };
@@ -57,6 +57,7 @@ function loadFixture(key) {
   const manifestBytes = readFileSync(manifestPath);
   const manifest = JSON.parse(manifestBytes.toString("utf8"));
   return {
+    dir: FIXTURES[key].dir,
     manifest,
     manifestPath,
     manifestSha256: createHash("sha256").update(manifestBytes).digest("hex"),
@@ -173,6 +174,7 @@ async function runMatrix() {
   console.log(`host: ${environment.cpu_model}, ${environment.storage_model} (${environment.storage_type}), plan=${environment.power_plan}`);
 
   const runs = [];
+  const occurrence = {};
   const smallCreateCold = { runId: "", reportSha256: "", totalBytes: 0, peakRss: 0 };
   const smallRestoreCold = { runId: "", reportSha256: "", totalBytes: 0, peakRss: 0 };
 
@@ -185,7 +187,9 @@ async function runMatrix() {
 
     for (const mode of ["create", "restore"]) {
       for (const cacheState of ["cold", "warm", "warm"]) {
-        const label = `${fixtureKey}-${mode}-${cacheState}`;
+        const labelKey = `${fixtureKey}-${mode}-${cacheState}`;
+        occurrence[labelKey] = (occurrence[labelKey] ?? 0) + 1;
+        const label = `${labelKey}-${occurrence[labelKey]}`;
         if (mode === "create") {
           await rm(storeRoot, { recursive: true, force: true });
           await mkdir(storeRoot, { recursive: true });
@@ -260,7 +264,7 @@ async function runMatrix() {
         const record = {
           label,
           runId: report.run_id,
-          reportPath: `perf-reports/perf-report-${label}.json`,
+          reportPath: `perf-report-${label}.json`,
           reportSha256: createHash("sha256").update(await readFile(reportPath)).digest("hex"),
           peakRss: peakFromSamples(rssDoc),
           totalBytes: bytesProcessedOf(report)
@@ -309,7 +313,7 @@ async function runMatrix() {
   }
 
   const failures = runs.filter((run) => {
-    const report = JSON.parse(readFileSync(resolve(ARTIFACTS, run.reportPath.replace("perf-reports/", "perf-reports/")), "utf8"));
+    const report = JSON.parse(readFileSync(resolve(ARTIFACTS, run.reportPath), "utf8"));
     return report.verdict.overall !== "pass";
   });
   for (const run of runs) {

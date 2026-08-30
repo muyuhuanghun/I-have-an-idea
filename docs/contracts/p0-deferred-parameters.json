@@ -2,9 +2,21 @@
   "schema_version": "p0-deferred-parameters-v1",
   "status": "authoritative_deferred_parameter_registry",
   "owners": [
-    {"id": "OWNER-P0", "name": "项目开发者", "accountability": "P0 协议、实现与证据"},
-    {"id": "OWNER-PRODUCT", "name": "产品 owner（当前由项目开发者承担）", "accountability": "P1 及以后产品范围和 UX 决策"},
-    {"id": "OWNER-SECURITY", "name": "安全 owner（当前由项目开发者承担，独立审计不可自授予）", "accountability": "威胁边界、密码代际和供应链门禁"}
+    {
+      "id": "OWNER-P0",
+      "name": "项目开发者",
+      "accountability": "P0 协议、实现与证据"
+    },
+    {
+      "id": "OWNER-PRODUCT",
+      "name": "产品 owner（当前由项目开发者承担）",
+      "accountability": "P1 及以后产品范围和 UX 决策"
+    },
+    {
+      "id": "OWNER-SECURITY",
+      "name": "安全 owner（当前由项目开发者承担，独立审计不可自授予）",
+      "accountability": "威胁边界、密码代际和供应链门禁"
+    }
   ],
   "parameters": [
     {

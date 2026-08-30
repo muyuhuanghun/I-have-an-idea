@@ -95,4 +95,21 @@ snapshot 侧参数已在 `p0-runtime-limits-v1` 冻结（1 MiB chunk、并发 1�
 
 ## 当前参数状态
 
-参数已由本 ADR 冻结并经开发者确认；DP-007/008/010/012 仍为 `open`（关闭以 §2/§4 的正式产物为准）。无任何 fixture/perf/evidence 产物由 R1-0 产生；R1-A 未获授权。
+参数已由本 ADR 冻结并经开发者确认；DP-007/008/010/012 已于 2026-08-30 R1-A 产物落地后**关闭**（见下方记录）。R1-B 的 37 份 acc-evidence-v1 尚未生成，全部 ACC 仍为 `untested`；R1-A 之后的 R1-B/C 未获授权。
+
+## R1-A 产物与关闭记录（2026-08-30）
+
+R1-A（开发者同日授权）产物已落地并关闭 DP-007/008/010/012：
+
+1. **DP-008**：`tools/fixture-generator.mjs` 扩展 `--profile representative-small|representative-large`（generator v1.1.0，seed `ekd-representative-v1`，绑定提交 `3a0c2bb`）。两份 `fixture-manifest-v1` 已入库：
+   - representative-small：10,000 文件 / 134,217,679 字节（范围内），manifest sha256 `655d3bc4d639148bc40a059b2466a61cd7d87d1f3616d9aa804ab33f4c071fe4`；
+   - representative-large：10,000 文件 / 1,073,741,847 字节（范围内），manifest sha256 `f8e3dcfa920bd02e5f93fd2e57bf28681b6ec8c3352fa606a2b0da6e23b86dea`。
+2. **DP-007**：`fixtures/edge-cases/case-oracle.json`（15+ 场景 → 稳定码）+ 物化 vault 文件入库，oracle 完整性由 `edge-case-oracle.test.ts` 机器验证。
+3. **DP-010**：12 次正式运行（勘误：§4 原写 8 次系算术错误，实际 2 fixture × 2 方向 × cold1+warm2 = 12 次）全部 `pass`，主机为 §4 冻结的本地 Windows 工作机。报告位于 `artifacts/perf-reports/`（gitignore，可重建），SHA-256：
+   - small-create-cold-1（baseline）`8e043a55cb81f8b9fb0de11ab3688f42665b652c0336e61566fa594de28a0cf5`；
+   - small-create-warm-1 `091bef967993336553a3b373abcac38971c92550a6913abb6371f4a777eb073c`；small-create-warm-2 `f996c1c7e544f35864b8569ae9a449522ff2db797920fd2ebbfb9a5a8cab8aa8`；
+   - small-restore-cold-1 `761a4ce8f1eeec655ae83be788cb65969ed7f92d79b9f5dd0e1129a70fda668e`；small-restore-warm-1 `930421887e0df063633ea0783330d1c4b4a5560e01a84053f96bd150e322e5ec`；small-restore-warm-2 `edba996a26862345a1a66a5aaede7c045ccac8df44e9814036f8f40d4a35f73d`；
+   - large-create-cold-1 `d30cbb4dac3ffd1cf1d1636f4bd3e7045c64215fac10558ed8f583ed188a1495`；large-create-warm-1 `19f42c9898ba5382be55b3a97b62856059133aefe32f95823424c215cee35d3f`；large-create-warm-2 `57b74c501e07cb2df133204cc2bea456de451207327935a7e7c714b3d9749fe5`；
+   - large-restore-cold-1 `34dfe3016a9f1ba34b72868f02e018f3151b43bd8925cfc67e123eedc7ebcfb0`；large-restore-warm-1 `c4c3f9b70b5879104ef356a402ec27a820c2f2b472e5a9b54589a2162ead69ce`；large-restore-warm-2 `e37773378b48dc8ba3a24d3966430c7fccafb41c29c656c703d28bff09e3974d`。
+4. **DP-012**：snapshot 侧参数（1 MiB chunk、并发 1、预取 0、8 次总尝试）+ 恢复侧顺序结构，经 perf 对比验证：peak RSS 全部 ≤ 169.4 MiB（限 512 MiB），large−small 增量 17.9–28.2 MiB（限 128 MiB），fixture 增长比 8.0（≥7.5）——全部达标。
+5. **诚实边界**：perf-report-v1 的 `bytes_verified`/ACC-26/29/30/31 的正式 `acc-evidence-v1` 打包属 R1-B；本记录不升级任何 ACC 状态。

@@ -1,0 +1,29 @@
+{
+  "schema_version": "storage-visibility-scan-v1",
+  "verdict": "pass",
+  "entries_total": 1,
+  "entries_by_kind": {"key": 1, "tmp": 0, "violation": 0},
+  "total_bytes": 128,
+  "allowed_metadata": [
+    {"name": "AAECAwQFBgcICQoLDA0ODw", "size_bytes": 128, "mtime_ms": 1788069600000}
+  ],
+  "forbidden_findings": [],
+  "findings_truncated": false,
+  "forbidden_counts": {"store": 0, "log": 0},
+  "scanner_selftest": {
+    "control_markers_planted": 3,
+    "control_markers_found": 3,
+    "marker_results": [
+      {"marker_id": "marker-001", "family": "filename", "occurrences": 1},
+      {"marker_id": "marker-002", "family": "content", "occurrences": 1},
+      {"marker_id": "marker-003", "family": "path", "occurrences": 1}
+    ],
+    "pass": true
+  },
+  "inputs": {
+    "marker_count": 3,
+    "marker_families_covered": ["filename", "content", "path"],
+    "known_secret_labels": ["recovery-root", "domain-data-root", "manifest-key", "object-wrap-key"],
+    "log_bytes_scanned": 64
+  }
+}

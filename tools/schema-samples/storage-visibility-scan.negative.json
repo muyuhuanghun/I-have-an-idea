@@ -1,0 +1,24 @@
+{
+  "schema_version": "storage-visibility-scan-v1",
+  "verdict": "pass",
+  "entries_total": 0,
+  "entries_by_kind": {"key": 0, "tmp": 0, "violation": 0},
+  "total_bytes": 0,
+  "allowed_metadata": [],
+  "forbidden_findings": [],
+  "findings_truncated": false,
+  "forbidden_counts": {"store": 0, "log": 0},
+  "scanner_selftest": {
+    "control_markers_planted": 3,
+    "control_markers_found": 3,
+    "marker_results": [],
+    "pass": true
+  },
+  "inputs": {
+    "marker_count": 3,
+    "marker_families_covered": ["filename", "content", "path"],
+    "known_secret_labels": ["recovery-root"],
+    "log_bytes_scanned": 0,
+    "markers": ["FILENAME_MARK_should-never-be-echoed"]
+  }
+}

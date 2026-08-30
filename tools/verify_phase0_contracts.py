@@ -31,7 +31,7 @@ SCHEMAS = ROOT / "docs" / "schemas"
 SAMPLES = ROOT / "tools" / "schema-samples"
 
 
-# Schema keywords that the five P0 schemas use.  Anything else triggers a
+# Schema keywords that the P0 schemas use.  Anything else triggers a
 # fail-closed rejection at schema-load time so that the enforced subset
 # cannot silently drift from what the schemas actually require.
 SUPPORTED_SCHEMA_KEYWORDS = frozenset({
@@ -315,6 +315,7 @@ def validate_schema_files() -> None:
         "perf-report-v1.schema.json",
         "smoke-aggregate-v1.schema.json",
         "smoke-report-v1.schema.json",
+        "storage-visibility-scan-v1.schema.json",
     }
     actual = {path.name for path in SCHEMAS.glob("*.schema.json")}
     require(expected <= actual, f"missing JSON Schema files: {sorted(expected - actual)}")
@@ -520,6 +521,7 @@ def validate_schema_samples() -> None:
         ("perf-report-v1.schema.json", "perf-report"),
         ("smoke-aggregate-v1.schema.json", "smoke-aggregate"),
         ("smoke-report-v1.schema.json", "smoke-report"),
+        ("storage-visibility-scan-v1.schema.json", "storage-visibility-scan"),
     ]
     for schema_name, base in pairs:
         schema = _load_schema(schema_name)

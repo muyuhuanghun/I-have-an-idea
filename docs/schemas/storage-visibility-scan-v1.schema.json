@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/storage-visibility-scan-v1.schema.json",
+  "title": "P0 storage visibility scan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "verdict",
+    "entries_total",
+    "entries_by_kind",
+    "total_bytes",
+    "allowed_metadata",
+    "forbidden_findings",
+    "findings_truncated",
+    "forbidden_counts",
+    "scanner_selftest",
+    "inputs"
+  ],
+  "properties": {
+    "schema_version": {"const": "storage-visibility-scan-v1"},
+    "verdict": {"enum": ["pass", "fail"]},
+    "scanner_error": {"type": "string", "minLength": 1},
+    "entries_total": {"type": "integer", "minimum": 0},
+    "entries_by_kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "tmp", "violation"],
+      "properties": {
+        "key": {"type": "integer", "minimum": 0},
+        "tmp": {"type": "integer", "minimum": 0},
+        "violation": {"type": "integer", "minimum": 0}
+      }
+    },
+    "total_bytes": {"type": "integer", "minimum": 0},
+    "allowed_metadata": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "size_bytes", "mtime_ms"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z0-9_-]{22}(\\.tmp)?$"},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "mtime_ms": {"type": "number"}
+        }
+      }
+    },
+    "forbidden_findings": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "findings_truncated": {"type": "boolean"},
+    "forbidden_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["store", "log"],
+      "properties": {
+        "store": {"type": "integer", "minimum": 0},
+        "log": {"type": "integer", "minimum": 0}
+      }
+    },
+    "scanner_selftest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["control_markers_planted", "control_markers_found", "marker_results", "pass"],
+      "properties": {
+        "control_markers_planted": {"type": "integer", "minimum": 0},
+        "control_markers_found": {"type": "integer", "minimum": 0},
+        "marker_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["marker_id", "family", "occurrences"],
+            "properties": {
+              "marker_id": {"type": "string", "pattern": "^marker-[0-9]{3,}$"},
+              "family": {"enum": ["filename", "content", "path"]},
+              "occurrences": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        "pass": {"type": "boolean"}
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["marker_count", "marker_families_covered", "known_secret_labels", "log_bytes_scanned"],
+      "properties": {
+        "marker_count": {"type": "integer", "minimum": 0},
+        "marker_families_covered": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {"enum": ["filename", "content", "path"]}
+        },
+        "known_secret_labels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,63}$"}
+        },
+        "log_bytes_scanned": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface", "kind", "pattern", "offset"],
+      "properties": {
+        "surface": {"enum": ["store", "log"]},
+        "kind": {"enum": ["marker", "known_secret", "filename_shape", "extension_token", "magic_bytes"]},
+        "entry": {"type": "string", "pattern": "^[A-Za-z0-9_-]{22}(\\.tmp)?$"},
+        "pattern": {"type": "string", "pattern": "^[a-z0-9._:-]+$"},
+        "encoding": {"enum": ["raw", "hex"]},
+        "offset": {"type": "integer", "minimum": 0}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "marker"}}},
+          "then": {"properties": {"pattern": {"enum": ["filename", "content", "path"]}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "known_secret"}}},
+          "then": {"required": ["encoding"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "filename_shape"}}},
+          "then": {"properties": {"pattern": {"enum": ["entry_name_outside_store_vocabulary", "entry_is_not_a_regular_file"]}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "extension_token"}}},
+          "then": {"properties": {"pattern": {"enum": [".md", ".markdown", ".canvas", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"]}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "magic_bytes"}}},
+          "then": {"properties": {"pattern": {"enum": ["pdf", "png", "jpeg", "gif", "riff", "zip"]}}}
+        }
+      ]
+    }
+  }
+}

@@ -48,3 +48,26 @@ export class RecoveryFileCodecError extends Error {
     this.name = "RecoveryFileCodecError";
   }
 }
+
+export type ObjectCodecErrorCode =
+  | "ENTRY_SIZE_MISMATCH"
+  | "MANIFEST_AEAD_FAILED"
+  | "OBJECT_AAD_MISMATCH"
+  | "OBJECT_AEAD_FAILED"
+  | "OBJECT_ID_INVALID"
+  | "OBJECT_TRAILING_BYTES"
+  | "OBJECT_TRUNCATED"
+  | "RANDOM_SOURCE_ALL_ZERO"
+  | "RANDOM_SOURCE_FAILED"
+  | "RANDOM_SOURCE_SHORT_READ";
+
+export class ObjectCodecError extends Error {
+  constructor(
+    readonly code: ObjectCodecErrorCode,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = "ObjectCodecError";
+  }
+}

@@ -2,7 +2,7 @@
   "name": "ekd-p0",
   "version": "0.1.0",
   "private": true,
-  "description": "P0 shared core, portability smoke harness, local scanner/Manifest, and authorized Recovery File v1 work.",
+  "description": "P0 shared core, portability smoke harness, Recovery File v1, and authorized in-memory Object crypto codecs.",
   "packageManager": "pnpm@11.19.0",
   "engines": {
     "node": ">=20.19.0"

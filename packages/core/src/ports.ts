@@ -22,7 +22,7 @@ export interface Clock {
   readonly nowMilliseconds: () => number;
 }
 
-/** Opaque byte storage. Snapshot, object, and envelope semantics are intentionally absent. */
+/** Opaque byte storage port reserved for later orchestration; Phase 3B codecs do not call it. */
 export interface ObjectStore {
   readonly put: (key: string, value: Bytes) => Promise<void>;
   readonly get: (key: string) => Promise<Bytes | undefined>;

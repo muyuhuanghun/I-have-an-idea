@@ -23,8 +23,8 @@ const ports: CorePorts = {
 };
 
 describe("shared core scaffold", () => {
-  it("exposes the Phase 3A core version", () => {
-    expect(CORE_VERSION).toBe("phase3a-recovery-file-v1");
+  it("exposes the Phase 3B core version", () => {
+    expect(CORE_VERSION).toBe("phase3b-object-codecs-v1");
   });
 
   it("keeps the supplied ports as the only wiring surface", () => {

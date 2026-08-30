@@ -1,6 +1,31 @@
 export { CORE_VERSION, createCore } from "./core.js";
-export { ManifestCodecError, RecoveryFileCodecError, VaultScanError } from "./errors.js";
+export {
+  ManifestCodecError,
+  ObjectCodecError,
+  RecoveryFileCodecError,
+  VaultScanError
+} from "./errors.js";
+export {
+  deriveDomainDataRootV1,
+  deriveManifestKeyV1,
+  deriveObjectWrapKeyV1
+} from "./keys.js";
 export { decodeManifestPlaintextV1, encodeManifestPlaintextV1 } from "./manifest.js";
+export {
+  OBJECT_AAD_V1_LENGTH,
+  OBJECT_ENVELOPE_V1_HEADER_LENGTH,
+  decodeObjectAadV1,
+  decodeObjectEnvelopeV1,
+  decodeObjectStoreKeyV1,
+  encodeObjectAadV1,
+  encodeObjectEnvelopeV1,
+  encodeObjectStoreKeyV1,
+  generateObjectIdV1,
+  openFileObjectV1,
+  openManifestObjectV1,
+  sealFileObjectV1,
+  sealManifestObjectV1
+} from "./object.js";
 export {
   RECOVERY_FILE_V1_LENGTH,
   decodeRecoveryFileV1,
@@ -11,10 +36,25 @@ export { scanVault } from "./scan.js";
 export type { Core } from "./core.js";
 export type {
   ManifestCodecErrorCode,
+  ObjectCodecErrorCode,
   RecoveryFileCodecErrorCode,
   VaultScanErrorCode
 } from "./errors.js";
 export type { ManifestEntryV1, ManifestPlaintextV1 } from "./manifest.js";
+export type { KeyDerivationProvider } from "./keys.js";
+export type {
+  ObjectAadV1,
+  ObjectContextV1,
+  ObjectCryptoProvider,
+  ObjectEnvelopeV1,
+  ObjectSealDependencies,
+  ObjectTypeV1,
+  OpenFileObjectV1Input,
+  OpenManifestObjectV1Input,
+  SealFileObjectV1Input,
+  SealManifestObjectV1Input,
+  SealedFileObjectV1
+} from "./object.js";
 export type {
   RecoveryCryptoProvider,
   RecoveryFileV1,

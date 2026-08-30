@@ -324,6 +324,7 @@ PHASE_3D_A_STORAGE_VISIBILITY_SCANNER_IMPLEMENTED
 PHASE_4_0_SNAPSHOT_PIPELINE_CONTRACT_ACCEPTED
 RUNTIME_LIMITS_V1_ACCEPTED_AND_MACHINE_GATED
 PHASE_4_A_SNAPSHOT_CREATE_ORCHESTRATION_IMPLEMENTED
+PHASE_4_B0_RESTORE_PIPELINE_CONTRACT_ACCEPTED
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -344,7 +345,8 @@ ACC_37_OF_37_UNTESTED
 - Phase 3D-0 已单独授权并冻结存储可见性扫描合同（ADR-0016）：原始字节扫描、目录结构白名单、三族 marker 逐项自测、已知秘密 raw+hex、扩展名 token、offset 0 magic、报告脱敏、`storage-visibility-scan-v1` JSON Schema 与失败关闭；不新增错误码、不改 DP；
 - Phase 3D-A 已单独授权：扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管；ACC-32/33 保持 `untested`，正式证据仍要求 snapshot pipeline 存在后按 P0-R1 证据门执行；
 - Phase 4-0 已完成：ADR-0017 经开发者四点确认接受（DP-012 拟议值、Recovery File complete 定义、日志封口顺序、注册两个新错误码）；runtime-limits v1（`contract_status=accepted`）已接入 `verify_phase0_contracts.py` schema/样例机器门；机器 registry 新增 `SOURCE_FILE_READ_FAILED`、`RECOVERY_FILE_WRITE_FAILED`（+2）；`P0_EXECUTION_PLAN.md` §8.4 碰撞措辞已按 ADR-0017 §6 修订；DP-012 保持 `open`，DP 状态零变化；
-- Phase 4-A 已单独授权：snapshot 创建编排（core `createSnapshotV1`，严格按 ADR-0017 §4 顺序、§6 碰撞循环、§7 日志绑定、§8 orphan 语义、§9 错误收敛）与 Node 日志 sink/Recovery File 目标适配器、1 MiB 分块稳定读取、`snapshot-log-v1` schema 机器门及 ADR-0017 §10 测试边界已实现，已由提交 `fbdf325` 纳管；CLI 接线、Phase 4-B、HTTP ObjectStore、恢复实现和插件接线仍被禁止；
+- Phase 4-A 已单独授权：snapshot 创建编排（core `createSnapshotV1`，严格按 ADR-0017 §4 顺序、§6 碰撞循环、§7 日志绑定、§8 orphan 语义、§9 错误收敛）与 Node 日志 sink/Recovery File 目标适配器、1 MiB 分块稳定读取、`snapshot-log-v1` schema 机器门及 ADR-0017 §10 测试边界已实现，已由提交 `fbdf325` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
+- Phase 4-B-0 已完成：恢复流水线合同（ADR-0018）经开发者四点确认接受（目标空目录语义与失败残留、逐文件无 read-back/fsync、`INCOMPLETE_RESTORE` v1 不使用、fresh-process worker 与纯 stdlib Python 验证器形态）；registry 零新增；Phase 4-B-A 已获授权，恢复编排实现进行中；
 - 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/p0-roundtrip-report-v1.schema.json",
+  "title": "P0 round-trip report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "git_commit",
+    "snapshot",
+    "restore"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "p0-roundtrip-report-v1"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "file_count",
+        "total_plaintext_bytes"
+      ],
+      "properties": {
+        "status": {
+          "const": "complete"
+        },
+        "file_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_plaintext_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "restore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "restored_file_count",
+        "total_bytes_written"
+      ],
+      "properties": {
+        "status": {
+          "const": "complete"
+        },
+        "restored_file_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_bytes_written": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

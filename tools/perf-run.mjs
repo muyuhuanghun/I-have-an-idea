@@ -11,7 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const ARTIFACTS = resolve(REPO_ROOT, "artifacts", "perf-reports");
+const ARTIFACTS = resolve(REPO_ROOT, "artifacts", "performance-reports");
 const HEAD = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
 
 const POWER_SHELL_SCRIPT = "$d = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\"; $disk = Get-PhysicalDisk | Select-Object -First 1; $plan = (powercfg /getactivescheme) -replace '.*:\\s+',''; $fs = $d.FileSystem; Write-Output \"$($disk.Model)|$($disk.MediaType)|$($disk.BusType)|$fs|$plan\"";

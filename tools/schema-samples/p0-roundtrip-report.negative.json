@@ -1,0 +1,14 @@
+{
+  "schema_version": "p0-roundtrip-report-v1",
+  "git_commit": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+  "snapshot": {
+    "status": "complete",
+    "file_count": 3,
+    "total_plaintext_bytes": 128
+  },
+  "restore": {
+    "status": "complete",
+    "restored_file_count": 3,
+    "total_bytes_written": 128
+  }
+}

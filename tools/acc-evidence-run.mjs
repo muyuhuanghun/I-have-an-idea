@@ -109,9 +109,6 @@ function artifactFile(relativePathUnderArtifacts) {
   const absolute = join(ARTIFACTS, relativePathUnderArtifacts);
   return { path: relativePathUnderArtifacts, sha256: sha256File(absolute) };
 }
-function artifactBytes(relativePathUnderArtifacts, bytes) {
-  return { path: relativePathUnderArtifacts, sha256: sha256Bytes(bytes) };
-}
 
 function spawnWorker(command, args) {
   let stdout = "";
@@ -552,10 +549,6 @@ async function acc18to25() {
   const objectWrapKey = await core.deriveObjectWrapKeyV1(domainDataRoot, recovery.domainId, provider);
   const manifestKey22 = core.encodeObjectStoreKeyV1(recovery.manifestObjectId);
   const manifestEnvelope = new Uint8Array(readFileSync(join(storeRoot, manifestKey22)));
-  const manifest = await core.openManifestObjectV1(
-    { domainId: recovery.domainId, objectId: recovery.manifestObjectId, snapshotId: recovery.snapshotId, envelope: manifestEnvelope, manifestKey },
-    provider
-  );
   const store = new DirectoryObjectStoreV1(storeRoot);
 
   // ACC-18: non-empty target rejected before any write.
@@ -665,7 +658,6 @@ async function acc18to25() {
   writeFileSync(join(mutationVault, "a.md"), "version one\n");
   const mutationStore = join(E2E, "mutation-store");
   mkdirSync(mutationStore, { recursive: true });
-  const mutationLog = join(E2E, "mutation.log");
   const versions = new Map([["a.md", ["version one\n", "version two with a very different length\n"]]]);
   const readCounts = new Map();
   const mutationVaultSource = {
@@ -895,9 +887,8 @@ function acc29to31() {
 function acc32() {
   const controlPath = join(E2E, "scanner-control.txt");
   writeFileSync(controlPath, "FILENAME_MARK_alpha CONTENT_MARK_beta PATH_MARK_gamma\n");
-  let scannerOutput = "";
   try {
-    scannerOutput = sh("node", [
+    sh("node", [
       "tools/storage-visibility-scan.mjs",
       "--store-root", storeRoot,
       "--log-file", logPath,

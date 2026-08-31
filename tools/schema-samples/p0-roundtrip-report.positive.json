@@ -1,7 +1,7 @@
 {
   "schema_version": "p0-roundtrip-report-v1",
   "run_id": "00112233-4455-6677-8899-aabbccddeeff",
-  "git_commit": "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+  "git_commit": "00112233445566778899aabbccddeeff00112233",
   "snapshot": {
     "status": "complete",
     "file_count": 3,

@@ -3,7 +3,7 @@
 // real implementation (dist + workers + scanner + Python verifier) and writes one
 // acc-evidence-v1 file per ACC under artifacts/. Gate: --evidence-root artifacts must PASS.
 import { createHash, randomUUID } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,7 +49,17 @@ function sha256File(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 function sh(command, args) {
-  return execFileSync(command, args, { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  // Node >= 20.12 refuses to spawn .cmd shims directly (EINVAL); route them through cmd.exe.
+  if (!(process.platform === "win32" && command.toLowerCase().endsWith(".cmd"))) {
+    return execFileSync(command, args, { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  }
+  const result = spawnSync([command, ...args].join(" "), { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, shell: true });
+  if (result.error || result.status !== 0) {
+    const error = new Error(`${command} failed (status=${result.status}, code=${result.error?.code ?? "none"}): ${result.stderr ?? ""}`);
+    error.stdout = result.stdout ?? "";
+    throw error;
+  }
+  return result.stdout ?? "";
 }
 function schemaAccepts(schemaName, instancePath) {
   const source = "import sys; from pathlib import Path; import tools.verify_phase0_contracts as v; v._validate_against_schema(v.load_json(Path(sys.argv[2])), v._load_schema(sys.argv[1]), sys.argv[2])";

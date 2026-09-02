@@ -1,8 +1,8 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS — Phase 1 正式三环境矩阵已完成，Web Crypto/Noble 两个 aggregate 均为 `cross_env_pass`；ADR-0013 选择 Web Crypto 和 Suite 1，DP-001..005 已关闭；P0-R1 仍未实现/未测试，37 ACC 仍为 `untested`**
-> 日期：2026-08-29
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-30 的 R1 evidence/closeout 因 oracle、嵌套 schema 与 provenance 缺陷于 2026-08-31 撤回；37 ACC 仍为 `untested`，P0-R1 与 Phase 5 均未关闭。**
+> 日期：2026-08-31
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
 >
@@ -263,7 +263,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
 | 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional` |
-| Schema 强制门禁 | `validate_evidence` 用 `acc-evidence-v1` 真校验每份 evidence；`--validate-samples` 用 5 对正/负样本反身校验 5 份 schema 自身 | design+samples PASS | 5 份正样本通过、5 份负样本被拒 |
+| Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 9 对正/负样本反身校验 9 份 schema | design+samples PASS | 9 份正样本通过、9 份负样本被拒 |
 
 ## 13. 当前机器门禁
 
@@ -326,6 +326,8 @@ RUNTIME_LIMITS_V1_ACCEPTED_AND_MACHINE_GATED
 PHASE_4_A_SNAPSHOT_CREATE_ORCHESTRATION_IMPLEMENTED
 PHASE_4_B0_RESTORE_PIPELINE_CONTRACT_ACCEPTED
 PHASE_4_B_A_RESTORE_ORCHESTRATION_IMPLEMENTED
+R1_CANDIDATE_EVIDENCE_REJECTED_2026_08_31
+PHASE_5_WIRING_REJECTED_AND_REMOVED_FROM_WORKTREE
 P0_R1_NOT_IMPLEMENTED
 P0_R1_NOT_TESTED
 ACC_37_OF_37_UNTESTED
@@ -349,7 +351,7 @@ ACC_37_OF_37_UNTESTED
 - Phase 4-A 已单独授权：snapshot 创建编排（core `createSnapshotV1`，严格按 ADR-0017 §4 顺序、§6 碰撞循环、§7 日志绑定、§8 orphan 语义、§9 错误收敛）与 Node 日志 sink/Recovery File 目标适配器、1 MiB 分块稳定读取、`snapshot-log-v1` schema 机器门及 ADR-0017 §10 测试边界已实现，已由提交 `fbdf325` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
 - Phase 4-B-0 已完成并经独立复审纠错：保持 `INCOMPLETE_RESTORE` v1 不使用，机器 registry 新增 `RESTORE_TARGET_WRITE_FAILED`（+1），ACC-25 oracle 同步到该码，并冻结不含原始路径的 `partialOutputInventory`；
 - Phase 4-B-A 已单独授权：恢复编排（core `restoreSnapshotV1`，ADR-0018 §4 顺序与拒绝规则映射、全量校验先于任何写入）与 `NodeRestoreTarget`、fresh-process worker CLI、纯 stdlib Python 验证器已实现；独立复审指出的错误码闭包、验证器 missing-root 假 PASS/fingerprint 漏检、ASCII fold、清零时序和负面测试缺口已修正；第二轮独立复审边界内 PASS，F7（探针失败错误码语义）经开发者裁决按方案 A 修复（→ `REPARSE_POINT_FOUND`），已由提交 `a6cd59f` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
-- 仍没有 P0-R1、representative/performance evidence 或任何 passed ACC；
+- 仓库中存在 representative/performance 与 37 份 candidate evidence，但 2026-08-31 复审确认它们不能通过修复后的嵌套 schema/provenance/oracle 门；因此仍没有有效 P0-R1 evidence 或任何 passed ACC；
 - 没有任何 ACC、密码候选或安全声明被升级为 passed/accepted/production-ready。
 
 ## 15. 当前状态一致性
@@ -361,6 +363,6 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `historical/superseded/withdrawn`：仅保留决策演进，不是当前权威；
 - `deferred/open/conditional/closed`：只在延期 registry 中使用；`closed` 还必须绑定存在的 closure ADR；
 - `PASS design-only`：只指静态合同检查，绝不等同 P0-R1 PASS；
-- `PASS design-only+samples`：design-only 加上 5 份 schema 的 5 对正/负样本反身校验通过，证明 schema 强制路径在 work；仍非 P0-R1 PASS。
+- `PASS design-only+samples`：design-only 加上 9 份 schema 的 9 对正/负样本反身校验通过，证明 schema 强制路径在 work；仍非 P0-R1 PASS。
 
 本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`，两者都不等于 P0-R1 PASS。

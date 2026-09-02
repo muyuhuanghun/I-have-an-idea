@@ -1,7 +1,7 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1 与 ADR-0013 Suite 1 已冻结；Manifest plaintext 与 Recovery File v1 已实现；Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD 已由提交 `696e199` 纳管并获开发者追认。Phase 3C-0 已冻结 Directory ObjectStore v1 合同（ADR-0015），Phase 3C-A 的 Directory ObjectStore Node adapter 已由提交 `684af1e` 纳管。Phase 3D-0 已冻结存储可见性扫描合同（ADR-0016），Phase 3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。Phase 4-0 已完成：snapshot 创建流水线合同（ADR-0017）已接受，runtime-limits v1 已接入机器门。Phase 4-A 已单独授权并实现 snapshot 创建编排（`createSnapshotV1` + Node 日志 sink 与 Recovery File 目标 + `snapshot-log-v1` 机器门），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：ADR-0018 保持 v1 不使用 `INCOMPLETE_RESTORE`，新增 `RESTORE_TARGET_WRITE_FAILED` 并同步 ACC-25 oracle。Phase 4-B-A 已单独授权并实现恢复编排（`restoreSnapshotV1` + `NodeRestoreTarget` + fresh-process worker 与纯 stdlib Python 验证器）；复审错误已修正；第二轮独立复审边界内 PASS，F7 按方案 A 修复后，已由提交 `a6cd59f` 纳管；37 份正式 ACC evidence 均不存在，全部 ACC 仍为 `untested`
+> 当前状态：wire contract v1、Suite 1、Directory ObjectStore、存储可见性扫描及 Phase 4 snapshot/restore 编排均已实现并纳管。后续虽然生成了 37 份 candidate evidence，但 2026-08-31 复审发现其内层 perf/schema/provenance 与多个 required oracle 不成立，不能算正式 ACC evidence；关闭报告已撤回，37 ACC 继续 `untested`。协议实现状态不因此回退，但 P0-R1、插件产品接线和 HTTP ObjectStore 解锁均未成立。
 > 日期：2026-08-30
 > 当前权威：ADR-0011、ADR-0012、ADR-0013、ADR-0015、ADR-0016、ADR-0017、ADR-0018、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`、`docs/contracts/p0-runtime-limits-v1.json`、`docs/schemas/storage-visibility-scan-v1.schema.json`、`docs/schemas/p0-runtime-limits-v1.schema.json`
 

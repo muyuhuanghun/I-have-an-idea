@@ -84,7 +84,7 @@ python tools/verify_phase0_contracts.py --validate-samples
 python tools/verify_phase0_contracts.py --evidence-root artifacts
 ```
 
-需要 37 份 ACC evidence 全部通过；在它们不存在时必须失败，不能把 design-only PASS 解释成 P0-R1 PASS。`validate_evidence` 在加载每份 evidence 后用 `acc-evidence-v1` 真校验 enum/pattern/format/required/additionalProperties/uniqueItems/contains 等约束；任何缺字段、未知字段、错误类型或非法 uuid/date-time 都会使该 evidence 立即被拒，而不再等 `required_checks` 检查才被发现。`artifacts[].path` 必须位于 `evidence_root` 之下、文件存在、`sha256` 与文件实际内容匹配。
+需要 37 份 ACC evidence 全部通过；在它们不存在、registry/matrix 未同步为 `passed` 或 evidence commit 不一致时必须失败，不能把 design-only PASS 解释成 P0-R1 PASS。`validate_evidence` 在加载每份 evidence 后用 `acc-evidence-v1` 真校验 enum/pattern/format/required/additionalProperties/uniqueItems/contains 等约束；还递归校验 perf、storage-visibility 与 roundtrip artifacts 的各自 schema，以及 perf raw artifact hash。任何缺字段、未知字段、错误类型、非法 uuid/date-time 或嵌套 hash 不一致都会立即被拒。`artifacts[].path` 必须位于 `evidence_root` 之下、文件存在、`sha256` 与文件实际内容匹配。
 
 ## 后果
 

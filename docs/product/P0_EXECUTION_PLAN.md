@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 0 设计合同门、Phase 1 正式矩阵和 Phase 2 窄范围实现已完成，ADR-0013/0014 分别关闭 DP-001..005 和 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID/canonical base64url、Object AAD/Envelope、对象密钥包装及文件/Manifest 纯内存 AEAD。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍须在 snapshot pipeline 实现后另按 P0-R1 证据门执行，当前未生成。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`。Phase 4-A 已单独授权并实现 snapshot 创建编排（共享核心 `createSnapshotV1`、Node 日志 sink 与 Recovery File 目标、1 MiB 分块稳定读取、`snapshot-log-v1` 机器门、ADR-0017 §10 测试边界），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：恢复流水线合同（ADR-0018）保持 v1 不使用 `INCOMPLETE_RESTORE`，registry 新增 `RESTORE_TARGET_WRITE_FAILED`，ACC-25 oracle 同步到该码并冻结 path-free `partialOutputInventory`。Phase 4-B-A 已单独授权并实现恢复编排（共享核心 `restoreSnapshotV1`、Node `NodeRestoreTarget`、fresh-process worker 与纯 stdlib Python 验证器）；复审错误已修正；第二轮独立复审边界内 PASS，F7（探针失败错误码语义）经开发者裁决按方案 A 修复后，已由提交 `a6cd59f` 纳管。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止。DP-007/008/010/012 保持 `open`，DP-011 保持 `conditional`，37 ACC 全部保持 `untested`；P0-R1 仍未实现/未测试
+> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回：perf report 不满足自身 schema 和 ADR-0017 hash binding，evidence runner 多项 required check 未执行真实 oracle，ACC-36 未证明 clean repeatability，ACC-37 未绑定真实开发者裁决。Phase 5 `841c26e` 也因不可构建、runtime-limits 绑定错误、源 Vault 写入和越界实现插件恢复而不成立，本轮工作树已移除该接线。机器 registry 中 DP-007/008/010/012 仍为 `open`、DP-011 为 `conditional`、37 ACC 仍为 `untested`；当前授权边界回到 R1 evidence 工具修复与 clean-commit 重跑，P0-R1、Phase 5 和 DP-014 解锁均未关闭。
 >
 > 日期：2026-08-30
 >
@@ -499,7 +499,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - ADR-0011 消除 Manifest AAD/recovery material 循环依赖，冻结 wire bytes/HKDF/object ID；
 - ADR-0012 冻结 5 份 JSON Schema、缺项失败规则和数值 oracle；
 - registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
-- `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会把任何 ACC 从 `untested` 升级；`--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身，证明 schema 强制路径在 work；`--evidence-root` 模式用 `acc-evidence-v1` 真校验每份 evidence（缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反均立即被拒）；
+- `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会自动升级 ACC；`--validate-samples` 模式用 9 对正/负样本反身校验当前 9 份 schema；`--evidence-root` 模式同时校验 ACC 外层与 perf/visibility/roundtrip 内层 schema、raw artifact hash、同一 evidence commit 及 registry/matrix 的 `passed` 状态；
 - Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；Phase 1 实现与 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`；
 - Phase 1 已按用户单独授权完成工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和正式三环境 smoke；六份 source report 绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，Android 两份 verified binding 已独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 已选择 Web Crypto 并关闭 DP-001..005。
 - Phase 2 实现提交为 `dc41fe435b7df95208ffb334dae9a90080bbbb3a`；fixture 绑定修正提交 `d170d97bce59f991dc180319c12a7127cc3dc1bd` 后取得 `mode=formal`，ADR-0014 关闭 DP-006/009。
@@ -756,12 +756,12 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-A 已完成各自获授权的合同与实现切片。Phase 4-B-0 合同已接受，Phase 4-B-A 恢复编排与 fresh-process harness 已实现；独立复审三轮（R1 REQUEST CHANGES → 补丁 → R2 追加 P2 → 补丁 → R2 边界内 PASS），F7 语义细化项经开发者裁决按方案 A 修复后，已由提交 `a6cd59f` 纳管。下一授权门槛为 P0-R1 证据阶段：R1-0 证据计划冻结（DP-007/008/010/012 参数与 37 份 ACC 运行矩阵）→ 代表性 fixture 与性能门 → `--evidence-root artifacts` 门禁 PASS → P0-R1 关闭报告。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。后续 R1-A/B/C 和 Phase 5 虽已进入 Git 历史，但 2026-08-31 复审确认 R1 evidence 不满足冻结 oracle/schema/provenance，Phase 5 也不可构建且越界；两者当前都不算完成。下一授权门槛回到 R1 evidence 修复：clean commit → 重跑 12 份 perf report → 同一 clean commit 生成 37 份 ACC evidence → ACC-37 machine-scan hash 的显式开发者 token → registry/矩阵同步为 `passed` → 嵌套 `--evidence-root artifacts` 门通过 → 新关闭报告。
 
 1. 第二轮独立复审必须确认 Phase 4-B 的合同、实现、测试与已知限制一致；有阻断 finding 时不得编写关闭报告；
 2. 复审 PASS 后才编写 `docs/test-plans/phase4b-restore-report.md`，且只能称为 dirty-source implementation review evidence；
-3. Phase 4-B 关闭报告完成后，由用户另行决定是否授权提交/推送，以及是否进入 Phase 5-0 的 CLI/极薄 Obsidian 插件接线合同；
-4. 未获得新的明确授权前，不实施 CLI/插件产品接线、representative/performance fixture、正式 ACC evidence、P0-R1 关闭或 HTTP ObjectStore；
+3. 本轮修复未经用户明确授权不得自动提交/推送；clean-commit ACC-36 与正式 perf/evidence 重跑必须发生在后续明确提交授权之后；
+4. 在新的 P0-R1 关闭报告成立前，不实施 CLI/插件产品接线、Phase 5、DP-014 解锁或 HTTP ObjectStore；
 5. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义的修改都必须先停下并形成明确合同裁决；
 6. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
 

@@ -4,9 +4,9 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 0 设计合同静态门禁通过；Phase 1 正式矩阵与 ADR-0013 已完成，DP-001..005 已关闭。Phase 2 已实现并由 ADR-0014 关闭 DP-006/009；Phase 3A Recovery File v1 已由提交 `454afdd` 纳管。Phase 3B 已单独授权并由提交 `696e199` 纳管、获开发者追认：冻结的三条 HKDF、随机 object ID 与 canonical base64url、Object AAD/Envelope v1、文件对象密钥包装及文件/Manifest 纯内存 AES-256-GCM seal/open。Phase 3C 已单独授权分两步执行：3C-0 冻结 Directory ObjectStore v1 合同（ADR-0015，registry 仅新增 `OBJECT_STORE_IO_FAILED`）；3C-A 实现 Directory ObjectStore Node adapter，已由提交 `684af1e` 纳管。Phase 3D 已单独授权分两步：3D-0 冻结存储可见性扫描合同（ADR-0016，不新增错误码、不改 DP）；3D-A 的扫描器、CLI、机器 Schema 与测试经直接修正后通过独立复审，已由提交 `1f5e274` 纳管。ACC-32/33 的正式证据仍须在 snapshot pipeline 实现后另按 P0-R1 证据门执行，当前未生成。Phase 4-0 已完成：ADR-0017 经开发者四点确认接受，runtime-limits v1 已接受并接入机器门，registry 新增 `SOURCE_FILE_READ_FAILED` 与 `RECOVERY_FILE_WRITE_FAILED`。Phase 4-A 已单独授权并实现 snapshot 创建编排（共享核心 `createSnapshotV1`、Node 日志 sink 与 Recovery File 目标、1 MiB 分块稳定读取、`snapshot-log-v1` 机器门、ADR-0017 §10 测试边界），已由提交 `fbdf325` 纳管。Phase 4-B-0 已完成并经复审纠错：恢复流水线合同（ADR-0018）保持 v1 不使用 `INCOMPLETE_RESTORE`，registry 新增 `RESTORE_TARGET_WRITE_FAILED`，ACC-25 oracle 同步到该码并冻结 path-free `partialOutputInventory`。Phase 4-B-A 已单独授权并实现恢复编排（共享核心 `restoreSnapshotV1`、Node `NodeRestoreTarget`、fresh-process worker 与纯 stdlib Python 验证器）；复审发现的错误码闭包、验证器假 PASS/fingerprint 漏检、ASCII fold、清零时序与负面测试缺口已修正；第二轮独立复审边界内 PASS，F7（探针失败错误码语义）经开发者裁决按方案 A 修复后，已由提交 `a6cd59f` 纳管。CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止。DP-007/008/010/012 仍为 `open`，DP-011 仍为 `conditional`，37 个 ACC 全部保持 `untested`；P0-R1 仍未实现、未测试
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留；`684af1e` 之后的 R1-A/B/C 与 Phase 5 已在 2026-08-31 复审。复审确认现有 37 份 evidence 只通过了外层 `acc-evidence-v1` 包装门，内部多个 oracle 被硬编码为真，12 份 perf report 缺少 schema 强制要求的 raw artifacts 与 ADR-0017 要求的 build/runtime-limits hash binding，且报告的 `git_commit` 与实际 dirty-source 修正不一致；因此 `b5fcecf` 的 P0-R1 关闭与 DP-014 解锁评估已撤回。Phase 5 `841c26e` 同时存在缺失模块、统一门禁失败、错误 runtime-limits hash、写入源 Vault 及越界加入插件恢复命令等问题，本轮已从工作树移除该接线，等待 R1 重新关闭后按执行计划 §16 另行设计。DP-007/008/010/012 以机器 registry 为准继续 `open`，DP-011 为 `conditional`，37 个 ACC 继续 `untested`；当前只有 design-only/design-only+samples 门可通过，P0-R1 未关闭。
 >
-> 最后更新：2026-08-30
+> 最后更新：2026-08-31
 
 ## 1. 项目一句话定义
 
@@ -907,7 +907,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 2. ADR-0012 和 5 份 JSON Schema 已冻结 smoke/fixture/performance/ACC evidence 的 required 与缺项失败规则；
 3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
 4. deferred registry 已逐项绑定 26 个参数的 owner、阶段、状态、关闭产物和硬停止；DP-001..005 已由 ADR-0013 关闭；
-5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 5 对正/负样本反身校验 5 份 schema 自身（`acc-evidence-v1` / `fixture-manifest-v1` / `perf-report-v1` / `smoke-aggregate-v1` / `smoke-report-v1`），证明 schema 强制路径在 work；`--evidence-root` 模式在加载每份 evidence 后用 `acc-evidence-v1` 真校验，缺字段、未知字段、enum/pattern/format/uniqueItems/contains 违反都立即被拒；
+5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 9 对正/负样本反身校验当前 9 份 schema；`--evidence-root` 模式除校验 `acc-evidence-v1` 外，还递归校验 perf、storage-visibility、roundtrip artifact schema 与 perf raw artifact hash，缺字段、未知字段、非法值或嵌套 hash 不一致都立即被拒；
 6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已按单独授权完成；clean-source 正式矩阵中 Web Crypto 和 Noble 均取得 `cross_env_pass`，ADR-0013 已选择 Web Crypto 并关闭 DP-001..005；Phase 2 Tiny fixture generator/fixture 已纳管，但仍无 passed ACC。
 
 ### 27.4 推迟到 P1-alpha 以后裁决
@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同已经完成静态修复：恢复链不再循环依赖，canonical wire bytes 和 schema 有机器权威，37/16/5 追踪可运行检查，延期项有硬门禁，schema 强制路径由 `--validate-samples` 用正/负样本反身校验。Phase 1 正式矩阵、Phase 2 Tiny fixture/scanner/Manifest、Phase 3 Recovery/Object crypto/Directory ObjectStore，以及 Phase 4-A snapshot 编排均已按各自授权完成；Phase 4-B 恢复实现正在处理第一轮独立复审 finding，仍未提交。P0-R1 正式 evidence 与任何 passed ACC 仍不存在；这些实现和 dirty-source 测试不等于生产安全或 P0-R1 关闭。
+当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。后续 R1 evidence 曾生成，但 2026-08-31 复审证明其内层 artifact/schema/provenance 与多项 oracle 不满足冻结计划，不能视为 passed ACC；关闭报告已撤回。现状仍是 37 个 ACC 全部 `untested`、P0-R1 未关闭，Phase 5 产品接线暂不成立。
 
 ## 30. 仓库状态
 
@@ -972,6 +972,6 @@ docs/
 tools/
 ```
 
-Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 Obsidian 插件、固定密码向量和统一门禁配置已纳管。正式 runtime evidence 位于 `.gitignore` 忽略的 `artifacts/test-reports/crypto-smoke/formal-63db4eeb/`；ADR-0013 记录两个 aggregate 的路径和 SHA-256。Phase 2 已纳管 Tiny fixture generator、20 文件 fixture、只读 scanner 和 Manifest plaintext codec；Phase 3 与 Phase 4-A 的纳管状态见本文件顶部当前状态，Phase 4-B 仍为未提交复审中的 dirty source。P0-R1 与全部 ACC evidence 仍不存在。
+Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 smoke 插件、固定密码向量和统一门禁配置已纳管。Phase 2 至 Phase 4-B 的纳管状态见本文件顶部。`artifacts/` 中存在后续生成的 R1 candidate evidence，但它们已被 2026-08-31 复审判定为不可用于关闭；存在文件不等于有效证据。
 
 当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)，密码选择见 ADR-0013。权威结论是：Phase 0 design-only/design-only+samples 门通过；Phase 1 两候选正式矩阵均为 `cross_env_pass`，DP-001..005 已关闭；P0-R1 仍未实现且 37 ACC 全部未测试。前两项不等于 P0-R1、生产安全或后续阶段授权；在完整实现、测试和独立审计以前，不承诺生产可用。

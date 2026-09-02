@@ -93,13 +93,13 @@ snapshot 侧参数已在 `p0-runtime-limits-v1` 冻结（1 MiB chunk、并发 1�
 
 随接受提交完成的文档动作：本 ADR 翻为已接受；四个 DP 条目加"参数已由 ADR-0019 冻结"注记（状态仍 `open` 待证据）。R1-A（fixture 生成器扩展 + perf harness）为独立授权切片，未获授权不得开工。
 
-## 当前参数状态
+## 当前参数状态（2026-08-31 复审纠正）
 
-参数已由本 ADR 冻结并经开发者确认；DP-007/008/010/012 已于 2026-08-30 R1-A 产物落地后**关闭**（见下方记录）。R1-B 的 37 份 acc-evidence-v1 尚未生成，全部 ACC 仍为 `untested`；R1-A 之后的 R1-B/C 未获授权。
+参数提案仍由本 ADR 冻结，但关闭状态以 `p0-deferred-parameters.json` 为准：DP-007/008/010/012 均为 `open`。2026-08-30 的 R1-A/B artifacts 已在 2026-08-31 复审中降级为历史 candidate：perf report 缺 raw artifacts 与 build/runtime-limits binding，且 commit provenance 不成立；它们不能关闭 DP-010/012，也不能支撑 ACC-26/29/30/31。37 ACC 继续 `untested`。
 
-## R1-A 产物与关闭记录（2026-08-30）
+## R1-A 历史 candidate 记录（2026-08-30；不构成关闭）
 
-R1-A（开发者同日授权）产物已落地并关闭 DP-007/008/010/012：
+R1-A（开发者同日授权）曾生成下列产物；以下数值和 hash 只描述当时文件，不代表复审后仍有效：
 
 1. **DP-008**：`tools/fixture-generator.mjs` 扩展 `--profile representative-small|representative-large`（generator v1.1.0，seed `ekd-representative-v1`，绑定提交 `3a0c2bb`）。两份 `fixture-manifest-v1` 已入库：
    - representative-small：10,000 文件 / 134,217,679 字节（范围内），manifest sha256 `655d3bc4d639148bc40a059b2466a61cd7d87d1f3616d9aa804ab33f4c071fe4`；
@@ -111,5 +111,5 @@ R1-A（开发者同日授权）产物已落地并关闭 DP-007/008/010/012：
    - small-restore-cold-1 `761a4ce8f1eeec655ae83be788cb65969ed7f92d79b9f5dd0e1129a70fda668e`；small-restore-warm-1 `930421887e0df063633ea0783330d1c4b4a5560e01a84053f96bd150e322e5ec`；small-restore-warm-2 `edba996a26862345a1a66a5aaede7c045ccac8df44e9814036f8f40d4a35f73d`；
    - large-create-cold-1 `d30cbb4dac3ffd1cf1d1636f4bd3e7045c64215fac10558ed8f583ed188a1495`；large-create-warm-1 `19f42c9898ba5382be55b3a97b62856059133aefe32f95823424c215cee35d3f`；large-create-warm-2 `57b74c501e07cb2df133204cc2bea456de451207327935a7e7c714b3d9749fe5`；
    - large-restore-cold-1 `34dfe3016a9f1ba34b72868f02e018f3151b43bd8925cfc67e123eedc7ebcfb0`；large-restore-warm-1 `c4c3f9b70b5879104ef356a402ec27a820c2f2b472e5a9b54589a2162ead69ce`；large-restore-warm-2 `e37773378b48dc8ba3a24d3966430c7fccafb41c29c656c703d28bff09e3974d`。
-4. **DP-012**：snapshot 侧参数（1 MiB chunk、并发 1、预取 0、8 次总尝试）+ 恢复侧顺序结构，经 perf 对比验证：peak RSS 全部 ≤ 169.4 MiB（限 512 MiB），large−small 增量 17.9–28.2 MiB（限 128 MiB），fixture 增长比 8.0（≥7.5）——全部达标。
-5. **诚实边界**：perf-report-v1 的 `bytes_verified`/ACC-26/29/30/31 的正式 `acc-evidence-v1` 打包属 R1-B；本记录不升级任何 ACC 状态。
+4. **DP-012 candidate**：旧报告中的数值显示 peak RSS ≤ 169.4 MiB、large−small 增量 17.9–28.2 MiB、fixture 增长比 8.0；但因报告 schema/provenance/binding 不合格，不能据此关闭 DP-012。
+5. **当前边界**：这些文件可以帮助定位和重跑，不能升级 DP 或 ACC 状态。

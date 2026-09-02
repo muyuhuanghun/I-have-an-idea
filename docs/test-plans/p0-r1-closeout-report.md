@@ -2,13 +2,25 @@
 
 > 日期：2026-08-30
 >
-> 状态：P0-R1 证据阶段完成，37 份 acc-evidence-v1 全部通过机器 oracle 校验；ACC-37 开发者裁决完成
+> 状态：**已撤回 / REOPENED**。2026-08-31 独立复审确认本报告所依据的 evidence gate 只校验了外层包装，未证明多项内层 oracle；ACC-37 也没有可复核的显式开发者裁决绑定。
 >
 > 基线：`572f229`（R1-B 提交之后）
 >
-> 证据门：`python tools/verify_phase0_contracts.py --evidence-root artifacts` → **PASS**
+> 当前证据门：`python -B tools/verify_phase0_contracts.py --validate-samples --evidence-root artifacts` → **FAIL**（registry 仍为 `untested`；旧 perf/evidence artifacts 也不满足修复后的嵌套 schema/provenance 门）
 
-## 1. 关闭判定
+## 0. 2026-08-31 复审纠正（当前权威）
+
+本报告其余章节保留为历史候选记录，不再构成关闭结论。撤回理由如下：
+
+1. `tools/acc-evidence-run.mjs` 曾把多项 required check 直接写成 `true`：ACC-16 没有独立执行 Manifest AAD 篡改；ACC-26/27/28 没从 1 GiB 往返与代码文件字节比较结果导出；ACC-35 没调用 schema validator；ACC-36 没检查 clean checkout 或执行两次独立生成；ACC-37 只扫 4 份文档和 5 个短语，并在关闭报告尚未存在时声称已绑定开发者裁决。
+2. 12 份 perf report 的 `raw_artifacts` 为空，违反 `perf-report-v1.schema.json` 的 `minItems: 1`；schema 当时没有机器强制 ADR-0017 要求的 report-to-build 与 report-to-runtime-limits hash binding。
+3. perf report 记录 `git_commit=3a0c2bb`，但运行所需修正在后续 `79481a7` 才提交，属于 dirty-source 证据；37 份 ACC evidence 绑定 `afd5ca4`，统一门禁 lint 修正在 `572f229`，因此本报告“全部基于 `572f229` 构建产物”的说法不实。
+4. 机器 registry 与验收矩阵始终保持 37 个 `untested`，DP-007/008/010/012 也仍为 `open`；历史正文声称 37 ACC 全 PASS、四个 DP 已关闭，与权威机器状态冲突。
+5. `841c26e` Phase 5 在 R1 未合法关闭时进入下一阶段，且自身 typecheck 失败并越过 §16 的 snapshot-only 插件边界，因此不能作为本报告的后续有效阶段。
+
+恢复关闭所需的最小路径是：修复后的 runner 与 schema 在一个 clean commit 上运行；12 份 perf report 必须重新生成并绑定 clean build/runtime-limits/raw artifacts；37 份 evidence 必须来自同一 clean commit；ACC-37 先产出确定性 machine-scan hash，再由开发者用精确 token 单独裁决；最后把 registry 与矩阵 37 项同步改为 `passed`，复跑嵌套 evidence gate 后才能另写新的关闭报告。当前没有该授权与证据。
+
+## 1. 历史关闭判定（已撤回）
 
 P0-R1（第一轮本地加密快照闭环验收）的证据阶段已完成。37 份 `acc-evidence-v1` 报告覆盖执行计划 §4.1 P0 IN 清单的全部安全与功能验收条目，每份报告通过以下四重机器校验：
 

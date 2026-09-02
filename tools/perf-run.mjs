@@ -142,7 +142,7 @@ function peakFromSamples(sampleDoc) {
   return sampleDoc.samples.reduce((peak, sample) => Math.max(peak, sample.rss_bytes ?? 0), 0);
 }
 
-function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDurationMs, result, rssDoc, verify, binding, rawArtifacts }) {
+function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDurationMs, result, rssDoc, verify, binding, rawArtifacts, environment }) {
   const peak = peakFromSamples(rssDoc);
   const idle = rssDoc.samples[0]?.rss_bytes ?? 0;
   const createRun = mode === "create";
@@ -164,7 +164,7 @@ function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDur
       manifest_sha256: fixture.manifestSha256,
       generator_sha256: fixture.manifest.generator.sha256
     },
-    environment: collectEnvironment(),
+    environment,
     cache_state: cacheState,
     measurement: {
       clock: "performance.now",
@@ -252,6 +252,14 @@ async function runMatrix() {
         const stdoutFile = join(runDir, "worker-stdout.json");
 
         const domainId = createHash("sha256").update(`ekd-domain|${fixtureKey}`).digest("hex");
+        // The frozen perf-report contract requires one stable environment across the matrix
+        // (bounded_memory_comparison.same_environment is const true); fail fast instead of
+        // emitting 12 reports that only the evidence gate would reject.
+        const runEnvironment = collectEnvironment();
+        const changedKey = Object.keys(runEnvironment).find((key) => JSON.stringify(runEnvironment[key]) !== JSON.stringify(environment[key]));
+        if (changedKey !== undefined) {
+          throw new Error(`Formal perf evidence requires a stable environment; ${changedKey} changed from ${JSON.stringify(environment[changedKey])} to ${JSON.stringify(runEnvironment[changedKey])} before ${label}`);
+        }
         let spawned;
         let result;
         if (mode === "create") {
@@ -316,6 +324,7 @@ async function runMatrix() {
           rssDoc,
           verify,
           binding,
+          environment: runEnvironment,
           rawArtifacts: rawArtifacts.map(rawArtifact)
         });
         if (result.status !== "complete" || spawned.exitCode !== 0) {

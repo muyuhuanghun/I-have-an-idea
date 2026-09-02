@@ -245,6 +245,8 @@ async function runMatrix() {
           await mkdir(targetRoot, { recursive: true });
         }
         const runDir = join(ARTIFACTS, "raw", label);
+        // Recovery File targets must not pre-exist (ports.ts: never overwrite); clear stale raw artifacts.
+        await rm(runDir, { recursive: true, force: true });
         await mkdir(runDir, { recursive: true });
         const rssFile = join(runDir, "rss-samples.json");
         const stdoutFile = join(runDir, "worker-stdout.json");

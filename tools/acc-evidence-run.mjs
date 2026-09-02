@@ -4,7 +4,7 @@
 // acc-evidence-v1 file per ACC under artifacts/. Gate: --evidence-root artifacts must PASS.
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,12 @@ const REPORTS = join(ARTIFACTS, "test-reports");
 const PERF_REPORTS = join(ARTIFACTS, "performance-reports");
 const E2E = join(ARTIFACTS, "e2e");
 const GIT_COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+const SOURCE_TREE_STATUS_AT_START = execFileSync(
+  "git",
+  ["status", "--porcelain=v1", "--untracked-files=all"],
+  { cwd: REPO_ROOT, encoding: "utf8" }
+).trim();
+const SOURCE_TREE_CLEAN_AT_START = SOURCE_TREE_STATUS_AT_START.length === 0;
 const RUN_ID = randomUUID();
 
 const core = await import("../packages/core/dist/index.js");
@@ -33,6 +39,8 @@ const storeRoot = join(E2E, "store");
 const logPath = join(E2E, "snapshot.log");
 const recoveryPath = join(E2E, "recovery.bin");
 const targetRoot = join(E2E, "target");
+let formalSourceBefore;
+let formalSourceAfter;
 
 function sha256Bytes(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
@@ -42,6 +50,15 @@ function sha256File(path) {
 }
 function sh(command, args) {
   return execFileSync(command, args, { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+}
+function schemaAccepts(schemaName, instancePath) {
+  const source = "import sys; from pathlib import Path; import tools.verify_phase0_contracts as v; v._validate_against_schema(v.load_json(Path(sys.argv[2])), v._load_schema(sys.argv[1]), sys.argv[2])";
+  try {
+    sh("python", ["-B", "-c", source, schemaName, instancePath]);
+    return true;
+  } catch {
+    return false;
+  }
 }
 function structuralCode(error) {
   if (error !== null && typeof error === "object" && "code" in error) {
@@ -80,10 +97,19 @@ function writeEvidence(accId, checks, observedErrorCodes, sideEffectOverrides, a
   const oracle = acceptance[accId].oracle;
   for (const required of oracle.required_checks) {
     if (!checks[required]) throw new Error(`${accId}: missing check ${required}`);
+    if (checks[required].passed !== true) {
+      throw new Error(`${accId}: required check ${required} did not pass (actual=${JSON.stringify(checks[required].actual)})`);
+    }
   }
   for (const group of oracle.required_error_code_groups) {
     if (!group.some((code) => observedErrorCodes.includes(code))) {
       throw new Error(`${accId}: no observed error from group ${group.join("/")}`);
+    }
+  }
+  const sideEffects = { ...SIDE_EFFECTS, ...sideEffectOverrides };
+  for (const forbidden of oracle.forbidden_side_effects) {
+    if (sideEffects[forbidden] !== false) {
+      throw new Error(`${accId}: forbidden side effect ${forbidden} was not proven false`);
     }
   }
   const evidence = {
@@ -95,13 +121,16 @@ function writeEvidence(accId, checks, observedErrorCodes, sideEffectOverrides, a
     status: "passed",
     checks,
     observed_error_codes: [...new Set(observedErrorCodes)],
-    side_effects: { ...SIDE_EFFECTS, ...sideEffectOverrides },
+    side_effects: sideEffects,
     artifacts
   };
   const relative = acceptance[accId].evidence_path.replace(/^artifacts\//, "");
   const target = join(ARTIFACTS, relative);
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, `${JSON.stringify(evidence, null, 2)}\n`);
+  if (!schemaAccepts("acc-evidence-v1.schema.json", target)) {
+    throw new Error(`${accId}: generated evidence failed acc-evidence-v1 schema validation`);
+  }
   written.push(target);
 }
 
@@ -134,6 +163,9 @@ function copyDir(from, to) {
 }
 
 async function main() {
+  if (!SOURCE_TREE_CLEAN_AT_START) {
+    throw new Error("Formal ACC evidence requires a clean source tree before any evidence output is written.");
+  }
   rmSync(E2E, { recursive: true, force: true });
   mkdirSync(vaultRoot, { recursive: true });
   mkdirSync(storeRoot, { recursive: true });
@@ -146,6 +178,7 @@ async function main() {
   writeFileSync(join(vaultRoot, "FILENAME_MARK_alpha.md"), "body with CONTENT_MARK_beta inside\n");
   mkdirSync(join(vaultRoot, "PATH_MARK_gamma"), { recursive: true });
   writeFileSync(join(vaultRoot, "PATH_MARK_gamma", "deep.md"), "deep marker body\n");
+  formalSourceBefore = hashDir(vaultRoot);
 
   const createRun = spawnWorker("tools/snapshot-worker.mjs", [
     "--vault", vaultRoot, "--store", storeRoot, "--log", logPath,
@@ -153,6 +186,7 @@ async function main() {
   ]);
   const createResult = JSON.parse(createRun.stdout);
   if (createResult.status !== "complete") throw new Error(`formal snapshot failed: ${createRun.stdout}`);
+  formalSourceAfter = hashDir(vaultRoot);
   const restoreRun1 = spawnWorker("tools/restore-worker.mjs", ["--recovery", recoveryPath, "--store", storeRoot, "--target", targetRoot]);
   const restoreResult = JSON.parse(restoreRun1.stdout);
   if (restoreResult.status !== "complete") throw new Error(`formal restore failed: ${restoreRun1.stdout}`);
@@ -163,20 +197,20 @@ async function main() {
   acc02();
   acc03();
   acc04(createResult);
-  acc05();
+  acc05(createRun, restoreRun1, restoreResult);
   await acc06to10();
-  acc11();
+  acc11(createRun, restoreRun1, restoreResult, verifyRun);
   await acc12to14();
   await acc15to17();
   await acc18to25();
   acc26();
-  acc27();
+  acc27(verifyRun);
   acc28();
   acc29to31();
   acc32();
   acc33();
   acc34();
-  acc35();
+  acc35(createResult, restoreResult);
   acc36();
   acc37();
 
@@ -185,31 +219,56 @@ async function main() {
 
 function acc01() {
   const output = sh("node", ["tools/check-imports.mjs"]);
+  const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const coreBuildOutput = sh(pnpm, ["--filter", "@ekd/core", "run", "build"]);
   writeFileSync(join(REPORTS, "acc-01-import-gate-output.txt"), output);
   writeEvidence("ACC-01", {
     schema_valid: boolCheck("schema_valid", true),
     forbidden_import_count_zero: boolCheck("forbidden_import_count_zero", output.includes("PASS") && !output.includes("FAIL")),
-    core_build_exit_zero: boolCheck("core_build_exit_zero", true, "core dist built from the current commit")
+    core_build_exit_zero: boolCheck("core_build_exit_zero", coreBuildOutput !== undefined, "pnpm --filter @ekd/core run build exited zero")
   }, [], {}, [artifactFile("test-reports/acc-01-import-gate-output.txt")]);
 }
 
 function acc02() {
   const aggregateDir = join(ARTIFACTS, "test-reports/crypto-smoke/formal-63db4eeb");
   const environments = [];
+  const expectedEnvironmentIds = ["android-obsidian", "windows-node-cli", "windows-obsidian"];
+  const sourceCommits = new Set();
   for (const candidate of ["webcrypto", "noble-ciphers-hashes"]) {
     const path = join(aggregateDir, candidate, "suite-1/aggregate/smoke-aggregate.json");
     if (existsSync(path)) {
       const json = JSON.parse(readFileSync(path, "utf8"));
       const envVerdicts = Object.values(json.environment_verdicts ?? {});
-      environments.push({ candidate, path: `test-reports/crypto-smoke/formal-63db4eeb/${candidate}/suite-1/aggregate/smoke-aggregate.json`, sha256: sha256File(path), envVerdicts, crossEnv: json.cross_env_verdict });
+      const reportEnvironmentIds = [];
+      let allReportsClean = true;
+      for (const sourceReport of json.source_reports ?? []) {
+        const reportPath = join(dirname(dirname(path)), sourceReport.path);
+        const report = JSON.parse(readFileSync(reportPath, "utf8"));
+        reportEnvironmentIds.push(report.environment.id);
+        sourceCommits.add(report.environment.source_commit);
+        const treeState = report.environment_manifest.items.find((item) => item.key === "source_tree_state")?.value;
+        allReportsClean &&= treeState === "clean";
+      }
+      environments.push({
+        candidate,
+        path: `test-reports/crypto-smoke/formal-63db4eeb/${candidate}/suite-1/aggregate/smoke-aggregate.json`,
+        sha256: sha256File(path),
+        envVerdicts,
+        crossEnv: json.cross_env_verdict,
+        reportEnvironmentIds: reportEnvironmentIds.sort(),
+        allReportsClean
+      });
     }
   }
-  const counted = environments.reduce((sum, env) => sum + env.envVerdicts.length, 0);
   writeEvidence("ACC-02", {
     schema_valid: boolCheck("schema_valid", true),
-    three_environments_present: boolCheck("three_environments_present", counted >= 3, `counted ${counted} environment entries across formal aggregates`),
-    core_bundle_hash_unique_count_one: boolCheck("core_bundle_hash_unique_count_one", true, "aggregate records a single shared-core bundle hash"),
-    all_environment_verdicts_pass: boolCheck("all_environment_verdicts_pass", environments.every((env) => env.crossEnv === "cross_env_pass" && env.envVerdicts.every((verdict) => verdict === "pass")))
+    three_environments_present: boolCheck("three_environments_present", environments.length === 2 && environments.every((env) => JSON.stringify(env.reportEnvironmentIds) === JSON.stringify(expectedEnvironmentIds))),
+    core_bundle_hash_unique_count_one: boolCheck(
+      "core_bundle_hash_unique_count_one",
+      sourceCommits.size === 1,
+      `formal reports bind one clean shared-core source commit; app-shell bundle hashes differ by design (source commits: ${[...sourceCommits].join(",")})`
+    ),
+    all_environment_verdicts_pass: boolCheck("all_environment_verdicts_pass", environments.every((env) => env.allReportsClean && env.crossEnv === "cross_env_pass" && env.envVerdicts.every((verdict) => verdict === "pass")))
   }, [], {}, environments.map((env) => ({ path: env.path, sha256: env.sha256 })));
 }
 
@@ -236,20 +295,22 @@ function acc03() {
 
 function acc04(createResult) {
   const recoveryBytes = readFileSync(recoveryPath);
+  const randomProbeA = provider.randomBytes(32);
+  const randomProbeB = provider.randomBytes(32);
   writeEvidence("ACC-04", {
     schema_valid: boolCheck("schema_valid", true),
-    random_source_attested: boolCheck("random_source_attested", true, "WebCryptoAes256Provider (globalThis.crypto.getRandomValues)"),
+    random_source_attested: boolCheck("random_source_attested", randomProbeA.byteLength === 32 && randomProbeB.byteLength === 32 && !bytesEqual(randomProbeA, randomProbeB) && !randomProbeA.every((byte) => byte === 0), "two WebCryptoAes256Provider probes are correctly sized, nonzero, and distinct"),
     recovery_root_length_32: boolCheck("recovery_root_length_32", recoveryBytes.byteLength === 167 && createResult.status === "complete"),
     recovery_path_outside_vault: boolCheck("recovery_path_outside_vault", existsSync(recoveryPath) && !recoveryPath.startsWith(vaultRoot))
   }, [], { source_vault_modified: false }, [artifactFile("e2e/recovery.bin")]);
 }
 
-function acc05() {
+function acc05(createRun, restoreRun, restoreResult) {
   writeEvidence("ACC-05", {
     schema_valid: boolCheck("schema_valid", true),
-    creator_process_exited: boolCheck("creator_process_exited", true, "worker A exited before worker B started"),
-    fresh_process_read_disk_file: boolCheck("fresh_process_read_disk_file", true, "worker B read the Recovery File from disk"),
-    restore_completed: boolCheck("restore_completed", true, "restore result status=complete")
+    creator_process_exited: boolCheck("creator_process_exited", createRun.exitCode === 0, "worker A exited before worker B started"),
+    fresh_process_read_disk_file: boolCheck("fresh_process_read_disk_file", existsSync(recoveryPath) && restoreRun.exitCode === 0, "worker B received only the on-disk Recovery File path and ObjectStore path"),
+    restore_completed: boolCheck("restore_completed", restoreRun.exitCode === 0 && restoreResult.status === "complete")
   }, [], { undeclared_persistent_state_used: false, source_vault_modified: false }, [artifactFile("e2e/recovery.bin")]);
 }
 
@@ -257,6 +318,32 @@ async function acc06to10() {
   const recoveryBytes = new Uint8Array(readFileSync(recoveryPath));
   const observed = [];
   const decoded = await core.decodeRecoveryFileV1(recoveryBytes, provider);
+  const material = {
+    domainId: decoded.domainId,
+    recoveryRoot: decoded.recoveryRoot,
+    snapshotId: decoded.snapshotId,
+    manifestObjectId: decoded.manifestObjectId
+  };
+  let missingFieldVariantsRejected = 0;
+  for (const field of ["domainId", "recoveryRoot", "snapshotId", "manifestObjectId"]) {
+    try {
+      await core.encodeRecoveryFileV1({ ...material, [field]: new Uint8Array(0) }, provider);
+    } catch (error) {
+      const code = structuralCode(error);
+      observed.push(code);
+      if (code === "RECOVERY_FIELD_MISSING") missingFieldVariantsRejected += 1;
+    }
+  }
+  const trailing = new Uint8Array(recoveryBytes.byteLength + 1);
+  trailing.set(recoveryBytes);
+  let trailingRejected = false;
+  try {
+    await core.decodeRecoveryFileV1(trailing, provider);
+  } catch (error) {
+    const code = structuralCode(error);
+    observed.push(code);
+    trailingRejected = code === "RECOVERY_TRAILING_BYTES";
+  }
   writeEvidence("ACC-06", {
     schema_valid: boolCheck("schema_valid", true),
     valid_file_exactly_167_bytes: boolCheck("valid_file_exactly_167_bytes", recoveryBytes.byteLength === 167),
@@ -265,9 +352,9 @@ async function acc06to10() {
       recoveryBytes[0] === 0x45 && recoveryBytes[4] === 1 && recoveryBytes[5] === 1 && recoveryBytes[38] === 1 && decoded.suiteId === 1,
       "magic EKDR, format/protocol version 1, suite 1"
     ),
-    each_missing_field_variant_rejected: boolCheck("each_missing_field_variant_rejected", true, "zeroed security-region variants rejected (see observed codes)"),
-    trailing_bytes_rejected: boolCheck("trailing_bytes_rejected", true, "RECOVERY_TRAILING_BYTES observed below")
-  }, ["RECOVERY_FIELD_MISSING", "RECOVERY_TRUNCATED", "RECOVERY_TRAILING_BYTES"], {}, [artifactFile("e2e/recovery.bin")]);
+    each_missing_field_variant_rejected: boolCheck("each_missing_field_variant_rejected", missingFieldVariantsRejected === 4, `${missingFieldVariantsRejected}/4 short-field variants rejected with RECOVERY_FIELD_MISSING`),
+    trailing_bytes_rejected: boolCheck("trailing_bytes_rejected", trailingRejected)
+  }, observed, {}, [artifactFile("e2e/recovery.bin")]);
 
   let rootFlip = false;
   let locatorFlip = false;
@@ -309,7 +396,7 @@ async function acc06to10() {
   }, observed, {}, [artifactFile("e2e/recovery.bin")]);
 
   let allTruncationsRejected = true;
-  for (let length = 0; length <= 166; length += 7) {
+  for (let length = 0; length <= 166; length += 1) {
     try {
       await core.decodeRecoveryFileV1(recoveryBytes.subarray(0, length), provider);
       allTruncationsRejected = false;
@@ -353,13 +440,13 @@ async function acc06to10() {
   }, observed, {}, [artifactFile("e2e/recovery.bin")]);
 }
 
-function acc11() {
+function acc11(createRun, restoreRun, restoreResult, verifyOutput) {
   writeEvidence("ACC-11", {
     schema_valid: boolCheck("schema_valid", true),
-    creator_process_exited: boolCheck("creator_process_exited", true, "worker A exited before worker B started"),
-    declared_inputs_exactly_two: boolCheck("declared_inputs_exactly_two", true, "recovery file + object store"),
-    restore_completed: boolCheck("restore_completed", true, "restore result status=complete"),
-    independent_verifier_passed: boolCheck("independent_verifier_passed", true, "verify_restore.py RESTORE_VERIFY_PASS")
+    creator_process_exited: boolCheck("creator_process_exited", createRun.exitCode === 0, "worker A exited before worker B started"),
+    declared_inputs_exactly_two: boolCheck("declared_inputs_exactly_two", restoreRun.exitCode === 0, "restore worker received recovery file + ObjectStore; target is output-only"),
+    restore_completed: boolCheck("restore_completed", restoreRun.exitCode === 0 && restoreResult.status === "complete"),
+    independent_verifier_passed: boolCheck("independent_verifier_passed", verifyOutput.includes("RESTORE_VERIFY_PASS"))
   }, [], { undeclared_persistent_state_used: false, source_vault_modified: false }, [artifactFile("test-reports/acc-27-verify-output.txt")]);
 }
 
@@ -367,24 +454,28 @@ async function acc12to14() {
   const observed = [];
   const context = { domainId: DOMAIN_ID, objectId: core.generateObjectIdV1(provider), snapshotId: filled(32, 2) };
   const first = await core.sealFileObjectV1({ ...context, objectWrapKey: filled(32, 3), plaintext: utf8("ACC-12 correlation probe body") }, { cryptoProvider: provider, randomSource: provider });
-  const second = await core.sealFileObjectV1({ ...context, objectId: core.generateObjectIdV1(provider), objectWrapKey: filled(32, 3), plaintext: utf8("ACC-12 correlation probe body") }, { cryptoProvider: provider, randomSource: provider });
+  const secondObjectId = core.generateObjectIdV1(provider);
+  const second = await core.sealFileObjectV1({ ...context, objectId: secondObjectId, objectWrapKey: filled(32, 3), plaintext: utf8("ACC-12 correlation probe body") }, { cryptoProvider: provider, randomSource: provider });
   writeEvidence("ACC-12", {
     schema_valid: boolCheck("schema_valid", true),
-    object_ids_differ: boolCheck("object_ids_differ", !bytesEqual(first.envelope.subarray(19, 31), second.envelope.subarray(19, 31))),
+    object_ids_differ: boolCheck("object_ids_differ", !bytesEqual(context.objectId, secondObjectId)),
     nonces_differ: boolCheck("nonces_differ", !bytesEqual(first.envelope.subarray(19, 31), second.envelope.subarray(19, 31))),
     ciphertext_objects_differ: boolCheck("ciphertext_objects_differ", !bytesEqual(first.envelope, second.envelope))
   }, observed, {}, []);
 
+  const correlationProbe = utf8("ACC-13 content-hash correlation probe");
   const objectId = core.generateObjectIdV1(provider);
+  const secondRandomObjectId = core.generateObjectIdV1(provider);
   const key = core.encodeObjectStoreKeyV1(objectId);
   const decodedId = core.decodeObjectStoreKeyV1(key);
+  const contentHashPrefix = (await provider.sha256(correlationProbe)).subarray(0, 16);
   writeEvidence("ACC-13", {
     schema_valid: boolCheck("schema_valid", true),
     raw_id_length_16: boolCheck("raw_id_length_16", objectId.byteLength === 16),
     store_key_length_22: boolCheck("store_key_length_22", key.length === 22),
     base64url_roundtrip_canonical: boolCheck("base64url_roundtrip_canonical", bytesEqual(decodedId, objectId)),
-    content_hash_not_equal: boolCheck("content_hash_not_equal", !bytesEqual(objectId, utf8("ACC-13 content-hash correlation probe").slice(0, 16)), "object ID compared against raw content bytes"),
-    random_source_attested: boolCheck("random_source_attested", true, "WebCryptoAes256Provider")
+    content_hash_not_equal: boolCheck("content_hash_not_equal", !bytesEqual(objectId, contentHashPrefix), "object ID compared with SHA-256(content)[0:16]"),
+    random_source_attested: boolCheck("random_source_attested", !bytesEqual(objectId, secondRandomObjectId), "two provider-generated 16-byte IDs differ")
   }, observed, {}, []);
 
   const tamperContext = { domainId: DOMAIN_ID, objectId: core.generateObjectIdV1(provider), snapshotId: filled(32, 4) };
@@ -441,6 +532,19 @@ async function acc15to17() {
   }
   rmSync(firstKeyPath(firstKey), { force: true });
   const missingRun = restoreToAcc15();
+  let allTruncationsRejected = true;
+  for (let length = 0; length < saved.byteLength; length += 1) {
+    try {
+      core.decodeObjectEnvelopeV1(saved.subarray(0, length));
+      allTruncationsRejected = false;
+      break;
+    } catch (error) {
+      if (structuralCode(error) !== "OBJECT_TRUNCATED") {
+        allTruncationsRejected = false;
+        break;
+      }
+    }
+  }
   writeFileSync(firstKeyPath(firstKey), saved.slice(0, saved.length - 3));
   const truncatedRun = restoreToAcc15();
   writeFileSync(firstKeyPath(firstKey), new Uint8Array(readFileSync(join(storeRoot, secondKey))));
@@ -472,13 +576,14 @@ async function acc15to17() {
   observed.push(JSON.parse(duplicateRun.stdout).errorCode);
 
   const codes = [missingRun, truncatedRun, wrongRun, trailingRun, brokenMagicRun, duplicateRun].map((run) => JSON.parse(run.stdout).errorCode).filter(Boolean);
+  const duplicateCode = JSON.parse(duplicateRun.stdout).errorCode;
   observed.push(...codes);
   writeEvidence("ACC-15", {
     schema_valid: boolCheck("schema_valid", true),
     missing_object_rejected: boolCheck("missing_object_rejected", missingRun.exitCode === 1),
-    every_truncation_offset_rejected: boolCheck("every_truncation_offset_rejected", truncatedRun.exitCode === 1),
+    every_truncation_offset_rejected: boolCheck("every_truncation_offset_rejected", allTruncationsRejected && truncatedRun.exitCode === 1),
     wrong_id_substitution_rejected: boolCheck("wrong_id_substitution_rejected", wrongRun.exitCode === 1),
-    duplicate_reference_rejected: boolCheck("duplicate_reference_rejected", true, "manifest encoder/decoder reject duplicate object references"),
+    duplicate_reference_rejected: boolCheck("duplicate_reference_rejected", duplicateRun.exitCode === 1 && duplicateCode === "DUPLICATE_OBJECT_REFERENCE"),
     trailing_bytes_rejected: boolCheck("trailing_bytes_rejected", trailingRun.exitCode === 1)
   }, codes, {}, [artifactFile("e2e/recovery.bin")]);
 
@@ -486,6 +591,16 @@ async function acc15to17() {
   tampered[30] = (tampered[30] ?? 0) ^ 0xff;
   writeFileSync(join(storeRoot, manifestKey22), tampered);
   const tamperRun = spawnWorker("tools/restore-worker.mjs", ["--recovery", recoveryPath, "--store", storeRoot, "--target", join(E2E, "acc16-target")]);
+  writeFileSync(join(storeRoot, manifestKey22), manifestEnvelope);
+  const aadMismatchRecoveryPath = join(E2E, "acc16-aad-mismatch.recovery");
+  const aadMismatchRecovery = await core.encodeRecoveryFileV1({
+    domainId: recovery.domainId,
+    recoveryRoot: recovery.recoveryRoot,
+    snapshotId: filled(32, 0x55),
+    manifestObjectId: recovery.manifestObjectId
+  }, provider);
+  writeFileSync(aadMismatchRecoveryPath, aadMismatchRecovery);
+  const aadMismatchRun = spawnWorker("tools/restore-worker.mjs", ["--recovery", aadMismatchRecoveryPath, "--store", storeRoot, "--target", join(E2E, "acc16-target")]);
   // MANIFEST_TRAILING_BYTES lives at the plaintext level: seal a valid manifest plaintext
   // with one appended byte so the envelope authenticates but the plaintext has trailing data.
   const trailingPlaintext = new Uint8Array(manifestPlaintextForTrailing.length + 1);
@@ -505,15 +620,20 @@ async function acc15to17() {
   writeFileSync(join(storeRoot, manifestKey22), invalidEnvelope);
   const invalidRun = spawnWorker("tools/restore-worker.mjs", ["--recovery", recoveryPath, "--store", storeRoot, "--target", join(E2E, "acc16-target")]);
   writeFileSync(join(storeRoot, manifestKey22), manifestEnvelope);
-  console.error("ACC-16 codes:", JSON.parse(tamperRun.stdout).errorCode, "|", JSON.parse(trailingManifestRun.stdout).errorCode, "|", JSON.parse(invalidRun.stdout).errorCode, "| trailingExit:", trailingManifestRun.exitCode);
+  const tamperCode = JSON.parse(tamperRun.stdout).errorCode;
+  const aadMismatchCode = JSON.parse(aadMismatchRun.stdout).errorCode;
+  const trailingManifestCode = JSON.parse(trailingManifestRun.stdout).errorCode;
+  const invalidManifestCode = JSON.parse(invalidRun.stdout).errorCode;
   writeEvidence("ACC-16", {
     schema_valid: boolCheck("schema_valid", true),
-    manifest_ciphertext_bitflip_rejected: boolCheck("manifest_ciphertext_bitflip_rejected", tamperRun.exitCode === 1),
-    manifest_aad_field_bitflip_rejected: boolCheck("manifest_aad_field_bitflip_rejected", tamperRun.exitCode === 1),
-    manifest_plaintext_format_invalid_rejected: boolCheck("manifest_plaintext_format_invalid_rejected", true, "decoder enforces canonical format"),
-    manifest_trailing_bytes_rejected: boolCheck("manifest_trailing_bytes_rejected", trailingManifestRun.exitCode === 1)
-  }, [JSON.parse(tamperRun.stdout).errorCode, JSON.parse(trailingManifestRun.stdout).errorCode, JSON.parse(invalidRun.stdout).errorCode].filter(Boolean), {}, [artifactFile("e2e/recovery.bin")]);
-  console.error("ACC-16 codes:", JSON.parse(tamperRun.stdout).errorCode, "|", JSON.parse(trailingManifestRun.stdout).errorCode, "|", JSON.parse(invalidRun.stdout).errorCode, "| trailingExit:", trailingManifestRun.exitCode);
+    manifest_ciphertext_bitflip_rejected: boolCheck("manifest_ciphertext_bitflip_rejected", tamperRun.exitCode === 1 && tamperCode === "MANIFEST_AEAD_FAILED"),
+    manifest_aad_field_bitflip_rejected: boolCheck("manifest_aad_field_bitflip_rejected", aadMismatchRun.exitCode === 1 && aadMismatchCode === "MANIFEST_AEAD_FAILED", "Recovery File carries a different authenticated snapshot_id, so Manifest AAD verification must fail"),
+    manifest_plaintext_format_invalid_rejected: boolCheck("manifest_plaintext_format_invalid_rejected", invalidRun.exitCode === 1 && invalidManifestCode === "MANIFEST_FORMAT_INVALID"),
+    manifest_trailing_bytes_rejected: boolCheck("manifest_trailing_bytes_rejected", trailingManifestRun.exitCode === 1 && trailingManifestCode === "MANIFEST_TRAILING_BYTES")
+  }, [tamperCode, aadMismatchCode, trailingManifestCode, invalidManifestCode].filter(Boolean), {}, [
+    artifactFile("e2e/recovery.bin"),
+    artifactFile("e2e/acc16-aad-mismatch.recovery")
+  ]);
 
   const wrongDomainMaterial = { domainId: filled(32, 0x99), recoveryRoot: filled(32, 0x88), snapshotId: recovery.snapshotId, manifestObjectId: recovery.manifestObjectId };
   const wrongDomainBytes = await core.encodeRecoveryFileV1(wrongDomainMaterial, provider);
@@ -616,11 +736,21 @@ async function acc18to25() {
     storeBytes.push(readFileSync(join(reparseStore, storeEntry)).toString("latin1"));
   }
   const targetsNotRead = !storeBytes.some((content) => content.includes("TOP-SECRET-REPARSE-TARGET-CONTENT"));
+  const attributedReparseTarget = join(E2E, "acc20-attributed-reparse-target");
+  mkdirSync(attributedReparseTarget, { recursive: true });
+  let otherReparsePointRejected = false;
+  try {
+    await new NodeRestoreTarget(attributedReparseTarget, {
+      reparsePointProbe: async () => true
+    }).verifyEmptyTarget();
+  } catch (error) {
+    otherReparsePointRejected = structuralCode(error) === "REPARSE_POINT_FOUND";
+  }
   writeEvidence("ACC-20", {
     schema_valid: boolCheck("schema_valid", true),
     symlink_rejected: boolCheck("symlink_rejected", reparseResult.status === "failed" && reparseResult.errorCode === "REPARSE_POINT_FOUND", junctionCreated ? "junction created and rejected" : "junction creation unavailable on this host"),
     junction_rejected: boolCheck("junction_rejected", reparseResult.status === "failed"),
-    other_reparse_point_rejected: boolCheck("other_reparse_point_rejected", true, "FILE_ATTRIBUTE_REPARSE_POINT probe covers non-symlink reparse tags"),
+    other_reparse_point_rejected: boolCheck("other_reparse_point_rejected", otherReparsePointRejected, "NodeRestoreTarget FILE_ATTRIBUTE_REPARSE_POINT probe seam returned true and failed closed"),
     targets_not_read: boolCheck("targets_not_read", targetsNotRead)
   }, ["REPARSE_POINT_FOUND"], { source_vault_modified: false, write_outside_target: false }, [artifactFile("e2e/reparse.log")]);
 
@@ -728,25 +858,20 @@ async function acc18to25() {
   );
   writeEvidence("ACC-25", {
     schema_valid: boolCheck("schema_valid", true),
-    disk_full_injected: boolCheck("disk_full_injected", true, "ENOSPC injected on the second target write"),
+    disk_full_injected: boolCheck("disk_full_injected", faultTarget.writes >= 2 && faultRestore.errorCode === "RESTORE_TARGET_WRITE_FAILED", "ENOSPC injected on the second target write"),
     restore_failed: boolCheck("restore_failed", faultRestore.status === "failed"),
     success_marker_absent: boolCheck("success_marker_absent", faultRestore.status !== "complete"),
     partial_output_inventory_recorded: boolCheck("partial_output_inventory_recorded", Array.isArray(faultRestore.partialOutputInventory) && faultRestore.partialOutputInventory.length > 0)
   }, ["RESTORE_TARGET_WRITE_FAILED"], { partial_success_reported: false, write_outside_target: false }, [artifactFile("e2e/recovery.bin")]);
 
-  // ACC-22: source vault zero-write — hash before/after the formal snapshot.
-  const before = hashDir(vaultRoot);
-  const zeroWriteCreate = spawnWorker("tools/snapshot-worker.mjs", [
-    "--vault", vaultRoot, "--store", storeRoot, "--log", logPath,
-    "--recovery", recoveryPath, "--domain-id", sha256Bytes(utf8("ekd-domain|e2e"))
-  ]);
-  const after = hashDir(vaultRoot);
-  JSON.parse(zeroWriteCreate.stdout);
+  // ACC-22: source Vault zero-write — compare the successful formal snapshot's own
+  // pre/post inventory, rather than a second run that fails early on exclusive targets.
+  if (formalSourceBefore === undefined || formalSourceAfter === undefined) throw new Error("formal source inventories are missing");
   writeEvidence("ACC-22", {
     schema_valid: boolCheck("schema_valid", true),
-    before_after_path_sets_equal: boolCheck("before_after_path_sets_equal", JSON.stringify(before.paths) === JSON.stringify(after.paths)),
-    before_after_file_hashes_equal: boolCheck("before_after_file_hashes_equal", JSON.stringify(before.hashes) === JSON.stringify(after.hashes)),
-    metadata_unchanged: boolCheck("metadata_unchanged", true, "restore/snapshot never opens the Vault for writing")
+    before_after_path_sets_equal: boolCheck("before_after_path_sets_equal", JSON.stringify(formalSourceBefore.paths) === JSON.stringify(formalSourceAfter.paths)),
+    before_after_file_hashes_equal: boolCheck("before_after_file_hashes_equal", JSON.stringify(formalSourceBefore.hashes) === JSON.stringify(formalSourceAfter.hashes)),
+    metadata_unchanged: boolCheck("metadata_unchanged", JSON.stringify(formalSourceBefore.metadata) === JSON.stringify(formalSourceAfter.metadata), "mtime/ctime/size inventory unchanged across the successful snapshot")
   }, [], { source_vault_modified: false }, []);
 
   void objectWrapKey;
@@ -755,19 +880,22 @@ async function acc18to25() {
 function hashDir(root) {
   const paths = [];
   const hashes = {};
+  const metadata = {};
   function walk(current) {
     for (const entry of readdirSync(current, { withFileTypes: true })) {
       const child = join(current, entry.name);
       if (entry.isDirectory()) walk(child);
       else {
         const relative = child.slice(root.length + 1).split("\\").join("/");
+        const stats = statSync(child);
         paths.push(relative);
         hashes[relative] = sha256File(child);
+        metadata[relative] = { size: stats.size, mtimeMs: stats.mtimeMs, ctimeMs: stats.ctimeMs };
       }
     }
   }
   walk(root);
-  return { paths: paths.sort(), hashes };
+  return { paths: paths.sort(), hashes, metadata };
 }
 
 function handCraftManifestPlaintext(domainId, snapshotId, entries) {
@@ -815,72 +943,95 @@ async function sealRawManifest(domainId, manifestObjectId, snapshotId, plaintext
 }
 
 function acc26() {
+  const manifestPath = join(REPO_ROOT, "fixtures/representative-large/fixture-manifest-v1.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const createReportPath = join(PERF_REPORTS, "perf-report-large-create-cold-1.json");
+  const restoreReportPath = join(PERF_REPORTS, "perf-report-large-restore-cold-1.json");
+  const createReport = JSON.parse(readFileSync(createReportPath, "utf8"));
+  const restoreReport = JSON.parse(readFileSync(restoreReportPath, "utf8"));
+  const verifyArtifact = restoreReport.raw_artifacts?.find((artifact) => artifact.path.endsWith("/verify-output.txt"));
+  const verifyOutput = verifyArtifact === undefined
+    ? ""
+    : readFileSync(join(ARTIFACTS, verifyArtifact.path), "utf8");
   writeEvidence("ACC-26", {
-    schema_valid: boolCheck("schema_valid", true),
-    fixture_profile_large_valid: boolCheck("fixture_profile_large_valid", true, "representative-large manifest in the frozen 1 GiB ±5% range"),
-    total_files_exactly_10000: boolCheck("total_files_exactly_10000", true, "manifest totals.files = 10000"),
-    total_bytes_within_5_percent_of_1gib: boolCheck("total_bytes_within_5_percent_of_1gib", true, "1073741847 bytes"),
-    roundtrip_exit_zero: boolCheck("roundtrip_exit_zero", true, "fresh-process create/restore workers exit 0 (perf-run matrix)"),
-    independent_verifier_passed: boolCheck("independent_verifier_passed", true, "verify_restore.py PASS on the large roundtrip")
+    schema_valid: boolCheck("schema_valid", schemaAccepts("perf-report-v1.schema.json", createReportPath) && schemaAccepts("perf-report-v1.schema.json", restoreReportPath)),
+    fixture_profile_large_valid: boolCheck("fixture_profile_large_valid", schemaAccepts("fixture-manifest-v1.schema.json", manifestPath) && manifest.profile === "representative-large"),
+    total_files_exactly_10000: boolCheck("total_files_exactly_10000", manifest.totals.files === 10000),
+    total_bytes_within_5_percent_of_1gib: boolCheck("total_bytes_within_5_percent_of_1gib", manifest.totals.bytes >= 1020054733 && manifest.totals.bytes <= 1127428915, `${manifest.totals.bytes} bytes`),
+    roundtrip_exit_zero: boolCheck("roundtrip_exit_zero", createReport.process.exit_code === 0 && restoreReport.process.exit_code === 0 && createReport.verdict.overall === "pass" && restoreReport.verdict.overall === "pass"),
+    independent_verifier_passed: boolCheck("independent_verifier_passed", verifyOutput.includes("RESTORE_VERIFY_PASS"))
   }, [], { source_vault_modified: false, partial_success_reported: false }, [
     artifactFile("performance-reports/perf-report-large-create-cold-1.json"),
     artifactFile("performance-reports/perf-report-large-restore-cold-1.json")
   ]);
 }
 
-function acc27() {
+function acc27(verifyOutput) {
+  const verifierPassed = verifyOutput.includes("RESTORE_VERIFY_PASS");
   writeEvidence("ACC-27", {
     schema_valid: boolCheck("schema_valid", true),
-    independent_verifier_process: boolCheck("independent_verifier_process", true, "python tools/verify_restore.py"),
-    relative_path_sets_equal: boolCheck("relative_path_sets_equal", true, "verify_restore.py path-set comparison"),
-    all_file_sha256_equal: boolCheck("all_file_sha256_equal", true, "verify_restore.py byte comparison")
+    independent_verifier_process: boolCheck("independent_verifier_process", verifierPassed, "python tools/verify_restore.py exited zero"),
+    relative_path_sets_equal: boolCheck("relative_path_sets_equal", verifierPassed, "RESTORE_VERIFY_PASS is emitted only after exact path-set comparison"),
+    all_file_sha256_equal: boolCheck("all_file_sha256_equal", verifierPassed, "RESTORE_VERIFY_PASS is emitted only after byte-by-byte file comparison")
   }, [], { source_vault_modified: false }, [artifactFile("test-reports/acc-27-verify-output.txt")]);
 }
 
 function acc28() {
+  const before = hashDir(vaultRoot);
+  const after = hashDir(targetRoot);
+  const cPaths = before.paths.filter((path) => path.endsWith(".c"));
+  const pythonPaths = before.paths.filter((path) => path.endsWith(".py"));
   writeEvidence("ACC-28", {
     schema_valid: boolCheck("schema_valid", true),
-    c_fixture_present: boolCheck("c_fixture_present", true, "representative fixture .c entries"),
-    python_fixture_present: boolCheck("python_fixture_present", true, "representative fixture .py entries"),
-    c_sha256_equal: boolCheck("c_sha256_equal", true, "verify_restore.py byte comparison"),
-    python_sha256_equal: boolCheck("python_sha256_equal", true, "verify_restore.py byte comparison")
+    c_fixture_present: boolCheck("c_fixture_present", cPaths.length > 0, `${cPaths.length} .c files in formal fixture`),
+    python_fixture_present: boolCheck("python_fixture_present", pythonPaths.length > 0, `${pythonPaths.length} .py files in formal fixture`),
+    c_sha256_equal: boolCheck("c_sha256_equal", cPaths.every((path) => before.hashes[path] === after.hashes[path])),
+    python_sha256_equal: boolCheck("python_sha256_equal", pythonPaths.every((path) => before.hashes[path] === after.hashes[path]))
   }, [], { source_vault_modified: false }, [artifactFile("test-reports/acc-27-verify-output.txt")]);
 }
 
 function acc29to31() {
-  const names = [
-    "perf-report-small-create-cold-1.json",
-    "perf-report-small-restore-cold-1.json",
-    "perf-report-large-create-cold-1.json",
-    "perf-report-large-restore-cold-1.json"
-  ];
+  const names = [];
+  for (const fixture of ["small", "large"]) {
+    for (const mode of ["create", "restore"]) {
+      for (const run of ["cold-1", "warm-1", "warm-2"]) names.push(`perf-report-${fixture}-${mode}-${run}.json`);
+    }
+  }
   const reports = names.map((name) => {
     const path = join(PERF_REPORTS, name);
-    return { name, path: `performance-reports/${name}`, sha256: sha256File(path), json: JSON.parse(readFileSync(path, "utf8")) };
+    return { name, absolutePath: path, path: `performance-reports/${name}`, sha256: sha256File(path), json: JSON.parse(readFileSync(path, "utf8")) };
   });
-  const largeCold = reports.find((report) => report.name === "perf-report-large-create-cold-1.json").json;
-  const comparison = largeCold.bounded_memory_comparison;
+  const largeReports = reports.filter((report) => report.name.startsWith("perf-report-large-"));
+  const comparisons = largeReports.map((report) => report.json.bounded_memory_comparison);
+  const runtimeLimitsSha256 = sha256File(join(REPO_ROOT, "docs/contracts/p0-runtime-limits-v1.json"));
+  const schemasValid = reports.every((report) => schemaAccepts("perf-report-v1.schema.json", report.absolutePath));
+  const rawArtifactsValid = reports.every((report) => report.json.raw_artifacts.length > 0 && report.json.raw_artifacts.every((artifact) => {
+    const absolute = join(ARTIFACTS, artifact.path);
+    return existsSync(absolute) && sha256File(absolute) === artifact.sha256;
+  }));
   writeEvidence("ACC-29", {
-    schema_valid: boolCheck("schema_valid", true),
-    sample_interval_lte_100ms: boolCheck("sample_interval_lte_100ms", largeCold.measurement.rss_sample_interval_ms <= 100),
-    peak_rss_lte_frozen_limit: boolCheck("peak_rss_lte_frozen_limit", largeCold.phases.total.peak_rss_bytes <= 536870912),
-    process_exit_zero: boolCheck("process_exit_zero", largeCold.process.exit_code === 0)
-  }, [], {}, reports.slice(0, 2).map((report) => ({ path: report.path, sha256: report.sha256 })));
+    schema_valid: boolCheck("schema_valid", schemasValid),
+    sample_interval_lte_100ms: boolCheck("sample_interval_lte_100ms", reports.every((report) => report.json.measurement.rss_sample_interval_ms <= 100)),
+    peak_rss_lte_frozen_limit: boolCheck("peak_rss_lte_frozen_limit", reports.every((report) => report.json.phases.total.peak_rss_bytes <= 536870912)),
+    process_exit_zero: boolCheck("process_exit_zero", reports.every((report) => report.json.process.exit_code === 0 && !report.json.process.timed_out && report.json.process.uncaught_error === null))
+  }, [], {}, reports.map((report) => ({ path: report.path, sha256: report.sha256 })));
 
   writeEvidence("ACC-30", {
-    schema_valid: boolCheck("schema_valid", true),
-    same_environment_and_file_count: boolCheck("same_environment_and_file_count", comparison.same_environment && comparison.same_file_count),
-    fixture_byte_growth_ratio_gte_7_5: boolCheck("fixture_byte_growth_ratio_gte_7_5", comparison.fixture_byte_growth_ratio >= 7.5),
-    peak_rss_growth_lte_134217728: boolCheck("peak_rss_growth_lte_134217728", comparison.peak_rss_growth_bytes <= 134217728),
-    large_peak_rss_lte_frozen_limit: boolCheck("large_peak_rss_lte_frozen_limit", comparison.large_peak_rss_bytes <= 536870912)
-  }, [], {}, reports.slice(2).map((report) => ({ path: report.path, sha256: report.sha256 })));
+    schema_valid: boolCheck("schema_valid", schemasValid),
+    same_environment_and_file_count: boolCheck("same_environment_and_file_count", comparisons.every((comparison) => comparison?.same_environment === true && comparison.same_file_count === true)),
+    fixture_byte_growth_ratio_gte_7_5: boolCheck("fixture_byte_growth_ratio_gte_7_5", comparisons.every((comparison) => comparison?.fixture_byte_growth_ratio >= 7.5)),
+    peak_rss_growth_lte_134217728: boolCheck("peak_rss_growth_lte_134217728", comparisons.every((comparison) => comparison?.peak_rss_growth_bytes <= 134217728)),
+    large_peak_rss_lte_frozen_limit: boolCheck("large_peak_rss_lte_frozen_limit", comparisons.every((comparison) => comparison?.large_peak_rss_bytes <= 536870912))
+  }, [], {}, largeReports.map((report) => ({ path: report.path, sha256: report.sha256 })));
 
   writeEvidence("ACC-31", {
-    schema_valid: boolCheck("schema_valid", true),
-    all_required_perf_fields_present: boolCheck("all_required_perf_fields_present", reports.every((report) => report.json.environment && report.json.measurement && report.json.thresholds)),
+    schema_valid: boolCheck("schema_valid", schemasValid),
+    all_required_perf_fields_present: boolCheck("all_required_perf_fields_present", rawArtifactsValid && reports.every((report) => report.json.environment && report.json.measurement && report.json.thresholds && report.json.evidence_binding?.source_tree_state === "clean" && report.json.evidence_binding.runtime_limits_sha256 === runtimeLimitsSha256)),
     adjustment_count_lte_one: boolCheck("adjustment_count_lte_one", reports.every((report) => report.json.thresholds.adjustment_count <= 1)),
-    adjustment_record_hash_bound_if_present: boolCheck("adjustment_record_hash_bound_if_present", true, "no adjustment record exists; adjustment_count = 0"),
-    overall_verdict_derived: boolCheck("overall_verdict_derived", reports.every((report) => report.json.verdict.overall === "pass"))
+    adjustment_record_hash_bound_if_present: boolCheck("adjustment_record_hash_bound_if_present", reports.every((report) => report.json.thresholds.adjustment_count === 0
+      ? report.json.thresholds.adjustment_record_path === null && report.json.thresholds.adjustment_record_sha256 === null
+      : typeof report.json.thresholds.adjustment_record_path === "string" && typeof report.json.thresholds.adjustment_record_sha256 === "string")),
+    overall_verdict_derived: boolCheck("overall_verdict_derived", reports.every((report) => report.json.verdict.overall === "pass" && report.json.verdict.fixture_within_profile && report.json.verdict.roundtrip_completed && report.json.verdict.bytes_verified && report.json.verdict.peak_rss_within_limit && report.json.verdict.rss_growth_within_limit && report.json.verdict.adjustments_within_policy))
   }, [], {}, reports.map((report) => ({ path: report.path, sha256: report.sha256 })));
 }
 
@@ -939,37 +1090,38 @@ function acc34() {
   writeFileSync(join(REPORTS, "acc-34-worker-stdout.json"), run.stdout);
   writeEvidence("ACC-34", {
     schema_valid: boolCheck("schema_valid", true),
-    log_failure_injected: boolCheck("log_failure_injected", true, "pre-created log file forces exclusive-create failure"),
+    log_failure_injected: boolCheck("log_failure_injected", existsSync(readonlyLog) && result.errorCode === "LOG_WRITE_FAILED", "pre-created log file forces exclusive-create failure"),
     nonzero_exit: boolCheck("nonzero_exit", run.exitCode === 1),
     snapshot_not_complete: boolCheck("snapshot_not_complete", result.status === "failed" && result.errorCode === "LOG_WRITE_FAILED")
   }, ["LOG_WRITE_FAILED"], { partial_success_reported: false }, [artifactFile("test-reports/acc-34-worker-stdout.json")]);
 }
 
-function acc35() {
+function acc35(createResult, restoreResult) {
   const report = {
     schema_version: "p0-roundtrip-report-v1",
     run_id: RUN_ID,
     git_commit: GIT_COMMIT,
-    snapshot: { status: "complete", file_count: 3, total_plaintext_bytes: 128 },
-    restore: { status: "complete", restored_file_count: 3, total_bytes_written: 128 }
+    snapshot: { status: createResult.status, file_count: createResult.fileCount, total_plaintext_bytes: createResult.totalPlaintextBytes },
+    restore: { status: restoreResult.status, restored_file_count: restoreResult.restoredFileCount, total_bytes_written: restoreResult.totalBytesWritten }
   };
   const jsonPath = join(REPORTS, "acc-35-roundtrip-report.json");
   const mdPath = join(REPORTS, "acc-35-roundtrip-report.md");
   writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`);
-  writeFileSync(mdPath, "# Round-trip report\n\nsnapshot: complete\nrestore: complete\n");
+  writeFileSync(mdPath, `# Round-trip report\n\n- snapshot: ${report.snapshot.status}; files=${report.snapshot.file_count}; bytes=${report.snapshot.total_plaintext_bytes}\n- restore: ${report.restore.status}; files=${report.restore.restored_file_count}; bytes=${report.restore.total_bytes_written}\n`);
   const jsonSha = sha256File(jsonPath);
   const mdSha = sha256File(mdPath);
   const variant = { ...report };
   delete variant.run_id;
-  const missingFields = ["schema_version", "run_id", "git_commit", "snapshot", "restore"].filter((field) => variant[field] === undefined);
-  const variantRejected = missingFields.length > 0 || JSON.stringify(variant).includes("run_id") === false;
-  writeFileSync(join(REPORTS, "acc-35-missing-field-variant.json"), `${JSON.stringify(variant, null, 2)}\n`);
+  const variantPath = join(REPORTS, "acc-35-missing-field-variant.json");
+  writeFileSync(variantPath, `${JSON.stringify(variant, null, 2)}\n`);
+  const reportSchemaValid = schemaAccepts("p0-roundtrip-report-v1.schema.json", jsonPath);
+  const variantRejected = !schemaAccepts("p0-roundtrip-report-v1.schema.json", variantPath);
   writeEvidence("ACC-35", {
     schema_valid: boolCheck("schema_valid", true),
-    json_report_schema_valid: boolCheck("json_report_schema_valid", true, "validated against p0-roundtrip-report-v1.schema.json"),
+    json_report_schema_valid: boolCheck("json_report_schema_valid", reportSchemaValid, "validated against p0-roundtrip-report-v1.schema.json"),
     markdown_report_exists: boolCheck("markdown_report_exists", existsSync(mdPath)),
     report_hashes_bound: boolCheck("report_hashes_bound", jsonSha.length === 64 && mdSha.length === 64),
-    missing_required_field_fixture_rejected: boolCheck("missing_required_field_fixture_rejected", variantRejected, `missing: ${missingFields.join(", ") || "none"} → REPORT_SCHEMA_INVALID`)
+    missing_required_field_fixture_rejected: boolCheck("missing_required_field_fixture_rejected", variantRejected, "run_id removed; actual schema validator returned REPORT_SCHEMA_INVALID")
   }, ["REPORT_SCHEMA_INVALID"], {}, [
     { path: "test-reports/acc-35-roundtrip-report.json", sha256: jsonSha },
     { path: "test-reports/acc-35-roundtrip-report.md", sha256: mdSha },
@@ -979,28 +1131,71 @@ function acc35() {
 
 function acc36() {
   const manifestSource = join(REPO_ROOT, "fixtures/representative-small/fixture-manifest-v1.json");
-  const manifestCopy = join(E2E, "acc36-fixture-manifest-v1.json");
-  copyFileSync(manifestSource, manifestCopy);
-  const first = sha256File(manifestCopy);
-  const second = createHash("sha256").update(readFileSync(manifestCopy)).digest("hex");
+  const declaredManifest = JSON.parse(readFileSync(manifestSource, "utf8"));
+  const repeatRoot = join(E2E, "acc36-repeatability");
+  const firstRoot = join(repeatRoot, "run-1");
+  const secondRoot = join(repeatRoot, "run-2");
+  rmSync(repeatRoot, { recursive: true, force: true });
+  for (const output of [firstRoot, secondRoot]) {
+    sh("node", [
+      "tools/fixture-generator.mjs",
+      "--profile", "representative-small",
+      "--output", output,
+      "--git-commit", declaredManifest.generator.git_commit
+    ]);
+  }
+  const firstManifest = join(firstRoot, "fixture-manifest-v1.json");
+  const secondManifest = join(secondRoot, "fixture-manifest-v1.json");
+  const first = sha256File(firstManifest);
+  const second = sha256File(secondManifest);
+  const lockfileSha256 = sha256File(join(REPO_ROOT, "pnpm-lock.yaml"));
+  const perfReports = [];
+  for (const fixture of ["small", "large"]) {
+    for (const mode of ["create", "restore"]) {
+      for (const run of ["cold-1", "warm-1", "warm-2"]) {
+        perfReports.push(JSON.parse(readFileSync(join(PERF_REPORTS, `perf-report-${fixture}-${mode}-${run}.json`), "utf8")));
+      }
+    }
+  }
+  const warmPairsAgree = ["small", "large"].every((fixture) => ["create", "restore"].every((mode) => {
+    const warm1 = JSON.parse(readFileSync(join(PERF_REPORTS, `perf-report-${fixture}-${mode}-warm-1.json`), "utf8"));
+    const warm2 = JSON.parse(readFileSync(join(PERF_REPORTS, `perf-report-${fixture}-${mode}-warm-2.json`), "utf8"));
+    return warm1.verdict.overall === warm2.verdict.overall && warm1.process.exit_code === warm2.process.exit_code;
+  }));
   writeEvidence("ACC-36", {
     schema_valid: boolCheck("schema_valid", true),
-    clean_checkout_attested: boolCheck("clean_checkout_attested", true, "HEAD clean tree; fixtures regenerable from seed + generator commit"),
-    declared_dependencies_only: boolCheck("declared_dependencies_only", true, "pnpm-lock.yaml hash-bound in perf reports"),
-    two_run_verdicts_equal: boolCheck("two_run_verdicts_equal", true, "perf-run matrix: all runs verdict=pass"),
-    deterministic_artifact_hashes_equal: boolCheck("deterministic_artifact_hashes_equal", first === second, "manifest hash stable across reads")
-  }, [], { undeclared_persistent_state_used: false }, [{ path: "e2e/acc36-fixture-manifest-v1.json", sha256: first }]);
+    clean_checkout_attested: boolCheck("clean_checkout_attested", SOURCE_TREE_CLEAN_AT_START, "git status --porcelain=v1 --untracked-files=all was captured before any evidence output"),
+    declared_dependencies_only: boolCheck("declared_dependencies_only", perfReports.every((report) => report.environment.lockfile_sha256 === lockfileSha256 && report.evidence_binding?.source_tree_state === "clean"), "all 12 reports bind the current lockfile and a clean build tree"),
+    two_run_verdicts_equal: boolCheck("two_run_verdicts_equal", warmPairsAgree, "warm-1 and warm-2 verdict/exit pairs agree for both fixtures and directions"),
+    deterministic_artifact_hashes_equal: boolCheck("deterministic_artifact_hashes_equal", first === second && first === sha256File(manifestSource), "two independent generations equal the committed manifest byte-for-byte")
+  }, [], { undeclared_persistent_state_used: false }, [
+    { path: "e2e/acc36-repeatability/run-1/fixture-manifest-v1.json", sha256: first },
+    { path: "e2e/acc36-repeatability/run-2/fixture-manifest-v1.json", sha256: second }
+  ]);
 }
 
 function acc37() {
-  const scanTargets = ["README.md", "docs/product/P0_EXECUTION_PLAN.md", "docs/protocol/P0-recovery-and-object-format.md", "docs/test-plans/phase4b-restore-report.md"];
+  const scanTargets = [
+    "README.md",
+    "docs/product/P0_EXECUTION_PLAN.md",
+    "docs/protocol/P0-recovery-and-object-format.md",
+    "docs/test-plans/P0-acceptance-matrix.md",
+    "docs/decisions/phase0-consistency-check.md",
+    "docs/decisions/0005-p0-recovery-secret-model.md",
+    "docs/decisions/0017-p0-snapshot-pipeline-v1.md",
+    "docs/decisions/0018-p0-restore-pipeline-v1.md",
+    "docs/decisions/0019-p0-r1-evidence-plan-v1.md",
+    "docs/test-plans/p0-r1-closeout-report.md"
+  ];
   for (const relative of scanTargets) {
     mkdirSync(join(E2E, "acc37", dirname(relative)), { recursive: true });
     writeFileSync(join(E2E, "acc37", relative), readFileSync(join(REPO_ROOT, relative)));
   }
   const hits = [];
+  const texts = new Map();
   for (const relative of scanTargets) {
     const text = readFileSync(join(REPO_ROOT, relative), "utf8");
+    texts.set(relative, text);
     // Flag only positive assertions (is/has/passed), not disclaimers (不/not/does not).
     for (const [pattern, isPositive] of [
       ["已通过独立审计", true],
@@ -1013,19 +1208,39 @@ function acc37() {
       if (text.includes(pattern)) hits.push(`${relative}: ${pattern}`);
     }
   }
+  const rollbackText = `${texts.get("docs/decisions/0017-p0-snapshot-pipeline-v1.md")}\n${texts.get("docs/decisions/0018-p0-restore-pipeline-v1.md")}`;
+  const bearerText = texts.get("docs/decisions/0005-p0-recovery-secret-model.md") ?? "";
+  const traceText = readFileSync(join(REPO_ROOT, "docs/contracts/p0-traceability-v1.json"), "utf8");
+  const historyText = texts.get("docs/decisions/phase0-consistency-check.md") ?? "";
+  const scanDocument = {
+    schema_version: "acc37-machine-scan-v1",
+    targets: scanTargets.map((relative) => ({ path: relative, sha256: sha256File(join(REPO_ROOT, relative)) })),
+    unsupported_claim_hits: hits,
+    limitations: {
+      rollback_or_orphan_present: /orphan|回滚|rollback/u.test(rollbackText),
+      bearer_secret_present: /bearer secret|持有即恢复|持有者/u.test(bearerText),
+      out_of_scope_attackers_present: traceText.includes('"id": "THR-05"') && traceText.includes("out-of-scope"),
+      historical_conclusions_labeled: /历史|historical|superseded/u.test(historyText)
+    }
+  };
+  const scanPath = join(E2E, "acc37", "machine-scan.json");
+  writeFileSync(scanPath, `${JSON.stringify(scanDocument, null, 2)}\n`);
+  const scanSha256 = sha256File(scanPath);
+  const expectedRuling = `ACCEPT ACC-37 ${scanSha256}`;
+  const rulingBound = process.env.EKD_ACC37_RULING === expectedRuling;
+  if (!rulingBound) console.error(`ACC-37 requires explicit developer ruling: ${expectedRuling}`);
   writeEvidence("ACC-37", {
     schema_valid: boolCheck("schema_valid", true),
     no_unsupported_current_claims: boolCheck("no_unsupported_current_claims", hits.length === 0, `${hits.length} machine hits require adjudication`),
-    rollback_limitation_present: boolCheck("rollback_limitation_present", true, "no-rollback/orphan honesty recorded in ADR-0017/0018 and reports"),
-    bearer_secret_limitation_present: boolCheck("bearer_secret_limitation_present", true, "ADR-0005 known-limitation section recorded"),
-    out_of_scope_attackers_present: boolCheck("out_of_scope_attackers_present", true, "THR-05 out-of-scope recorded in registry hard_stop"),
-    historical_conclusions_labeled: boolCheck("historical_conclusions_labeled", true, "superseded conclusions marked historical in consistency-check"),
-    machine_scan_and_human_rulings_bound: boolCheck("machine_scan_and_human_rulings_bound", true, "machine scan executed here; developer adjudication recorded in the P0-R1 closeout report")
-  }, [], {}, scanTargets.map((relative) => {
+    rollback_limitation_present: boolCheck("rollback_limitation_present", scanDocument.limitations.rollback_or_orphan_present, "no-rollback/orphan limitation recorded in ADR-0017/0018"),
+    bearer_secret_limitation_present: boolCheck("bearer_secret_limitation_present", scanDocument.limitations.bearer_secret_present, "ADR-0005 bearer-secret limitation recorded"),
+    out_of_scope_attackers_present: boolCheck("out_of_scope_attackers_present", scanDocument.limitations.out_of_scope_attackers_present, "THR-05 out-of-scope recorded in registry"),
+    historical_conclusions_labeled: boolCheck("historical_conclusions_labeled", scanDocument.limitations.historical_conclusions_labeled, "historical conclusions explicitly labeled in consistency-check"),
+    machine_scan_and_human_rulings_bound: boolCheck("machine_scan_and_human_rulings_bound", rulingBound, `requires exact token ${expectedRuling}`)
+  }, [], {}, [...scanTargets.map((relative) => {
     const copyPath = join(E2E, "acc37", relative);
     return { path: `e2e/acc37/${relative}`, sha256: sha256File(copyPath) };
-  }));
-  void hits;
+  }), { path: "e2e/acc37/machine-scan.json", sha256: scanSha256 }]);
 }
 
 await main();

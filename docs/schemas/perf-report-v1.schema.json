@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema_version", "purpose", "run_id", "timestamp_utc", "git_commit", "fixture",
+    "schema_version", "purpose", "run_id", "timestamp_utc", "git_commit", "evidence_binding", "fixture",
     "environment", "cache_state", "measurement", "phases", "process", "thresholds",
     "bounded_memory_comparison", "verdict", "raw_artifacts"
   ],
@@ -15,6 +15,21 @@
     "run_id": {"type": "string", "format": "uuid"},
     "timestamp_utc": {"type": "string", "format": "date-time"},
     "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "evidence_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_tree_state", "build_tree_sha256", "runtime_limits_sha256",
+        "snapshot_worker_sha256", "restore_worker_sha256"
+      ],
+      "properties": {
+        "source_tree_state": {"const": "clean"},
+        "build_tree_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "runtime_limits_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "snapshot_worker_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "restore_worker_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
     "fixture": {
       "type": "object",
       "additionalProperties": false,

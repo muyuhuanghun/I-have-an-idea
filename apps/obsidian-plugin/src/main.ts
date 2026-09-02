@@ -29,8 +29,6 @@ import {
   type SmokeExecutionOptions,
   type SmokeReportSchemaValidator
 } from "@ekd/smoke";
-import { createSnapshotV1, restoreSnapshotV1 } from "@ekd/core";
-import { P0SettingTab, type P0Settings, DEFAULT_P0_SETTINGS } from "./p0.js";
 
 interface BuildMeta {
   readonly schema_version: "phase1-build-meta-v1";
@@ -226,17 +224,13 @@ class Phase1SettingTab extends PluginSettingTab {
 
 export default class EkdPhase1Plugin extends Plugin {
   settings: Phase1Settings = DEFAULT_SETTINGS;
-  p0Settings: P0Settings = DEFAULT_P0_SETTINGS;
   #running = false;
-  #provider = new WebCryptoAes256Provider();
   #reportValidator: SmokeReportSchemaValidator | undefined;
 
   async onload(): Promise<void> {
     this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<Phase1Settings> | null ?? {}) };
-    this.p0Settings = { ...DEFAULT_P0_SETTINGS, ...(await this.loadData() as Partial<P0Settings> | null ?? {}) };
     this.#reportValidator = createSmokeReportSchemaValidator(JSON.parse(__SMOKE_REPORT_SCHEMA_JSON__) as unknown);
     this.addSettingTab(new Phase1SettingTab(this.app, this));
-    this.addSettingTab(new P0SettingTab(this.app, this, () => this.p0Settings, async (s) => { this.p0Settings = s; await this.saveData({ ...this.settings, ...s }); }));
     for (const selected of ["webcrypto", "noble"] as const) {
       this.addCommand({
         id: `phase1-smoke-${selected}`,
@@ -244,91 +238,7 @@ export default class EkdPhase1Plugin extends Plugin {
         callback: () => { void this.runSmoke(selected); }
       });
     }
-    this.addCommand({
-      id: "p0-create-snapshot",
-      name: "P0: Create Snapshot",
-      callback: () => { void this.#runP0Create(); }
-    });
-    this.addCommand({
-      id: "p0-restore-snapshot",
-      name: "P0: Restore Snapshot",
-      callback: () => { void this.#runP0Restore(); }
-    });
   }
-
-  async #runP0Create(): Promise<void> {
-    if (this.#running) { new Notice("A P0 operation is already running."); return; }
-    this.#running = true;
-    try {
-      const s = this.p0Settings;
-      if (!s.objectStorePath || !s.recoveryFilePath || !s.logFilePath) throw new Error("Set ObjectStore, Recovery File, and Log paths in settings.");
-      const vaultPath = (this.app.vault.adapter as { basePath?: string }).basePath;
-      if (typeof vaultPath !== "string") throw new Error("Vault base path is only available on desktop.");
-      const domainKeyPath = normalizePath(`${this.app.vault.configDir}/plugins/${this.manifest.id}/p0-domain-id.hex`);
-      let domainId: Uint8Array;
-      if (await this.app.vault.adapter.exists(domainKeyPath)) {
-        const hex = await this.app.vault.adapter.read(domainKeyPath);
-        domainId = new Uint8Array(32);
-        for (let i = 0; i < 32; i++) domainId[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-      } else {
-        domainId = crypto.getRandomValues(new Uint8Array(32));
-        const hex = Array.from(domainId).map(b => b.toString(16).padStart(2, "0")).join("");
-        await this.app.vault.adapter.write(domainKeyPath, hex);
-      }
-      const { NodeVaultSource, DirectoryObjectStoreV1, NodeSnapshotLogSink, NodeRecoveryFileTarget } = await import("@ekd/adapters");
-      const limitsSha = sha256Hex(utf8Bytes(__VECTOR_MANIFEST_JSON__)).slice(0, 64);
-      new Notice("P0 snapshot: starting…");
-      const result = await createSnapshotV1(
-        { domainId, runtimeLimits: { schemaVersion: "p0-runtime-limits-v1", sha256Hex: limitsSha } },
-        {
-          vaultSource: new NodeVaultSource(vaultPath),
-          objectStore: new DirectoryObjectStoreV1(s.objectStorePath),
-          cryptoProvider: this.#provider,
-          randomSource: this.#provider,
-          clock: { nowMilliseconds: () => Date.now() },
-          logSink: new NodeSnapshotLogSink(s.logFilePath, { vaultRoot: vaultPath, objectStoreRoot: s.objectStorePath }),
-          recoveryFileTarget: new NodeRecoveryFileTarget(s.recoveryFilePath, { vaultRoot: vaultPath, objectStoreRoot: s.objectStorePath })
-        }
-      );
-      if (result.status === "complete") {
-        new Notice(`P0 snapshot: ${result.fileCount} files, ${(result.totalPlaintextBytes! / 1048576).toFixed(1)} MB, recovery file created.`, 10_000);
-      } else {
-        new Notice(`P0 snapshot failed: ${result.errorCode} (phase: ${result.failedPhase})`, 10_000);
-      }
-    } catch (error) {
-      new Notice(`P0 snapshot error: ${error instanceof Error ? error.message : String(error)}`, 10_000);
-    } finally {
-      this.#running = false;
-    }
-  }
-
-  async #runP0Restore(): Promise<void> {
-    if (this.#running) { new Notice("A P0 operation is already running."); return; }
-    this.#running = true;
-    try {
-      const s = this.p0Settings;
-      if (!s.objectStorePath || !s.recoveryFilePath) throw new Error("Set ObjectStore and Recovery File paths in settings.");
-      const targetPath = s.objectStorePath + "/restored-vault";
-      const { DirectoryObjectStoreV1, NodeRestoreTarget } = await import("@ekd/adapters");
-      new Notice("P0 restore: starting…");
-      const { readFile: rf } = await import("node:fs/promises");
-      const recoveryBytes = new Uint8Array(await rf(s.recoveryFilePath));
-      const result = await restoreSnapshotV1(
-        { recoveryFileBytes: recoveryBytes },
-        { objectStore: new DirectoryObjectStoreV1(s.objectStorePath), cryptoProvider: this.#provider, restoreTarget: new NodeRestoreTarget(targetPath) }
-      );
-      if (result.status === "complete") {
-        new Notice(`P0 restore: ${result.restoredFileCount} files, ${(result.totalBytesWritten! / 1048576).toFixed(1)} MB → ${targetPath}`, 10_000);
-      } else {
-        new Notice(`P0 restore failed: ${result.errorCode} (restored ${result.restoredFileCount} files)`, 10_000);
-      }
-    } catch (error) {
-      new Notice(`P0 restore error: ${error instanceof Error ? error.message : String(error)}`, 10_000);
-    } finally {
-      this.#running = false;
-    }
-  }
-
 
   async #ensureFolder(path: string): Promise<void> {
     if (!(await this.app.vault.adapter.exists(path))) await this.app.vault.adapter.mkdir(path);

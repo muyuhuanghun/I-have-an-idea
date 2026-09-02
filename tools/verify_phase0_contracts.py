@@ -458,11 +458,20 @@ def validate_traceability(trace: dict[str, Any]) -> None:
     matrix_text = (ROOT / "docs" / "test-plans" / "P0-acceptance-matrix.md").read_text(encoding="utf-8")
     matrix_ids = re.findall(r"^\*\*(ACC-\d{2})：", matrix_text, flags=re.MULTILINE)
     require(matrix_ids == acceptance_ids, "acceptance matrix headings do not match the 37-entry registry")
-    matrix_statuses = re.findall(r"^- 状态：untested$", matrix_text, flags=re.MULTILINE)
-    require(len(matrix_statuses) == 37, f"acceptance matrix must contain 37 untested statuses; got {len(matrix_statuses)}")
+    allowed_statuses = {"passed", "failed", "untested", "known-limitation", "out-of-scope"}
+    registry_statuses = [item.get("status") for item in acceptance]
+    require(all(status in allowed_statuses for status in registry_statuses), "acceptance registry contains an invalid status")
+    matrix_statuses = re.findall(
+        r"^- 状态：(passed|failed|untested|known-limitation|out-of-scope)$",
+        matrix_text,
+        flags=re.MULTILINE,
+    )
+    require(matrix_statuses == registry_statuses,
+            f"acceptance matrix statuses do not match registry: {matrix_statuses} != {registry_statuses}")
 
 
-def _check_required_artifact_paths(report: dict[str, Any], evidence_root: Path, report_path: Path) -> None:
+def _check_required_artifact_paths(report: dict[str, Any], evidence_root: Path, report_path: Path) -> list[Path]:
+    resolved: list[Path] = []
     for index, artifact in enumerate(report.get("artifacts", [])):
         rel = artifact.get("path")
         if not isinstance(rel, str) or not rel:
@@ -475,10 +484,44 @@ def _check_required_artifact_paths(report: dict[str, Any], evidence_root: Path, 
         digest = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
         require(digest == artifact.get("sha256"),
                 f"{report_path.relative_to(ROOT)}: artifact[{index}].sha256 mismatch (got {digest})")
+        resolved.append(artifact_path)
+    return resolved
+
+
+def _validate_nested_artifacts(artifact_paths: list[Path], evidence_root: Path) -> None:
+    import hashlib
+
+    for artifact_path in artifact_paths:
+        name = artifact_path.name
+        if name.startswith("perf-report-") and name.endswith(".json"):
+            report = load_json(artifact_path)
+            _validate_against_schema(report, _load_schema("perf-report-v1.schema.json"), str(artifact_path))
+            for index, raw in enumerate(report.get("raw_artifacts", [])):
+                rel = raw.get("path")
+                require(isinstance(rel, str) and rel, f"{name}: raw_artifacts[{index}].path missing")
+                raw_path = (evidence_root / rel).resolve()
+                require(evidence_root.resolve() in raw_path.parents,
+                        f"{name}: raw_artifacts[{index}] escapes evidence root")
+                require(raw_path.is_file(), f"{name}: raw_artifacts[{index}] does not exist")
+                digest = hashlib.sha256(raw_path.read_bytes()).hexdigest()
+                require(digest == raw.get("sha256"), f"{name}: raw_artifacts[{index}] sha256 mismatch")
+        elif name in {"acc-32-visibility-scan.json", "acc-33-visibility-scan.json"}:
+            _validate_against_schema(
+                load_json(artifact_path),
+                _load_schema("storage-visibility-scan-v1.schema.json"),
+                str(artifact_path),
+            )
+        elif name == "acc-35-roundtrip-report.json":
+            _validate_against_schema(
+                load_json(artifact_path),
+                _load_schema("p0-roundtrip-report-v1.schema.json"),
+                str(artifact_path),
+            )
 
 
 def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     acc_schema = _load_schema("acc-evidence-v1.schema.json")
+    evidence_commit: str | None = None
     for item in trace["acceptance"]:
         relative = Path(item["evidence_path"])
         if relative.parts and relative.parts[0].lower() == "artifacts":
@@ -486,6 +529,7 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
         report_path = evidence_root / relative
         report = load_json(report_path)
         acc_id = item["id"]
+        require(item.get("status") == "passed", f"{acc_id}: registry status is not passed")
 
         # Real schema enforcement first; this catches unknown fields, missing
         # required, type mismatches, enum/pattern/format violations and the rest
@@ -494,6 +538,11 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
 
         require(report.get("acc_id") == acc_id, f"{acc_id}: evidence acc_id mismatch")
         require(report.get("status") == "passed", f"{acc_id}: evidence status is not passed")
+        report_commit = report.get("git_commit")
+        if evidence_commit is None:
+            evidence_commit = report_commit
+        require(report_commit == evidence_commit,
+                f"{acc_id}: evidence commit {report_commit} differs from {evidence_commit}")
 
         checks = report.get("checks")
         require(isinstance(checks, dict), f"{acc_id}: checks object missing")
@@ -510,7 +559,8 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
         for flag in item["oracle"]["forbidden_side_effects"]:
             require(side_effects.get(flag) is False, f"{acc_id}: forbidden side effect {flag} occurred or is missing")
 
-        _check_required_artifact_paths(report, evidence_root, report_path)
+        artifact_paths = _check_required_artifact_paths(report, evidence_root, report_path)
+        _validate_nested_artifacts(artifact_paths, evidence_root)
 
 
 def validate_schema_samples() -> None:
@@ -585,7 +635,11 @@ def main() -> int:
         mode_parts.append("samples")
     print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC=37 INV=16 THR=5 DP=26")
     if args.evidence_root is None:
-        print("P0_R1 remains NOT_IMPLEMENTED / NOT_TESTED; no ACC status was upgraded.")
+        statuses = [item.get("status") for item in trace["acceptance"]]
+        if all(status == "passed" for status in statuses):
+            print("P0_R1 registry records 37 passed ACC; design-only mode did not revalidate runtime artifacts.")
+        else:
+            print("P0_R1 remains NOT_IMPLEMENTED / NOT_TESTED; no ACC status was upgraded.")
     return 0
 
 

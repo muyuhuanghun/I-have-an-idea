@@ -4,6 +4,13 @@
   "run_id": "not-a-uuid",
   "timestamp_utc": "2026-08-27",
   "git_commit": "HEAD",
+  "evidence_binding": {
+    "source_tree_state": "dirty",
+    "build_tree_sha256": "not-hex",
+    "runtime_limits_sha256": "not-hex",
+    "snapshot_worker_sha256": "not-hex",
+    "restore_worker_sha256": "not-hex"
+  },
   "fixture": {
     "fixture_id": "tiny",
     "profile": "tiny",

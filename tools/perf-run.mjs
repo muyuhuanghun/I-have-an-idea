@@ -4,20 +4,63 @@
 // Requires `pnpm build` first. Exits 0 when every report is verdict=pass.
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ARTIFACTS = resolve(REPO_ROOT, "artifacts", "performance-reports");
 const HEAD = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+const SNAPSHOT_WORKER = resolve(REPO_ROOT, "tools", "snapshot-worker.mjs");
+const RESTORE_WORKER = resolve(REPO_ROOT, "tools", "restore-worker.mjs");
+const RUNTIME_LIMITS = resolve(REPO_ROOT, "docs", "contracts", "p0-runtime-limits-v1.json");
 
 const POWER_SHELL_SCRIPT = "$d = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\"; $disk = Get-PhysicalDisk | Select-Object -First 1; $plan = (powercfg /getactivescheme) -replace '.*:\\s+',''; $fs = $d.FileSystem; Write-Output \"$($disk.Model)|$($disk.MediaType)|$($disk.BusType)|$fs|$plan\"";
 
 function sh(command, args) {
   return execFileSync(command, args, { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+}
+
+function sha256File(path) {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+function buildTreeSha256() {
+  const roots = [
+    "packages/core/dist",
+    "packages/adapters/dist",
+    "packages/crypto/dist"
+  ];
+  const files = ["tools/snapshot-worker.mjs", "tools/restore-worker.mjs"];
+  function walk(relativeRoot) {
+    const absoluteRoot = resolve(REPO_ROOT, relativeRoot);
+    for (const entry of readdirSync(absoluteRoot, { withFileTypes: true })) {
+      const child = `${relativeRoot}/${entry.name}`;
+      if (entry.isDirectory()) walk(child);
+      else files.push(child);
+    }
+  }
+  for (const root of roots) walk(root);
+  const digest = createHash("sha256");
+  for (const file of files.sort()) digest.update(`${file}\0${sha256File(resolve(REPO_ROOT, file))}\n`);
+  return digest.digest("hex");
+}
+
+function evidenceBinding() {
+  return {
+    source_tree_state: "clean",
+    build_tree_sha256: buildTreeSha256(),
+    runtime_limits_sha256: sha256File(RUNTIME_LIMITS),
+    snapshot_worker_sha256: sha256File(SNAPSHOT_WORKER),
+    restore_worker_sha256: sha256File(RESTORE_WORKER)
+  };
+}
+
+function rawArtifact(path) {
+  const relativePath = relative(resolve(REPO_ROOT, "artifacts"), path).split("\\").join("/");
+  return { path: relativePath, sha256: sha256File(path) };
 }
 
 function collectEnvironment() {
@@ -99,7 +142,7 @@ function peakFromSamples(sampleDoc) {
   return sampleDoc.samples.reduce((peak, sample) => Math.max(peak, sample.rss_bytes ?? 0), 0);
 }
 
-function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDurationMs, result, rssDoc, verify }) {
+function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDurationMs, result, rssDoc, verify, binding, rawArtifacts }) {
   const peak = peakFromSamples(rssDoc);
   const idle = rssDoc.samples[0]?.rss_bytes ?? 0;
   const createRun = mode === "create";
@@ -112,6 +155,7 @@ function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDur
     run_id: randomUUID(),
     timestamp_utc: new Date().toISOString(),
     git_commit: HEAD,
+    evidence_binding: binding,
     fixture: {
       fixture_id: fixture.manifest.fixture_id,
       profile: FIXTURES[fixtureKey].profile,
@@ -164,19 +208,22 @@ function buildReport({ purpose, fixtureKey, fixture, mode, cacheState, workerDur
       schema_valid: true,
       overall: "pass"
     },
-    raw_artifacts: []
+    raw_artifacts: rawArtifacts
   };
 }
 
 async function runMatrix() {
+  const dirty = execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
+  if (dirty.length > 0) throw new Error("Formal performance evidence requires a clean source tree.");
   await mkdir(ARTIFACTS, { recursive: true });
   const environment = collectEnvironment();
+  const binding = evidenceBinding();
   console.log(`host: ${environment.cpu_model}, ${environment.storage_model} (${environment.storage_type}), plan=${environment.power_plan}`);
 
   const runs = [];
   const occurrence = {};
-  const smallCreateCold = { runId: "", reportSha256: "", totalBytes: 0, peakRss: 0 };
-  const smallRestoreCold = { runId: "", reportSha256: "", totalBytes: 0, peakRss: 0 };
+  const smallCreateCold = { runId: "", reportSha256: "", totalBytes: 0, peakRss: 0, environment: null };
+  const smallRestoreCold = { runId: "", reportSha256: "", totalBytes: 0, peakRss: 0, environment: null };
 
   for (const fixtureKey of ["small", "large"]) {
     const fixture = loadFixture(fixtureKey);
@@ -228,6 +275,7 @@ async function runMatrix() {
         const rssDoc = JSON.parse(await readFile(rssFile, "utf8"));
 
         let verify = null;
+        let verifyOutputPath = null;
         if (mode === "restore") {
           const verifyStart = Date.now();
           let verifyOut = "";
@@ -240,6 +288,19 @@ async function runMatrix() {
             verifyExit = error.status ?? 1;
           }
           verify = { durationMs: Date.now() - verifyStart, passed: verifyExit === 0, output: verifyOut.split("\n")[0] };
+          verifyOutputPath = join(runDir, "verify-output.txt");
+          await writeFile(verifyOutputPath, `${verifyOut}\n`);
+        }
+
+        const rawArtifacts = [rssFile, stdoutFile];
+        if (verifyOutputPath !== null) rawArtifacts.push(verifyOutputPath);
+        for (const optional of [join(runDir, "snapshot.log"), join(runDir, "recovery.bin")]) {
+          try {
+            await readFile(optional);
+            rawArtifacts.push(optional);
+          } catch {
+            // Restore runs do not create snapshot-only raw artifacts.
+          }
         }
 
         const report = buildReport({
@@ -251,7 +312,9 @@ async function runMatrix() {
           workerDurationMs: spawned.durationMs,
           result,
           rssDoc,
-          verify
+          verify,
+          binding,
+          rawArtifacts: rawArtifacts.map(rawArtifact)
         });
         if (result.status !== "complete" || spawned.exitCode !== 0) {
           report.verdict.roundtrip_completed = false;
@@ -267,7 +330,8 @@ async function runMatrix() {
           reportPath: `perf-report-${label}.json`,
           reportSha256: createHash("sha256").update(await readFile(reportPath)).digest("hex"),
           peakRss: peakFromSamples(rssDoc),
-          totalBytes: bytesProcessedOf(report)
+          totalBytes: bytesProcessedOf(report),
+          environment: report.environment
         };
         runs.push(record);
         if (fixtureKey === "small" && mode === "create" && cacheState === "cold") {
@@ -275,12 +339,14 @@ async function runMatrix() {
           smallCreateCold.reportSha256 = record.reportSha256;
           smallCreateCold.totalBytes = record.totalBytes;
           smallCreateCold.peakRss = record.peakRss;
+          smallCreateCold.environment = record.environment;
         }
         if (fixtureKey === "small" && mode === "restore" && cacheState === "cold") {
           smallRestoreCold.runId = record.runId;
           smallRestoreCold.reportSha256 = record.reportSha256;
           smallRestoreCold.totalBytes = record.totalBytes;
           smallRestoreCold.peakRss = record.peakRss;
+          smallRestoreCold.environment = record.environment;
         }
         console.log(`${label}: ${report.verdict.overall} peakRSS=${(record.peakRss / 1048576).toFixed(1)} MiB`);
       }
@@ -303,8 +369,8 @@ async function runMatrix() {
       large_peak_rss_bytes: report.phases.total.peak_rss_bytes,
       fixture_byte_growth_ratio: ratio,
       peak_rss_growth_bytes: growth,
-      same_environment: true,
-      same_file_count: true,
+      same_environment: JSON.stringify(report.environment) === JSON.stringify(baseline.environment),
+      same_file_count: report.fixture.total_files === 10000,
       passed: growth <= 134217728 && ratio >= 7.5
     };
     if (!report.bounded_memory_comparison.passed) report.verdict.rss_growth_within_limit = false;

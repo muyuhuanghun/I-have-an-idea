@@ -16,6 +16,7 @@ schema must be simplified to use only what is enforced.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -635,6 +636,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _require_cli_runtime_limits_binding(embedded: str, actual: str) -> None:
+    require(re.fullmatch(r"[0-9a-f]{64}", embedded) is not None,
+            "CLI runtime-limits binding constant is not 64 lowercase hex characters")
+    require(embedded == actual,
+            "CLI embedded runtime-limits hash does not match docs/contracts/p0-runtime-limits-v1.json")
+
+
+def validate_cli_runtime_limits_binding() -> None:
+    source = (ROOT / "apps" / "cli" / "src" / "main.ts").read_text(encoding="utf-8")
+    match = re.search(r'ACCEPTED_RUNTIME_LIMITS_SHA256 = "([0-9a-f]{64})"', source)
+    require(match is not None, "apps/cli/src/main.ts lacks an ACCEPTED_RUNTIME_LIMITS_SHA256 binding constant")
+    actual = hashlib.sha256((ROOT / "docs" / "contracts" / "p0-runtime-limits-v1.json").read_bytes()).hexdigest()
+    _require_cli_runtime_limits_binding(match.group(1), actual)
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -647,6 +663,7 @@ def main() -> int:
         validate_wire_contract(wire)
         validate_deferred(deferred)
         validate_traceability(trace)
+        validate_cli_runtime_limits_binding()
         if args.evidence_root is not None:
             validate_evidence(trace, args.evidence_root.resolve())
     except ContractError as exc:

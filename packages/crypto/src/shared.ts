@@ -40,5 +40,8 @@ export function checkedRandomBytes(source: RandomBytesFunction, length: number):
 }
 
 export function asArrayBuffer(bytes: Bytes): ArrayBuffer {
-  return bytes.slice().buffer;
+  // Uint8Array views must be honored exactly: Node Buffers are pooled (byteOffset > 0)
+  // and Buffer.prototype.slice returns views rather than copies, so deriving the range
+  // from the view and copying via ArrayBuffer.prototype.slice is the only safe path.
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }

@@ -1,8 +1,16 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { lstat, mkdir, readFile, readdir, rmdir, writeFile } from "node:fs/promises";
 import { arch, platform, release } from "node:os";
-import { dirname, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CryptoProvider } from "@ekd/core";
+import { createSnapshotV1, restoreSnapshotV1, type CryptoProvider } from "@ekd/core";
+import {
+  DirectoryObjectStoreV1,
+  NodeRecoveryFileTarget,
+  NodeRestoreTarget,
+  NodeSnapshotLogSink,
+  NodeVaultSource
+} from "@ekd/adapters";
 import { NobleAes256Provider, NOBLE_CANDIDATE } from "@ekd/crypto/noble";
 import { WebCryptoAes256Provider, WEBCRYPTO_CANDIDATE } from "@ekd/crypto/webcrypto";
 import {
@@ -29,13 +37,21 @@ interface BuildMeta {
 type CandidateName = "webcrypto" | "noble";
 
 const HELP = [
-  "ekd-p0 — Phase 1 portability smoke harness",
+  "ekd-p0 — Phase 1 portability smoke harness + P0 CLI wiring (ADR-0021)",
   "",
   "Commands:",
   "  smoke --candidate webcrypto|noble [--output-dir PATH] [--allow-dirty-dev]",
   "  aggregate --root PATH --report PATH --report PATH --report PATH [--output PATH]",
   "",
-  "Production Recovery, Manifest, and Object codecs are intentionally unavailable."
+  "P0 wiring:",
+  "  snapshot --vault DIR --store DIR --log FILE --recovery FILE --domain-id 64HEX --runtime-limits FILE",
+  "  restore --recovery FILE --store DIR --target DIR",
+  "  __restore-worker --recovery FILE --store DIR --target DIR        (internal)",
+  "",
+  "P0 rules: every path is explicit; the Vault is never written; log/recovery/store",
+  "stay outside the Vault and each other; the store root, log parent and recovery",
+  "parent must pre-exist as real directories; restore refuses non-empty targets and",
+  "runs in a fresh process. Runtime-limits hash is bound to the accepted contract bytes."
 ].join("\n");
 
 function option(args: readonly string[], name: string): string | undefined {
@@ -193,6 +209,189 @@ async function aggregate(args: readonly string[]): Promise<number> {
   return result.cross_env_verdict === "cross_env_pass" ? 0 : 1;
 }
 
+// ---------------------------------------------------------------------------
+// P0 wiring (ADR-0021). Adapter/core semantics (Vault zero-write, exclusive
+// log/recovery creation, immutable store objects, empty restore target) stay in
+// the shared packages; the CLI parses explicit arguments, binds the accepted
+// runtime-limits contract bytes, enforces path disjointness and the restore
+// target policy, and keeps restore in a fresh process.
+// ---------------------------------------------------------------------------
+
+/** SHA-256 of `docs/contracts/p0-runtime-limits-v1.json`; cross-checked against the real file by `tools/verify_phase0_contracts.py`. */
+const ACCEPTED_RUNTIME_LIMITS_SHA256 = "e1971ab746f6b08b06522463f907143036d99e41c470532482b5da8eafc44acd";
+
+function requireHex64(value: string | undefined, flag: string): string {
+  if (value === undefined || !/^[0-9a-f]{64}$/.test(value)) throw new Error(`${flag} must be 64 lowercase hex characters.`);
+  return value;
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const pairs = hex.match(/../gu);
+  if (pairs === null) throw new Error("Invalid hex string.");
+  return new Uint8Array(pairs.map((pair) => Number.parseInt(pair, 16)));
+}
+
+function isNodeErrorWithCode(error: unknown, code: string): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === code;
+}
+
+function isInsidePath(root: string, candidate: string): boolean {
+  const rel = relative(resolve(root), resolve(candidate));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+function requireDisjoint(labelA: string, pathA: string, labelB: string, pathB: string): void {
+  if (isInsidePath(pathA, pathB) || isInsidePath(pathB, pathA)) {
+    throw new Error(`${labelA} and ${labelB} must not contain each other.`);
+  }
+}
+
+interface SnapshotCliOptions {
+  readonly vault: string;
+  readonly store: string;
+  readonly log: string;
+  readonly recovery: string;
+  readonly domainIdHex: string;
+  readonly runtimeLimits: string;
+}
+
+function snapshotOptions(args: readonly string[]): SnapshotCliOptions {
+  const vault = option(args, "--vault");
+  const store = option(args, "--store");
+  const log = option(args, "--log");
+  const recovery = option(args, "--recovery");
+  const runtimeLimits = option(args, "--runtime-limits");
+  const missing = [
+    ["--vault", vault], ["--store", store], ["--log", log], ["--recovery", recovery], ["--runtime-limits", runtimeLimits]
+  ].filter((entry) => entry[1] === undefined).map((entry) => entry[0]);
+  if (missing.length > 0) throw new Error(`snapshot requires ${missing.join(", ")}.`);
+  return {
+    vault: resolve(vault as string),
+    store: resolve(store as string),
+    log: resolve(log as string),
+    recovery: resolve(recovery as string),
+    domainIdHex: requireHex64(option(args, "--domain-id"), "--domain-id"),
+    runtimeLimits: resolve(runtimeLimits as string)
+  };
+}
+
+async function snapshotCommand(args: readonly string[]): Promise<number> {
+  const options = snapshotOptions(args);
+  requireDisjoint("--vault", options.vault, "--store", options.store);
+  requireDisjoint("--vault", options.vault, "--log", options.log);
+  requireDisjoint("--vault", options.vault, "--recovery", options.recovery);
+  requireDisjoint("--store", options.store, "--log", options.log);
+  requireDisjoint("--store", options.store, "--recovery", options.recovery);
+
+  const limitsBytes = await readFile(options.runtimeLimits);
+  const limitsSha256 = sha256Hex(limitsBytes);
+  if (limitsSha256 !== ACCEPTED_RUNTIME_LIMITS_SHA256) {
+    throw new Error(`--runtime-limits sha256 ${limitsSha256} does not match the accepted p0-runtime-limits-v1 contract.`);
+  }
+  const limitsJson = JSON.parse(limitsBytes.toString("utf8")) as { schema_version?: unknown };
+  if (limitsJson.schema_version !== "p0-runtime-limits-v1") {
+    throw new Error("--runtime-limits file is not p0-runtime-limits-v1.");
+  }
+
+  const provider = new WebCryptoAes256Provider();
+  const result = await createSnapshotV1(
+    {
+      domainId: hexToBytes(options.domainIdHex),
+      runtimeLimits: { schemaVersion: "p0-runtime-limits-v1", sha256Hex: limitsSha256 }
+    },
+    {
+      vaultSource: new NodeVaultSource(options.vault),
+      objectStore: new DirectoryObjectStoreV1(options.store),
+      cryptoProvider: provider,
+      randomSource: provider,
+      clock: { nowMilliseconds: () => Date.now() },
+      logSink: new NodeSnapshotLogSink(options.log, { vaultRoot: options.vault, objectStoreRoot: options.store }),
+      recoveryFileTarget: new NodeRecoveryFileTarget(options.recovery, { vaultRoot: options.vault, objectStoreRoot: options.store })
+    }
+  );
+  console.log(JSON.stringify(result, null, 2));
+  return result.status === "complete" ? 0 : 1;
+}
+
+interface RestoreCliOptions {
+  readonly recovery: string;
+  readonly store: string;
+  readonly target: string;
+}
+
+function restoreOptions(args: readonly string[]): RestoreCliOptions {
+  const recovery = option(args, "--recovery");
+  const store = option(args, "--store");
+  const target = option(args, "--target");
+  const missing = [["--recovery", recovery], ["--store", store], ["--target", target]]
+    .filter((entry) => entry[1] === undefined).map((entry) => entry[0]);
+  if (missing.length > 0) throw new Error(`restore requires ${missing.join(", ")}.`);
+  return { recovery: resolve(recovery as string), store: resolve(store as string), target: resolve(target as string) };
+}
+
+/** ADR-0021 §2.8: refuse non-empty existing targets; create the empty directory on the caller's behalf. Returns whether the CLI created it. */
+export async function prepareRestoreTarget(target: string): Promise<boolean> {
+  try {
+    await mkdir(target);
+    return true;
+  } catch (error) {
+    if (!isNodeErrorWithCode(error, "EEXIST")) {
+      throw new Error(`--target could not be created: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  const stats = await lstat(target);
+  if (stats.isSymbolicLink() || !stats.isDirectory()) throw new Error("--target exists and is not a real directory.");
+  if ((await readdir(target)).length > 0) throw new Error("--target exists and is not empty; refusing to restore into it.");
+  return false;
+}
+
+/** Leave no trace when the CLI created the target and the failed run never wrote into it. */
+async function removeEmptyCreatedTarget(target: string, created: boolean): Promise<void> {
+  if (!created) return;
+  try {
+    if ((await readdir(target)).length === 0) await rmdir(target);
+  } catch {
+    // Best-effort cleanup; the restore failure is still reported as-is.
+  }
+}
+
+async function restoreWorkerCommand(args: readonly string[]): Promise<number> {
+  const options = restoreOptions(args);
+  const recoveryFileBytes = await readFile(options.recovery);
+  const provider = new WebCryptoAes256Provider();
+  const result = await restoreSnapshotV1(
+    { recoveryFileBytes },
+    {
+      objectStore: new DirectoryObjectStoreV1(options.store),
+      cryptoProvider: provider,
+      restoreTarget: new NodeRestoreTarget(options.target)
+    }
+  );
+  console.log(JSON.stringify(result, null, 2));
+  return result.status === "complete" ? 0 : 1;
+}
+
+async function restoreCommand(args: readonly string[]): Promise<number> {
+  const options = restoreOptions(args);
+  requireDisjoint("--store", options.store, "--target", options.target);
+  const created = await prepareRestoreTarget(options.target);
+  const child = spawnSync(
+    process.execPath,
+    [resolve(process.argv[1] ?? "."), "__restore-worker", "--recovery", options.recovery, "--store", options.store, "--target", options.target],
+    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }
+  );
+  if (child.error !== undefined || child.stdout === null || !child.stdout.trim().startsWith("{")) {
+    await removeEmptyCreatedTarget(options.target, created);
+    process.stderr.write(child.stderr ?? `${child.error === undefined ? "restore worker produced no output" : String(child.error)}\n`);
+    return 2;
+  }
+  const result = JSON.parse(child.stdout) as { status?: string };
+  if (result.status !== "complete") await removeEmptyCreatedTarget(options.target, created);
+  process.stdout.write(child.stdout);
+  if (child.stderr !== null && child.stderr.length > 0) process.stderr.write(child.stderr);
+  return child.status === 0 ? 0 : 1;
+}
+
 export async function run(args: readonly string[]): Promise<number> {
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     console.log(HELP);
@@ -200,6 +399,9 @@ export async function run(args: readonly string[]): Promise<number> {
   }
   if (args[0] === "smoke") return smoke(args.slice(1));
   if (args[0] === "aggregate") return aggregate(args.slice(1));
+  if (args[0] === "snapshot") return snapshotCommand(args.slice(1));
+  if (args[0] === "restore") return restoreCommand(args.slice(1));
+  if (args[0] === "__restore-worker") return restoreWorkerCommand(args.slice(1));
   throw new Error(`Unknown command: ${args[0]}`);
 }
 

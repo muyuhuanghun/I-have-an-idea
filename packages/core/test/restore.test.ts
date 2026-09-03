@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { describe, expect, it } from "vitest";
 import { WebCryptoAes256Provider } from "../../crypto/src/webcrypto.js";
 import {
@@ -215,6 +216,21 @@ describe("Phase 4-B restore orchestration", () => {
     // Restore never writes to the ObjectStore (ACC-22 counterpart): the put count is
     // unchanged from the fixture creation run.
     expect(fixture.store.puts).toHaveLength(putsBeforeRestore);
+  });
+
+  it("restores Recovery File bytes delivered as a pooled Buffer view (byteOffset > 0)", async () => {
+    // Node Buffers are pooled views and Buffer.prototype.slice returns views rather than
+    // copies; the crypto boundary must derive WebCrypto ranges from the view itself.
+    const fixture = await createSnapshotFixture({ "a.md": "alpha\n" });
+    const pool = Buffer.alloc(8 + fixture.recoveryBytes.byteLength);
+    pool.set(fixture.recoveryBytes, 8);
+    const recoveryView = pool.subarray(8);
+    expect(recoveryView.byteOffset).toBe(8);
+    const target = new FakeRestoreTarget();
+    const result = await restoreFrom({ store: fixture.store, recoveryBytes: recoveryView }, target);
+    expect(result.status).toBe("complete");
+    expect(result.recoveryFileValid).toBe(true);
+    expect(new TextDecoder().decode(target.files.get("a.md") ?? filled(0, 0))).toBe("alpha\n");
   });
 
   it("rejects a non-empty target before any write and preserves the pre-existing file", async () => {

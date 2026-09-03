@@ -42,6 +42,13 @@ class Phase0EvidenceVerifierTests(unittest.TestCase):
         with self.assertRaises(verifier.ContractError):
             verifier._r1_closure_commit("no marker line here")
 
+    def test_cli_runtime_limits_binding_must_match_contract_file(self) -> None:
+        verifier._require_cli_runtime_limits_binding("c" * 64, "c" * 64)
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_cli_runtime_limits_binding("d" * 64, "c" * 64)
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_cli_runtime_limits_binding("NOT_A_HASH", "c" * 64)
+
     def test_nested_perf_raw_artifact_hash_is_enforced(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ekd-phase0-verifier-") as temporary:
             evidence_root = Path(temporary)

@@ -4,9 +4,9 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留；`684af1e` 之后的 R1-A/B/C 与 Phase 5 已在 2026-08-31 复审。复审确认现有 37 份 evidence 只通过了外层 `acc-evidence-v1` 包装门，内部多个 oracle 被硬编码为真，12 份 perf report 缺少 schema 强制要求的 raw artifacts 与 ADR-0017 要求的 build/runtime-limits hash binding，且报告的 `git_commit` 与实际 dirty-source 修正不一致；因此 `b5fcecf` 的 P0-R1 关闭与 DP-014 解锁评估已撤回。Phase 5 `841c26e` 同时存在缺失模块、统一门禁失败、错误 runtime-limits hash、写入源 Vault 及越界加入插件恢复命令等问题，本轮已从工作树移除该接线，等待 R1 重新关闭后按执行计划 §16 另行设计。DP-007/008/010/012 以机器 registry 为准继续 `open`，DP-011 为 `conditional`，37 个 ACC 继续 `untested`；当前只有 design-only/design-only+samples 门可通过，P0-R1 未关闭。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5（插件产品接线）未关闭，须另立 Phase 5-0 合同按执行计划 §16 做 snapshot-only 薄接线；本关闭不声明生产安全，不豁免后续独立审计。
 >
-> 最后更新：2026-08-31
+> 最后更新：2026-09-02
 
 ## 1. 项目一句话定义
 
@@ -908,7 +908,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
 4. deferred registry 已逐项绑定 26 个参数的 owner、阶段、状态、关闭产物和硬停止；DP-001..005 已由 ADR-0013 关闭；
 5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 9 对正/负样本反身校验当前 9 份 schema；`--evidence-root` 模式除校验 `acc-evidence-v1` 外，还递归校验 perf、storage-visibility、roundtrip artifact schema 与 perf raw artifact hash，缺字段、未知字段、非法值或嵌套 hash 不一致都立即被拒；
-6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已按单独授权完成；clean-source 正式矩阵中 Web Crypto 和 Noble 均取得 `cross_env_pass`，ADR-0013 已选择 Web Crypto 并关闭 DP-001..005；Phase 2 Tiny fixture generator/fixture 已纳管，但仍无 passed ACC。
+6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已按单独授权完成；clean-source 正式矩阵中 Web Crypto 和 Noble 均取得 `cross_env_pass`，ADR-0013 已选择 Web Crypto 并关闭 DP-001..005；Phase 2 Tiny fixture generator/fixture 已纳管，其余 ACC 已于 2026-09-02 随 P0-R1 关闭统一升级为 `passed`（ADR-0020）。
 
 ### 27.4 推迟到 P1-alpha 以后裁决
 
@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。后续 R1 evidence 曾生成，但 2026-08-31 复审证明其内层 artifact/schema/provenance 与多项 oracle 不满足冻结计划，不能视为 passed ACC；关闭报告已撤回。现状仍是 37 个 ACC 全部 `untested`、P0-R1 未关闭，Phase 5 产品接线暂不成立。
+当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭；Phase 5 产品接线未开始，须另立合同。
 
 ## 30. 仓库状态
 
@@ -972,6 +972,6 @@ docs/
 tools/
 ```
 
-Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 smoke 插件、固定密码向量和统一门禁配置已纳管。Phase 2 至 Phase 4-B 的纳管状态见本文件顶部。`artifacts/` 中存在后续生成的 R1 candidate evidence，但它们已被 2026-08-31 复审判定为不可用于关闭；存在文件不等于有效证据。
+Phase 1 `package.json`、pnpm workspace/lockfile、TypeScript shared core、crypto/adapters/smoke packages、CLI、最小 smoke 插件、固定密码向量和统一门禁配置已纳管。Phase 2 至 Phase 4-B 的纳管状态见本文件顶部。`artifacts/` 中的正式 R1 证据（12 份 perf + 37 份 ACC）由 clean commit `9443cb1` 生成；2026-08-30 的旧 candidate evidence 已被同日复审撤回并被重跑覆盖，git 追踪之外的 artifacts 不构成源码的一部分。
 
-当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)，密码选择见 ADR-0013。权威结论是：Phase 0 design-only/design-only+samples 门通过；Phase 1 两候选正式矩阵均为 `cross_env_pass`，DP-001..005 已关闭；P0-R1 仍未实现且 37 ACC 全部未测试。前两项不等于 P0-R1、生产安全或后续阶段授权；在完整实现、测试和独立审计以前，不承诺生产可用。
+当前 P0 执行计划见 [`docs/product/P0_EXECUTION_PLAN.md`](docs/product/P0_EXECUTION_PLAN.md)，当前静态门禁见 [`docs/decisions/phase0-consistency-check.md`](docs/decisions/phase0-consistency-check.md)，密码选择见 ADR-0013。权威结论是：Phase 0 design-only/design-only+samples 门通过；Phase 1 两候选正式矩阵均为 `cross_env_pass`，DP-001..005 已关闭；P0-R1 已于 2026-09-02 按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，正式证据绑定 clean commit `9443cb1`。这不等同于生产安全或后续阶段授权；在完整实现、独立审计和后续阶段合同以前，不承诺生产可用。

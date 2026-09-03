@@ -1,14 +1,29 @@
 # P0-R1 关闭报告
 
-> 日期：2026-08-30
+> 日期：2026-09-02（本节）；历史章节见下方说明
 >
-> 状态：**已撤回 / REOPENED**。2026-08-31 独立复审确认本报告所依据的 evidence gate 只校验了外层包装，未证明多项内层 oracle；ACC-37 也没有可复核的显式开发者裁决绑定。
+> 状态：**已关闭 / CLOSED**（2026-09-02，ADR-0020）。本报告所依据的证据全部于 clean commit `9443cb1` 上由修复后的 runner 重新生成，并通过开发者 ACC-37 精确 token 裁决。
 >
-> 基线：`572f229`（R1-B 提交之后）
+> 证据运行：`node tools/perf-run.mjs` → `PERF_RUNS_PASS`（12/12）；`node tools/acc-evidence-run.mjs` → `EVIDENCE_RUN_DONE 37 reports at HEAD 9443cb1…`（37/37，含绑定 token 的 ACC-37）。
 >
-> 当前证据门：`python -B tools/verify_phase0_contracts.py --validate-samples --evidence-root artifacts` → **FAIL**（registry 仍为 `untested`；旧 perf/evidence artifacts 也不满足修复后的嵌套 schema/provenance 门）
+> 当前证据门：`python -B tools/verify_phase0_contracts.py --validate-samples --evidence-root artifacts` → **PASS**（design+samples 与嵌套 evidence 模式同时通过）
 
-## 0. 2026-08-31 复审纠正（当前权威）
+R1_EVIDENCE_CLOSED_AT_COMMIT: 9443cb11903fa3c9608022d933980475225ad7cb
+
+## -1. 2026-09-02 关闭记录（当前权威）
+
+本节取代下方全部历史与撤回章节，成为本报告的当前权威结论。关闭依据：
+
+1. **证据溯源**：12 份 perf report 与 37 份 acc-evidence 全部绑定同一 clean commit `9443cb1`；perf report 携带 `evidence_binding`（clean source tree、build tree/runtime-limits/snapshot/restore worker sha256）与 hash-bound raw artifacts（RSS 采样、worker stdout、日志、Recovery File、verifier 输出）。修复后 runner 在写任何 evidence 前强制 clean source tree，任一 required check 失败即中止。
+2. **正式结果**：perf 12/12 pass（peak RSS 139–190 MiB，限 512 MiB；large−small RSS 增量 ≤ ~35 MiB，限 128 MiB；fixture 增长比 8.0）；37/37 ACC evidence 通过 schema、required_checks、错误码组与 side-effect oracle 校验。
+3. **ACC-37 人工裁决**：机器扫描 10 份核心文档，`unsupported_claim_hits: []`，四项限制声明在位；machine-scan sha256 `5dbc2a722e7622febbd23a35bc3afc82b79daceb3a7458daff1f216983e7acff`；开发者以精确 token `ACCEPT ACC-37 5dbc2a72…` 裁决 ACCEPT（2026-09-02，经 ZCode 会话确认）。
+4. **DP 收尾**：DP-007/008/010/012 以本次证据关闭；DP-011 以"无需调整"记录关闭（基线 peak RSS 远低于 512 MiB，未触发任何调整）。全部绑定 ADR-0020。DP-014 保持 `deferred`。
+5. **机器门**：`--validate-samples`（9 对正/负样本）与 `--evidence-root artifacts`（嵌套 schema + raw hash + 同 commit + registry/matrix 同步 + closeout 绑定行交叉验证）均 PASS；设计门 closure 规则（全部 untested 或全部 passed + 绑定行）配 4 项单元测试。
+6. **证据运行前的阻塞修复**：`9000d63`（Windows .cmd spawn EINVAL）、`d861e28`（per-run raw 目录清理，Recovery File 永不覆盖语义）、`62ad56f`（矩阵中段环境漂移 fail-fast——首次重跑中途电源计划被外部切换触发过 `same_environment` 硬门）、`9443cb1`（历史章节措辞避免扫描器自匹配）。
+
+边界：本关闭只覆盖 P0-R1 证据阶段；不声明生产安全，不豁免后续独立审计；Phase 5 须另立 Phase 5-0 合同（执行计划 §16 snapshot-only 薄接线）；DP-014/HTTP ObjectStore 保持 hard_stop。
+
+## 0. 2026-08-31 复审纠正（历史记录，已被 2026-09-02 关闭取代）
 
 本报告其余章节保留为历史候选记录，不再构成关闭结论。撤回理由如下：
 

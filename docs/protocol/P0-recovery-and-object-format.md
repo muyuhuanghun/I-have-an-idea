@@ -1,8 +1,8 @@
 # P0 恢复文件、Manifest 与密文对象格式
 
 > 文档版本：v0.5
-> 当前状态：wire contract v1、Suite 1、Directory ObjectStore、存储可见性扫描及 Phase 4 snapshot/restore 编排均已实现并纳管。后续虽然生成了 37 份 candidate evidence，但 2026-08-31 复审发现其内层 perf/schema/provenance 与多个 required oracle 不成立，不能算正式 ACC evidence；关闭报告已撤回，37 ACC 继续 `untested`。协议实现状态不因此回退，但 P0-R1、插件产品接线和 HTTP ObjectStore 解锁均未成立。
-> 日期：2026-08-30
+> 当前状态：wire contract v1、Suite 1、Directory ObjectStore、存储可见性扫描及 Phase 4 snapshot/restore 编排均已实现并纳管。旧 37 份 candidate evidence 经 2026-08-31 复审撤回后，2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成 12 份 perf report 与 37 份 acc-evidence 并全部通过嵌套证据门（ACC-37 经开发者精确 token 裁决）；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。协议实现状态不因此回退；插件产品接线（Phase 5）与 HTTP ObjectStore 解锁仍未成立。
+> 日期：2026-09-02
 > 当前权威：ADR-0011、ADR-0012、ADR-0013、ADR-0015、ADR-0016、ADR-0017、ADR-0018、`docs/contracts/p0-wire-contract-v1.json`、`docs/contracts/p0-traceability-v1.json`、`docs/contracts/p0-deferred-parameters.json`、`docs/contracts/p0-runtime-limits-v1.json`、`docs/schemas/storage-visibility-scan-v1.schema.json`、`docs/schemas/p0-runtime-limits-v1.schema.json`
 
 ## 1. 职责和权威顺序

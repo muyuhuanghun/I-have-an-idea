@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回：perf report 不满足自身 schema 和 ADR-0017 hash binding，evidence runner 多项 required check 未执行真实 oracle，ACC-36 未证明 clean repeatability，ACC-37 未绑定真实开发者裁决。Phase 5 `841c26e` 也因不可构建、runtime-limits 绑定错误、源 Vault 写入和越界实现插件恢复而不成立，本轮工作树已移除该接线。机器 registry 中 DP-007/008/010/012 仍为 `open`、DP-011 为 `conditional`、37 ACC 仍为 `untested`；当前授权边界回到 R1 evidence 工具修复与 clean-commit 重跑，P0-R1、Phase 5 和 DP-014 解锁均未关闭。
+> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回；Phase 5 `841c26e` 同因不可构建与越界被移除出工作树。2026-09-02 修复后的 runner（含 Windows `.cmd` spawn、per-run raw 目录清理、环境漂移 fail-fast、ACC-37 扫描措辞四项阻塞修复）在 clean commit `9443cb1` 上重新生成 12 份 perf report（`PERF_RUNS_PASS`）与 37 份 acc-evidence（37/37），ACC-37 经开发者精确 token 裁决 ACCEPT；P0-R1 已按 ADR-0020 关闭。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 同步为 `passed`；DP-007/008/010/011/012 已关闭（closure_adr = ADR-0020），DP-014 保持 `deferred`。设计门同步修订为 closure 规则（全部 `untested` 或全部 `passed` + 收尾报告 `R1_EVIDENCE_CLOSED_AT_COMMIT` 绑定行，evidence 门交叉验证 commit 一致）。Phase 5 与 HTTP ObjectStore 未解锁。
 >
 > 日期：2026-08-30
 >
@@ -756,13 +756,12 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。后续 R1-A/B/C 和 Phase 5 虽已进入 Git 历史，但 2026-08-31 复审确认 R1 evidence 不满足冻结 oracle/schema/provenance，Phase 5 也不可构建且越界；两者当前都不算完成。下一授权门槛回到 R1 evidence 修复：clean commit → 重跑 12 份 perf report → 同一 clean commit 生成 37 份 ACC evidence → ACC-37 machine-scan hash 的显式开发者 token → registry/矩阵同步为 `passed` → 嵌套 `--evidence-root artifacts` 门通过 → 新关闭报告。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。下一授权门槛为 **Phase 5-0**：冻结 CLI/极薄 Obsidian 插件的 snapshot-only 接线合同（严格按 §16 边界：插件只创建 snapshot，正式 fresh-process restore 仍由 CLI 负责），不得提前进入实现。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
 
-1. 第二轮独立复审必须确认 Phase 4-B 的合同、实现、测试与已知限制一致；有阻断 finding 时不得编写关闭报告；
-2. 复审 PASS 后才编写 `docs/test-plans/phase4b-restore-report.md`，且只能称为 dirty-source implementation review evidence；
-3. 本轮修复未经用户明确授权不得自动提交/推送；clean-commit ACC-36 与正式 perf/evidence 重跑必须发生在后续明确提交授权之后；
-4. 在新的 P0-R1 关闭报告成立前，不实施 CLI/插件产品接线、Phase 5、DP-014 解锁或 HTTP ObjectStore；
-5. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义的修改都必须先停下并形成明确合同裁决；
-6. 本计划不授权自动提交、推送或把当前 dirty diff 描述为已提交。
+1. 本轮 R1 重做中的全部修复（`9000d63`、`d861e28`、`62ad56f`、`9443cb1`）与收尾提交均经用户显式授权后提交并推送；
+2. ACC-37 的裁决 token 只对生成它的 machine-scan（即提交 `9443cb1` 时的 10 份扫描目标）有效；任何被扫描文档的后续变更都会使既有 token 失效，重跑证据需要新的开发者裁决；
+3. Phase 5-0 合同冻结前，不实施 CLI/插件产品接线、Phase 5 实现或 HTTP ObjectStore；
+4. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义的修改都必须先停下并形成明确合同裁决；
+5. 本计划不授权自动提交、推送或把未授权的 dirty diff 描述为已提交。
 
 本计划不授权自动提交或推送。本轮修改已经由用户显式授权后通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；之后的 README/一致性/执行计划 stale 措辞修订也属于用户显式授权下的小补丁提交。

@@ -4,7 +4,7 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5（插件产品接线）未关闭，须另立 Phase 5-0 合同按执行计划 §16 做 snapshot-only 薄接线；本关闭不声明生产安全，不豁免后续独立审计。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021，开发者四点确认：5-A CLI 先行、端口拦截 core 零改动、`p0-plugin-snapshot-report-v1` schema + 机器门、全部显式路径无默认）；5-A/5-B 实现未获授权。本关闭不声明生产安全，不豁免后续独立审计。
 >
 > 最后更新：2026-09-02
 

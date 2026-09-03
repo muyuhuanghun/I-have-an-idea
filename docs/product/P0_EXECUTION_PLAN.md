@@ -756,12 +756,12 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。下一授权门槛为 **Phase 5-0**：冻结 CLI/极薄 Obsidian 插件的 snapshot-only 接线合同（严格按 §16 边界：插件只创建 snapshot，正式 fresh-process restore 仍由 CLI 负责），不得提前进入实现。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受（snapshot-only 插件边界、端口拦截 core 零改动、`p0-plugin-snapshot-report-v1` schema + 机器门、全部显式路径无默认）。下一授权门槛为 **Phase 5-A**：按 ADR-0021 §2 实现 CLI 接线（`snapshot` 进程内创建 + `restore` 新进程恢复，拒绝非空目标并新建空目录），绑定 clean commit 并交付 `docs/test-plans/phase5a-cli-report.md`；5-B 插件薄 UI 在 5-A 纳管后另行授权。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
 
 1. 本轮 R1 重做中的全部修复（`9000d63`、`d861e28`、`62ad56f`、`9443cb1`）与收尾提交均经用户显式授权后提交并推送；
 2. ACC-37 的裁决 token 只对生成它的 machine-scan（即提交 `9443cb1` 时的 10 份扫描目标）有效；任何被扫描文档的后续变更都会使既有 token 失效，重跑证据需要新的开发者裁决；
-3. Phase 5-0 合同冻结前，不实施 CLI/插件产品接线、Phase 5 实现或 HTTP ObjectStore；
-4. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义的修改都必须先停下并形成明确合同裁决；
+3. Phase 5-A 实现未获明确授权前不得开工；5-A 交付物不得包含任何插件改动（插件属 5-B）；
+4. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义、ADR-0021 接线边界的修改都必须先停下并形成明确合同裁决；
 5. 本计划不授权自动提交、推送或把未授权的 dirty diff 描述为已提交。
 
 本计划不授权自动提交或推送。本轮修改已经由用户显式授权后通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；之后的 README/一致性/执行计划 stale 措辞修订也属于用户显式授权下的小补丁提交。

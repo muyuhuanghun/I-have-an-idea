@@ -84,20 +84,22 @@
       "name": "Edge-case fixture 的精确恶意输入与期望错误码",
       "owner": "OWNER-P0",
       "phase": "Phase 2 fixture",
-      "status": "open",
+      "status": "closed",
       "close_artifact": "fixtures/edge-cases/ + fixture-manifest-v1.json + case oracle manifest",
       "hard_stop": "任一必需场景缺失或无稳定错误码时，对应负面 ACC 保持 untested",
-      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §3（2026-08-30 接受）；关闭仍需本 close_artifact 证据"
+      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §3（2026-08-30 接受）；关闭仍需本 close_artifact 证据",
+      "closure_adr": "docs/decisions/0020-p0-r1-evidence-closure.md"
     },
     {
       "id": "DP-008",
       "name": "Representative small/large fixture 的精确分布、seed 和 manifest hash",
       "owner": "OWNER-P0",
       "phase": "Phase 2 fixture/performance",
-      "status": "open",
+      "status": "closed",
       "close_artifact": "两个 fixture-manifest-v1 报告（10,000 files；约 128 MiB 与约 1 GiB）",
       "hard_stop": "文件数、字节范围、内容覆盖或 hash 不满足 schema 时，不得运行 ACC-26/29/30",
-      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §2（seed ekd-representative-v1；2026-08-30 接受）；关闭仍需本 close_artifact 证据"
+      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §2（seed ekd-representative-v1；2026-08-30 接受）；关闭仍需本 close_artifact 证据",
+      "closure_adr": "docs/decisions/0020-p0-r1-evidence-closure.md"
     },
     {
       "id": "DP-009",
@@ -114,29 +116,32 @@
       "name": "性能测量主机、工具、采样间隔、power plan 和冷/热缓存运行清单",
       "owner": "OWNER-P0",
       "phase": "Phase 2 baseline，Phase 6 复核",
-      "status": "open",
+      "status": "closed",
       "close_artifact": "首份 schema-valid perf-report-v1 baseline",
       "hard_stop": "环境字段、idle RSS、<=100 ms 采样或 cache_state 缺失时，报告无效且不得比较",
-      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §4（正式主机 = 本地 Windows 11 工作机，实测 Ryzen 9 9955HX / 15.2 GB / NTFS / build 26200；Azure Ubuntu VPS 排除出正式证据；2026-08-30 接受）"
+      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §4（正式主机 = 本地 Windows 11 工作机，实测 Ryzen 9 9955HX / 15.2 GB / NTFS / build 26200；Azure Ubuntu VPS 排除出正式证据；2026-08-30 接受）",
+      "closure_adr": "docs/decisions/0020-p0-r1-evidence-closure.md"
     },
     {
       "id": "DP-011",
       "name": "512 MiB peak RSS 门槛的一次性调整（可选）",
       "owner": "OWNER-P0",
       "phase": "首次可靠 Phase 2 baseline 后，Phase 6 前",
-      "status": "conditional",
+      "status": "closed",
       "close_artifact": "docs/decisions/performance-threshold-adjustment-v1.md 或明确的 no-adjustment 记录",
-      "hard_stop": "无基线、无理由、无 owner 签字或 adjustment_count > 1 时，不得放宽阈值，ACC-31 失败"
+      "hard_stop": "无基线、无理由、无 owner 签字或 adjustment_count > 1 时，不得放宽阈值，ACC-31 失败",
+      "closure_adr": "docs/decisions/0020-p0-r1-evidence-closure.md"
     },
     {
       "id": "DP-012",
       "name": "流式 chunk size、最大并发数和队列上限",
       "owner": "OWNER-P0",
       "phase": "Phase 2 scanner/encryptor，最迟 ACC-30 前",
-      "status": "open",
+      "status": "closed",
       "close_artifact": "版本化 runtime-limits.json + perf-report-v1 bounded-memory comparison",
       "hard_stop": "数值未绑定报告或 peak RSS growth >128 MiB 时，不得关闭 ACC-30",
-      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §5（snapshot 侧参数已冻结于 p0-runtime-limits-v1，恢复侧并发 1 由 ADR-0018 §4 结构保证；关闭仍需 perf 证据）"
+      "params_freeze": "docs/decisions/0019-p0-r1-evidence-plan-v1.md §5（snapshot 侧参数已冻结于 p0-runtime-limits-v1，恢复侧并发 1 由 ADR-0018 §4 结构保证；关闭仍需 perf 证据）",
+      "closure_adr": "docs/decisions/0020-p0-r1-evidence-closure.md"
     },
     {
       "id": "DP-013",

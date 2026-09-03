@@ -25,6 +25,23 @@ class Phase0EvidenceVerifierTests(unittest.TestCase):
         with self.assertRaises(verifier.ContractError):
             verifier._validate_against_schema(without_raw, schema, "without-raw")
 
+    def test_acc_status_rule_allows_only_full_evidence_backed_flip(self) -> None:
+        closure = "R1_EVIDENCE_CLOSED_AT_COMMIT: " + "a" * 40 + "\n"
+        verifier._require_acc_statuses(["untested"] * 37, "")
+        verifier._require_acc_statuses(["passed"] * 37, closure)
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_acc_statuses(["passed"] * 37, "")
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_acc_statuses(["passed"] * 36 + ["untested"], closure)
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_acc_statuses(["bogus"] * 37, closure)
+
+    def test_evidence_commit_must_match_closeout_declaration(self) -> None:
+        closure = "R1_EVIDENCE_CLOSED_AT_COMMIT: " + "b" * 40 + "\n"
+        self.assertEqual(verifier._r1_closure_commit(closure), "b" * 40)
+        with self.assertRaises(verifier.ContractError):
+            verifier._r1_closure_commit("no marker line here")
+
     def test_nested_perf_raw_artifact_hash_is_enforced(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ekd-phase0-verifier-") as temporary:
             evidence_root = Path(temporary)

@@ -402,6 +402,22 @@ def validate_deferred(registry: dict[str, Any]) -> None:
             require((ROOT / closure_adr).is_file(), f"{item['id']}: closure_adr does not exist: {closure_adr}")
 
 
+def _r1_closure_commit(closeout_text: str) -> str:
+    match = re.search(r"^R1_EVIDENCE_CLOSED_AT_COMMIT: ([0-9a-f]{40})$", closeout_text, flags=re.MULTILINE)
+    require(match is not None, "closeout report lacks an 'R1_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
+    return match.group(1)
+
+
+def _require_acc_statuses(statuses: list[Any], closeout_text: str) -> None:
+    allowed_statuses = {"passed", "failed", "untested", "known-limitation", "out-of-scope"}
+    require(all(status in allowed_statuses for status in statuses), "acceptance registry contains an invalid status")
+    if all(status == "untested" for status in statuses):
+        return
+    require(all(status == "passed" for status in statuses),
+            "either all 37 ACC stay untested or all 37 are passed with evidence")
+    _r1_closure_commit(closeout_text)
+
+
 def validate_traceability(trace: dict[str, Any]) -> None:
     require(trace.get("schema_version") == "p0-traceability-v1", "wrong traceability version")
     threats = trace.get("threats", [])
@@ -420,9 +436,11 @@ def validate_traceability(trace: dict[str, Any]) -> None:
     allowed_side_effects = set(trace.get("allowed_side_effect_flags", []))
     require(known_errors and len(known_errors) == len(trace.get("error_codes", [])), "error code registry must be non-empty and unique")
 
+    closeout_text = (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8")
+    _require_acc_statuses([item.get("status") for item in acceptance], closeout_text)
+
     for item in acceptance:
         acc_id = item["id"]
-        require(item.get("status") == "untested", f"{acc_id}: committed design registry must remain untested")
         item_threats = item.get("threat_ids")
         item_invariants = item.get("invariant_ids")
         require(isinstance(item_threats, list) and set(item_threats) <= set(threat_ids), f"{acc_id}: invalid threat links")
@@ -521,6 +539,8 @@ def _validate_nested_artifacts(artifact_paths: list[Path], evidence_root: Path) 
 
 def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     acc_schema = _load_schema("acc-evidence-v1.schema.json")
+    closeout_commit = _r1_closure_commit(
+        (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8"))
     evidence_commit: str | None = None
     for item in trace["acceptance"]:
         relative = Path(item["evidence_path"])
@@ -543,6 +563,8 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
             evidence_commit = report_commit
         require(report_commit == evidence_commit,
                 f"{acc_id}: evidence commit {report_commit} differs from {evidence_commit}")
+        require(report_commit == closeout_commit,
+                f"{acc_id}: evidence commit {report_commit} differs from closeout-declared {closeout_commit}")
 
         checks = report.get("checks")
         require(isinstance(checks, dict), f"{acc_id}: checks object missing")

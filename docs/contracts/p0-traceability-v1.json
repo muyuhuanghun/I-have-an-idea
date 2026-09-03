@@ -1,6 +1,6 @@
 {
   "schema_version": "p0-traceability-v1",
-  "status": "design_contract_all_acceptance_untested",
+  "status": "all_acceptance_passed_with_evidence_2026_09_02",
   "evidence_schema": "docs/schemas/acc-evidence-v1.schema.json",
   "allowed_side_effect_flags": [
     "source_vault_modified",
@@ -119,187 +119,187 @@
   "acceptance": [
     {
       "id": "ACC-01", "title": "共享核心无平台依赖", "kind": "architecture", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "架构依赖门禁，不是攻击者缓解项", "evidence_path": "artifacts/test-reports/acc-01-import-check.json", "status": "untested",
+      "nonsecurity_reason": "架构依赖门禁，不是攻击者缓解项", "evidence_path": "artifacts/test-reports/acc-01-import-check.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "forbidden_import_count_zero", "core_build_exit_zero"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-02", "title": "三环境调用同一核心", "kind": "architecture", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "跨运行时架构一致性门禁", "evidence_path": "artifacts/test-reports/acc-02-cross-env.json", "status": "untested",
+      "nonsecurity_reason": "跨运行时架构一致性门禁", "evidence_path": "artifacts/test-reports/acc-02-cross-env.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "three_environments_present", "core_bundle_hash_unique_count_one", "all_environment_verdicts_pass"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-03", "title": "构建期执行禁止导入检查", "kind": "architecture", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "构建门禁自检", "evidence_path": "artifacts/test-reports/acc-03-build-gate.json", "status": "untested",
+      "nonsecurity_reason": "构建门禁自检", "evidence_path": "artifacts/test-reports/acc-03-build-gate.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "positive_build_passes", "injected_forbidden_import_fails_build"], "required_error_code_groups": [["FORBIDDEN_IMPORT"]], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-04", "title": "恢复文件由 CSPRNG 生成并位于 Vault 外", "kind": "security", "threat_ids": [], "invariant_ids": ["INV-05"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-04-recovery-generation.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-04-recovery-generation.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "random_source_attested", "recovery_root_length_32", "recovery_path_outside_vault"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified"]}
     },
     {
       "id": "ACC-05", "title": "持有性验证重新读取磁盘文件", "kind": "security", "threat_ids": [], "invariant_ids": ["INV-10", "INV-11"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-05-possession-verified.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-05-possession-verified.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "creator_process_exited", "fresh_process_read_disk_file", "restore_completed"], "required_error_code_groups": [], "forbidden_side_effects": ["undeclared_persistent_state_used", "source_vault_modified"]}
     },
     {
       "id": "ACC-06", "title": "恢复文件字段与固定长度合同", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-06-recovery-fields.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-06-recovery-fields.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "valid_file_exactly_167_bytes", "all_fields_match_wire_contract", "each_missing_field_variant_rejected", "trailing_bytes_rejected"], "required_error_code_groups": [["RECOVERY_FIELD_MISSING", "RECOVERY_TRUNCATED"], ["RECOVERY_TRAILING_BYTES"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
     },
     {
       "id": "ACC-07", "title": "恢复文件不含禁止信息", "kind": "security", "threat_ids": [], "invariant_ids": ["INV-05"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-07-recovery-leak-scan.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-07-recovery-leak-scan.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "vault_path_absent", "content_markers_absent", "file_names_absent", "account_secrets_absent"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified"]}
     },
     {
       "id": "ACC-08", "title": "篡改恢复文件被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-08-wrong-recovery.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-08-wrong-recovery.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "recovery_root_bitflip_rejected", "locator_bitflip_rejected", "fingerprint_bitflip_rejected"], "required_error_code_groups": [["RECOVERY_INTEGRITY_FAILED"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-09", "title": "恢复文件截断被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-09-truncated-recovery.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-09-truncated-recovery.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "every_truncation_offset_rejected"], "required_error_code_groups": [["RECOVERY_TRUNCATED"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-10", "title": "不支持的恢复文件版本被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-10-version-mismatch.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-10-version-mismatch.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "unsupported_recovery_version_rejected", "unsupported_protocol_version_rejected"], "required_error_code_groups": [["RECOVERY_VERSION_UNSUPPORTED"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
     },
     {
       "id": "ACC-11", "title": "fresh process 只凭恢复文件和 ObjectStore 恢复", "kind": "security", "threat_ids": [], "invariant_ids": ["INV-05", "INV-11"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-11-fresh-process.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-11-fresh-process.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "creator_process_exited", "declared_inputs_exactly_two", "restore_completed", "independent_verifier_passed"], "required_error_code_groups": [], "forbidden_side_effects": ["undeclared_persistent_state_used", "source_vault_modified"]}
     },
     {
       "id": "ACC-12", "title": "相同明文不可直接关联", "kind": "security", "threat_ids": ["THR-01"], "invariant_ids": ["INV-02"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-12-ciphertext-correlation.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-12-ciphertext-correlation.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "object_ids_differ", "nonces_differ", "ciphertext_objects_differ"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-13", "title": "object ID 是 16 字节随机不透明标识", "kind": "security", "threat_ids": ["THR-01"], "invariant_ids": ["INV-03"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-13-object-id-randomness.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-13-object-id-randomness.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "raw_id_length_16", "store_key_length_22", "base64url_roundtrip_canonical", "content_hash_not_equal", "random_source_attested"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-14", "title": "对象 AEAD 篡改被检测", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-04", "INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-14-aead-tamper.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-14-aead-tamper.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "ciphertext_bitflip_rejected", "tag_bitflip_rejected", "nonce_bitflip_rejected"], "required_error_code_groups": [["OBJECT_AEAD_FAILED"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
     },
     {
       "id": "ACC-15", "title": "对象缺失截断替换重复均失败关闭", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-04", "INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-15-object-corruption.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-15-object-corruption.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "missing_object_rejected", "every_truncation_offset_rejected", "wrong_id_substitution_rejected", "duplicate_reference_rejected", "trailing_bytes_rejected"], "required_error_code_groups": [["MISSING_OBJECT"], ["OBJECT_TRUNCATED", "OBJECT_AEAD_FAILED"], ["OBJECT_AAD_MISMATCH"], ["DUPLICATE_OBJECT_REFERENCE"], ["OBJECT_TRAILING_BYTES"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-16", "title": "Manifest 篡改被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-04", "INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-16-manifest-tamper.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-16-manifest-tamper.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "manifest_ciphertext_bitflip_rejected", "manifest_aad_field_bitflip_rejected", "manifest_plaintext_format_invalid_rejected", "manifest_trailing_bytes_rejected"], "required_error_code_groups": [["MANIFEST_AEAD_FAILED"], ["MANIFEST_FORMAT_INVALID"], ["MANIFEST_TRAILING_BYTES"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
     },
     {
       "id": "ACC-17", "title": "错误域或密钥被当成失败", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-04", "INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-17-wrong-key.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-17-wrong-key.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "wrong_domain_store_rejected", "wrong_recovery_root_rejected"], "required_error_code_groups": [["MISSING_OBJECT", "MANIFEST_AEAD_FAILED", "OBJECT_AAD_MISMATCH"]], "forbidden_side_effects": ["partial_plaintext_returned", "partial_success_reported"]}
     },
     {
       "id": "ACC-18", "title": "非空恢复目标被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-08", "INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-18-nonempty-target.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-18-nonempty-target.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "nonempty_target_rejected_before_write", "existing_bytes_unchanged"], "required_error_code_groups": [["NON_EMPTY_TARGET"]], "forbidden_side_effects": ["partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-19", "title": "路径逃逸被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-06", "INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-19-path-escape.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-19-path-escape.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "all_path_escape_cases_rejected", "target_tree_unchanged", "outside_tree_unchanged"], "required_error_code_groups": [["ENTRY_PATH_ESCAPE"]], "forbidden_side_effects": ["partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-20", "title": "Symlink Junction 和重解析点被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-06", "INV-07"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-20-reparse-points.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-20-reparse-points.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "symlink_rejected", "junction_rejected", "other_reparse_point_rejected", "targets_not_read"], "required_error_code_groups": [["REPARSE_POINT_FOUND", "ENTRY_PATH_ESCAPE"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-21", "title": "大小写折叠碰撞被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-14"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-21-case-collision.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-21-case-collision.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "case_collision_rejected_before_write"], "required_error_code_groups": [["CASE_COLLISION"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-22", "title": "源 Vault 零修改", "kind": "security", "threat_ids": [], "invariant_ids": ["INV-09"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-22-source-zero-write.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-22-source-zero-write.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "before_after_path_sets_equal", "before_after_file_hashes_equal", "metadata_unchanged"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified"]}
     },
     {
       "id": "ACC-23", "title": "扫描中文件变化不进入伪一致快照", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-15"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-23-scan-mutation.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-23-scan-mutation.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "mutation_detected", "snapshot_not_complete"], "required_error_code_groups": [["FILE_CHANGED_DURING_SCAN"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-24", "title": "未支持文件不被静默跳过", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-16"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-24-unsupported-files.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-24-unsupported-files.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "unsupported_path_reported", "snapshot_not_complete"], "required_error_code_groups": [["UNSUPPORTED_FILES_FOUND"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-25", "title": "部分写入不被报告为成功", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-13"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-25-partial-write.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-25-partial-write.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "disk_full_injected", "restore_failed", "success_marker_absent", "partial_output_inventory_recorded"], "required_error_code_groups": [["RESTORE_TARGET_WRITE_FAILED"]], "forbidden_side_effects": ["partial_success_reported", "write_outside_target"]}
     },
     {
       "id": "ACC-26", "title": "10000 文件约 1 GiB 完整往返", "kind": "performance", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "规模与功能完成度门禁", "evidence_path": "artifacts/performance-reports/acc-26-10k-roundtrip.json", "status": "untested",
+      "nonsecurity_reason": "规模与功能完成度门禁", "evidence_path": "artifacts/performance-reports/acc-26-10k-roundtrip.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "fixture_profile_large_valid", "total_files_exactly_10000", "total_bytes_within_5_percent_of_1gib", "roundtrip_exit_zero", "independent_verifier_passed"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "partial_success_reported"]}
     },
     {
       "id": "ACC-27", "title": "相对路径集合和字节完全一致", "kind": "correctness", "threat_ids": [], "invariant_ids": ["INV-12"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-27-byte-equality.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-27-byte-equality.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "independent_verifier_process", "relative_path_sets_equal", "all_file_sha256_equal"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified"]}
     },
     {
       "id": "ACC-28", "title": "C 和 Python 文件完整往返", "kind": "correctness", "threat_ids": [], "invariant_ids": ["INV-12"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-28-code-files.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-28-code-files.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "c_fixture_present", "python_fixture_present", "c_sha256_equal", "python_sha256_equal"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified"]}
     },
     {
       "id": "ACC-29", "title": "峰值 RSS 不超过冻结阈值", "kind": "performance", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "资源上限门禁", "evidence_path": "artifacts/performance-reports/acc-29-memory.json", "status": "untested",
+      "nonsecurity_reason": "资源上限门禁", "evidence_path": "artifacts/performance-reports/acc-29-memory.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "sample_interval_lte_100ms", "peak_rss_lte_frozen_limit", "process_exit_zero"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-30", "title": "内存不随 Vault 总字节线性增长", "kind": "performance", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "资源增长门禁", "evidence_path": "artifacts/performance-reports/acc-30-bounded-memory.json", "status": "untested",
+      "nonsecurity_reason": "资源增长门禁", "evidence_path": "artifacts/performance-reports/acc-30-bounded-memory.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "same_environment_and_file_count", "fixture_byte_growth_ratio_gte_7_5", "peak_rss_growth_lte_134217728", "large_peak_rss_lte_frozen_limit"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-31", "title": "性能目标按冻结规则评估", "kind": "performance", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "性能治理门禁", "evidence_path": "artifacts/performance-reports/acc-31-perf-evaluation.json", "status": "untested",
+      "nonsecurity_reason": "性能治理门禁", "evidence_path": "artifacts/performance-reports/acc-31-perf-evaluation.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "all_required_perf_fields_present", "adjustment_count_lte_one", "adjustment_record_hash_bound_if_present", "overall_verdict_derived"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-32", "title": "ObjectStore 和日志无禁止明文", "kind": "security", "threat_ids": ["THR-01"], "invariant_ids": ["INV-01", "INV-03"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-32-metadata-leak.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-32-metadata-leak.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "all_injected_markers_accounted_for", "object_store_found_count_zero", "process_log_found_count_zero"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-33", "title": "存储可见性报告无明文标记", "kind": "security", "threat_ids": ["THR-01"], "invariant_ids": ["INV-01", "INV-03"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-33-visibility-report.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-33-visibility-report.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "scanner_self_test_detects_control_marker", "forbidden_marker_found_count_zero", "allowed_metadata_exact_subset"], "required_error_code_groups": [], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-34", "title": "日志写入失败时失败关闭", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-13"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-34-log-failure.json", "status": "untested",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-34-log-failure.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "log_failure_injected", "nonzero_exit", "snapshot_not_complete"], "required_error_code_groups": [["LOG_WRITE_FAILED"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-35", "title": "机器可读和人类可读报告齐备", "kind": "reporting", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "证据交付格式门禁", "evidence_path": "artifacts/test-reports/acc-35-report-formats.json", "status": "untested",
+      "nonsecurity_reason": "证据交付格式门禁", "evidence_path": "artifacts/test-reports/acc-35-report-formats.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "json_report_schema_valid", "markdown_report_exists", "report_hashes_bound", "missing_required_field_fixture_rejected"], "required_error_code_groups": [["REPORT_SCHEMA_INVALID"]], "forbidden_side_effects": []}
     },
     {
       "id": "ACC-36", "title": "干净环境可重复运行", "kind": "reproducibility", "threat_ids": [], "invariant_ids": [],
-      "nonsecurity_reason": "可重复性门禁", "evidence_path": "artifacts/test-reports/acc-36-repeatability.json", "status": "untested",
+      "nonsecurity_reason": "可重复性门禁", "evidence_path": "artifacts/test-reports/acc-36-repeatability.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "clean_checkout_attested", "declared_dependencies_only", "two_run_verdicts_equal", "deterministic_artifact_hashes_equal"], "required_error_code_groups": [], "forbidden_side_effects": ["undeclared_persistent_state_used"]}
     },
     {
       "id": "ACC-37", "title": "声明边界诚实且历史状态显式", "kind": "claims", "threat_ids": ["THR-04", "THR-05"], "invariant_ids": [],
-      "nonsecurity_reason": "声明治理同时承担已接受限制的 oracle", "evidence_path": "artifacts/test-reports/acc-37-honest-claims.json", "status": "untested",
+      "nonsecurity_reason": "声明治理同时承担已接受限制的 oracle", "evidence_path": "artifacts/test-reports/acc-37-honest-claims.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "no_unsupported_current_claims", "rollback_limitation_present", "bearer_secret_limitation_present", "out_of_scope_attackers_present", "historical_conclusions_labeled", "machine_scan_and_human_rulings_bound"], "required_error_code_groups": [], "forbidden_side_effects": []}
     }
   ]

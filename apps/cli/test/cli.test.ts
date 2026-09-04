@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,8 +38,8 @@ async function snapshot(vaultRoot: string, scaffold: { store: string; log: strin
     "snapshot",
     "--vault", vaultRoot,
     "--store", overrides.store ?? scaffold.store,
-    "--log", scaffold.log,
-    "--recovery", scaffold.recovery,
+    "--log", overrides.log ?? scaffold.log,
+    "--recovery", overrides.recovery ?? scaffold.recovery,
     "--domain-id", overrides.domainId ?? DOMAIN_ID,
     "--runtime-limits", overrides.runtimeLimits ?? RUNTIME_LIMITS
   ]);
@@ -73,6 +73,43 @@ describe("P0 CLI wiring (ADR-0021)", () => {
     await expect(snapshot(vaultRoot, scaffold, { runtimeLimits: tampered })).rejects.toThrow(/does not match the accepted p0-runtime-limits-v1 contract/);
   });
 
+  it("snapshot rejects filesystem aliases that resolve write targets inside the Vault", async () => {
+    const vaultRoot = await makeVault();
+    const scaffold = await makeScaffold();
+    const outputDirectory = join(vaultRoot, "output");
+    await mkdir(outputDirectory);
+    const aliasedStorePhysical = join(outputDirectory, "store");
+    await mkdir(aliasedStorePhysical);
+    const vaultAlias = join(scaffold.base, "vault-alias");
+    await symlink(vaultRoot, vaultAlias, process.platform === "win32" ? "junction" : "dir");
+    const aliasedRecovery = join(vaultAlias, "output", "recovery.bin");
+    const aliasedLog = join(vaultAlias, "output", "snapshot.log");
+    const aliasedStore = join(vaultAlias, "output", "store");
+
+    await expect(snapshot(vaultRoot, scaffold, { recovery: aliasedRecovery })).rejects.toThrow(/must not contain each other/);
+    await expect(snapshot(vaultRoot, scaffold, { log: aliasedLog })).rejects.toThrow(/must not contain each other/);
+    await expect(snapshot(vaultRoot, scaffold, { store: aliasedStore })).rejects.toThrow(/must not contain each other/);
+    expect(existsSync(join(outputDirectory, "recovery.bin"))).toBe(false);
+    expect(existsSync(aliasedLog)).toBe(false);
+    expect((await readdir(aliasedStorePhysical)).length).toBe(0);
+    expect(existsSync(scaffold.log)).toBe(false);
+    expect(existsSync(scaffold.recovery)).toBe(false);
+  });
+
+  it.skipIf(process.platform !== "win32")("snapshot rejects the Windows 8.3 spelling of the same Vault", async () => {
+    const vaultShortPath = await makeVault();
+    const vaultLongPath = await realpath(vaultShortPath);
+    if (resolve(vaultShortPath).toLowerCase() === resolve(vaultLongPath).toLowerCase()) return;
+    const scaffold = await makeScaffold();
+    const outputDirectory = join(vaultShortPath, "output");
+    await mkdir(outputDirectory);
+    const aliasedRecovery = join(outputDirectory, "recovery.bin");
+
+    await expect(snapshot(vaultLongPath, scaffold, { recovery: aliasedRecovery })).rejects.toThrow(/must not contain each other/);
+    expect(existsSync(join(vaultLongPath, "output", "recovery.bin"))).toBe(false);
+    expect(existsSync(scaffold.log)).toBe(false);
+  });
+
   it("restore worker restores byte-identical content into the empty target", async () => {
     const vaultRoot = await makeVault();
     const scaffold = await makeScaffold();
@@ -97,5 +134,20 @@ describe("P0 CLI wiring (ADR-0021)", () => {
     await mkdir(nonEmpty);
     await writeFile(join(nonEmpty, "occupied.txt"), "occupied", "utf8");
     await expect(prepareRestoreTarget(nonEmpty)).rejects.toThrow(/not empty/);
+  });
+
+  it("restore rejects a filesystem alias that resolves the target inside the ObjectStore", async () => {
+    const scaffold = await makeScaffold();
+    const storeAlias = join(scaffold.base, "store-alias");
+    await symlink(scaffold.store, storeAlias, process.platform === "win32" ? "junction" : "dir");
+    const aliasedTarget = join(storeAlias, "restore-target");
+
+    await expect(run([
+      "restore",
+      "--recovery", scaffold.recovery,
+      "--store", scaffold.store,
+      "--target", aliasedTarget
+    ])).rejects.toThrow(/must not contain each other/);
+    expect(existsSync(aliasedTarget)).toBe(false);
   });
 });

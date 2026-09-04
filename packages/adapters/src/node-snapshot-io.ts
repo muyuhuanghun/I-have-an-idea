@@ -1,9 +1,9 @@
 import type { RecoveryFileTarget, SnapshotLogSink } from "@ekd/core";
-import { lstat, open, readFile } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { lstat, open, readFile, realpath } from "node:fs/promises";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { SnapshotAdapterError } from "./errors.js";
 
-/** Lexical containment: the target must resolve outside the given root. */
+/** Containment comparison for already-normalized lexical or physical identities. */
 function outsideRoot(root: string | undefined, target: string): boolean {
   if (root === undefined) return true;
   const relativePath = relative(resolve(root), resolve(target));
@@ -13,18 +13,40 @@ function outsideRoot(root: string | undefined, target: string): boolean {
   );
 }
 
-function requireOutsideRoots(
+async function physicalPathIdentity(pathValue: string): Promise<string> {
+  try {
+    return await realpath(pathValue);
+  } catch (error) {
+    if ((error as { code?: unknown }).code !== "ENOENT") throw error;
+  }
+  const parentIdentity = await realpath(dirname(pathValue));
+  return resolve(parentIdentity, basename(pathValue));
+}
+
+async function requireOutsideRoots(
   vaultRoot: string | undefined,
   objectStoreRoot: string | undefined,
   target: string,
   code: SnapshotAdapterErrorCodeOf
-): void {
-  if (!outsideRoot(vaultRoot, target) || !outsideRoot(objectStoreRoot, target)) {
+): Promise<void> {
+  try {
+    const [targetIdentity, vaultIdentity, objectStoreIdentity] = await Promise.all([
+      physicalPathIdentity(target),
+      vaultRoot === undefined ? undefined : physicalPathIdentity(vaultRoot),
+      objectStoreRoot === undefined ? undefined : physicalPathIdentity(objectStoreRoot)
+    ]);
+    if (outsideRoot(vaultIdentity, targetIdentity) && outsideRoot(objectStoreIdentity, targetIdentity)) return;
+  } catch (error) {
     throw new SnapshotAdapterError(
       code,
-      "Snapshot target must stay outside both the Vault root and the ObjectStore root."
+      "Snapshot path filesystem identity could not be resolved.",
+      { cause: error }
     );
   }
+  throw new SnapshotAdapterError(
+    code,
+    "Snapshot target must stay outside both the Vault root and the ObjectStore root."
+  );
 }
 
 type SnapshotAdapterErrorCodeOf = "LOG_WRITE_FAILED" | "RECOVERY_FILE_WRITE_FAILED";
@@ -82,7 +104,7 @@ export class NodeSnapshotLogSink implements SnapshotLogSink {
     }
     const fail = (message: string, cause?: unknown): SnapshotAdapterError =>
       new SnapshotAdapterError("LOG_WRITE_FAILED", message, cause === undefined ? undefined : { cause });
-    requireOutsideRoots(this.#vaultRoot, this.#objectStoreRoot, this.#logPath, "LOG_WRITE_FAILED");
+    await requireOutsideRoots(this.#vaultRoot, this.#objectStoreRoot, this.#logPath, "LOG_WRITE_FAILED");
     await requireAbsentWithRealParent(this.#logPath, "LOG_WRITE_FAILED");
     await requireRealParentDirectory(this.#logPath, "LOG_WRITE_FAILED");
     try {
@@ -140,7 +162,7 @@ export class NodeRecoveryFileTarget implements RecoveryFileTarget {
 
   async verifyTargetAbsent(): Promise<void> {
     const code: SnapshotAdapterErrorCodeOf = "RECOVERY_FILE_WRITE_FAILED";
-    requireOutsideRoots(this.#vaultRoot, this.#objectStoreRoot, this.#recoveryPath, code);
+    await requireOutsideRoots(this.#vaultRoot, this.#objectStoreRoot, this.#recoveryPath, code);
     await requireAbsentWithRealParent(this.#recoveryPath, code);
     await requireRealParentDirectory(this.#recoveryPath, code);
   }
@@ -149,7 +171,7 @@ export class NodeRecoveryFileTarget implements RecoveryFileTarget {
     const code: SnapshotAdapterErrorCodeOf = "RECOVERY_FILE_WRITE_FAILED";
     const fail = (message: string, cause?: unknown): SnapshotAdapterError =>
       new SnapshotAdapterError(code, message, cause === undefined ? undefined : { cause });
-    requireOutsideRoots(this.#vaultRoot, this.#objectStoreRoot, this.#recoveryPath, code);
+    await requireOutsideRoots(this.#vaultRoot, this.#objectStoreRoot, this.#recoveryPath, code);
     let handle: Awaited<ReturnType<typeof open>>;
     try {
       handle = await open(this.#recoveryPath, "wx");

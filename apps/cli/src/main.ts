@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { lstat, mkdir, readFile, readdir, rmdir, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, realpath, rmdir, writeFile } from "node:fs/promises";
 import { arch, platform, release } from "node:os";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createSnapshotV1, restoreSnapshotV1, type CryptoProvider } from "@ekd/core";
 import {
@@ -246,6 +246,43 @@ function requireDisjoint(labelA: string, pathA: string, labelB: string, pathB: s
   }
 }
 
+/**
+ * Resolve the filesystem identity used for containment checks. Output files and a new
+ * restore target do not exist yet, so their identity is the real path of the existing
+ * parent plus the final basename. On Windows this also expands 8.3 short names and
+ * resolves ancestor Junctions, which a lexical `path.relative` comparison cannot see.
+ */
+async function physicalPathIdentity(pathValue: string): Promise<string> {
+  try {
+    return await realpath(pathValue);
+  } catch (error) {
+    if (!isNodeErrorWithCode(error, "ENOENT")) throw error;
+  }
+  const parentIdentity = await realpath(dirname(pathValue));
+  return resolve(parentIdentity, basename(pathValue));
+}
+
+async function requirePhysicalDisjoint(
+  labelA: string,
+  pathA: string,
+  labelB: string,
+  pathB: string
+): Promise<void> {
+  let identityA: string;
+  let identityB: string;
+  try {
+    [identityA, identityB] = await Promise.all([
+      physicalPathIdentity(pathA),
+      physicalPathIdentity(pathB)
+    ]);
+  } catch (error) {
+    throw new Error(
+      `${labelA}/${labelB} filesystem identity could not be resolved: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+  requireDisjoint(labelA, identityA, labelB, identityB);
+}
+
 interface SnapshotCliOptions {
   readonly vault: string;
   readonly store: string;
@@ -282,6 +319,13 @@ async function snapshotCommand(args: readonly string[]): Promise<number> {
   requireDisjoint("--vault", options.vault, "--recovery", options.recovery);
   requireDisjoint("--store", options.store, "--log", options.log);
   requireDisjoint("--store", options.store, "--recovery", options.recovery);
+  await Promise.all([
+    requirePhysicalDisjoint("--vault", options.vault, "--store", options.store),
+    requirePhysicalDisjoint("--vault", options.vault, "--log", options.log),
+    requirePhysicalDisjoint("--vault", options.vault, "--recovery", options.recovery),
+    requirePhysicalDisjoint("--store", options.store, "--log", options.log),
+    requirePhysicalDisjoint("--store", options.store, "--recovery", options.recovery)
+  ]);
 
   const limitsBytes = await readFile(options.runtimeLimits);
   const limitsSha256 = sha256Hex(limitsBytes);
@@ -374,6 +418,7 @@ async function restoreWorkerCommand(args: readonly string[]): Promise<number> {
 async function restoreCommand(args: readonly string[]): Promise<number> {
   const options = restoreOptions(args);
   requireDisjoint("--store", options.store, "--target", options.target);
+  await requirePhysicalDisjoint("--store", options.store, "--target", options.target);
   const created = await prepareRestoreTarget(options.target);
   const child = spawnSync(
     process.execPath,

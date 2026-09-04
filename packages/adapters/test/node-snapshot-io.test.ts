@@ -1,6 +1,6 @@
 import { VAULT_SOURCE_READ_CHUNK_BYTES, NodeRecoveryFileTarget, NodeSnapshotLogSink, readStableFile } from "../src/index.js";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -119,6 +119,26 @@ describe("NodeRecoveryFileTarget", () => {
     const insideStore = new NodeRecoveryFileTarget(join(storeRoot, "recovery.bin"), { vaultRoot, objectStoreRoot: storeRoot });
     await expect(insideStore.verifyTargetAbsent()).rejects.toMatchObject({ code: "RECOVERY_FILE_WRITE_FAILED" });
     await expect(readFile(join(vaultRoot, "recovery.bin"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("fails preflight when an ancestor filesystem alias resolves the target inside the Vault", async () => {
+    const vaultRoot = await makeRoot("ekd-vault-");
+    const storeRoot = await makeRoot("ekd-store-");
+    const aliasRoot = await makeRoot("ekd-alias-");
+    await writeFile(join(vaultRoot, "keep.md"), "unchanged\n", "utf8");
+    const outputDirectory = join(vaultRoot, "output");
+    await mkdir(outputDirectory);
+    const aliasPath = join(aliasRoot, "vault-alias");
+    if (!(await createReparseLink(aliasPath, vaultRoot))) return;
+
+    const recoveryPath = join(aliasPath, "output", "recovery.bin");
+    const target = new NodeRecoveryFileTarget(recoveryPath, { vaultRoot, objectStoreRoot: storeRoot });
+    await expect(target.verifyTargetAbsent()).rejects.toMatchObject({
+      code: "RECOVERY_FILE_WRITE_FAILED",
+      message: "Snapshot target must stay outside both the Vault root and the ObjectStore root."
+    });
+    await expect(readFile(join(outputDirectory, "recovery.bin"))).rejects.toMatchObject({ code: "ENOENT" });
+    expect(await readFile(join(vaultRoot, "keep.md"), "utf8")).toBe("unchanged\n");
   });
 });
 

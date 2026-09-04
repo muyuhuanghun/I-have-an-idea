@@ -4,9 +4,9 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021，开发者四点确认）；Phase 5-A CLI 接线已实现并由提交 `3489871` 纳管（`snapshot` + fresh-process `restore`，runtime-limits 绑定机器门，crypto Buffer 视图缺陷修复），5-B 插件 UI 未获授权。本关闭不声明生产安全，不豁免后续独立审计。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 原实现由提交 `3489871` 纳管；2026-09-04 独立核验复现 Windows 8.3 短路径可把 Recovery File 写回物理源 Vault，初审结论为 `REQUEST CHANGES`。真实路径身份修复、回归测试和状态对账已落在当前未提交工作区，统一门通过；开发者现已确认复审 PASS，等待明确 commit/push 授权。5-B 插件 UI 仍未获授权。本关闭不声明生产安全，不豁免后续独立审计。
 >
-> 最后更新：2026-09-02
+> 最后更新：2026-09-04
 
 ## 1. 项目一句话定义
 
@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭；Phase 5 产品接线未开始，须另立合同。
+当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-0 合同已冻结；Phase 5-A 原提交 `3489871` 因 Windows 短路径别名可绕过源 Vault 零写入规则而在 2026-09-04 初审中收到 `REQUEST CHANGES`，当前未提交修复已由开发者确认复审 PASS，等待明确 commit/push 授权；Phase 5-B 尚未授权。
 
 ## 30. 仓库状态
 

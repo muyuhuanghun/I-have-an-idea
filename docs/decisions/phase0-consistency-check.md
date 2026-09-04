@@ -334,6 +334,8 @@ P0_R1_CLOSED_PER_ADR_0020
 ACC_37_OF_37_PASSED
 PHASE_5_0_WIRING_CONTRACT_ACCEPTED
 PHASE_5_A_CLI_WIRING_IMPLEMENTED
+PHASE_5_A_CLI_WIRING_REVIEW_REQUEST_CHANGES
+PHASE_5_A_SHORT_PATH_ALIAS_REMEDIATION_INDEPENDENT_REVIEW_PASS_PENDING_COMMIT
 PHASE_5_B_PLUGIN_UI_NOT_AUTHORIZED
 ```
 
@@ -358,7 +360,7 @@ PHASE_5_B_PLUGIN_UI_NOT_AUTHORIZED
 - 2026-08-31 复审曾确认当时的 candidate evidence 不能通过修复后的嵌套 schema/provenance/oracle 门；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成 12 份 perf report 与 37 份 acc-evidence，全部通过嵌套证据门，ACC-37 经开发者精确 token 裁决 ACCEPT（machine-scan sha256 `5dbc2a72…`）；
 - P0-R1 已按 ADR-0020 关闭：registry 与矩阵 37 个 ACC 同步为 `passed`（closure 门控规则 + `R1_EVIDENCE_CLOSED_AT_COMMIT` 绑定行交叉验证），DP-007/008/010/011/012 以本次证据关闭；这不等同于生产安全声明，Phase 5 与 HTTP ObjectStore 仍未解锁。
 - Phase 5-0 已完成：ADR-0021 经开发者四点确认接受（5-A CLI 先行/5-B 插件后行、端口拦截 core 零改动、新增 `p0-plugin-snapshot-report-v1` schema + 机器门、log/store/recovery 全部显式路径无默认、domainId 仅设置页 64-hex 且源 Vault 零写入、runtime-limits hash 必须对真实文件字节计算）。无错误码新增、无 DP/ACC 状态变化；5-A/5-B 实现未获授权不得开工。
-- Phase 5-A 已实现并由提交 `3489871` 纳管（报告见 `docs/test-plans/phase5a-cli-report.md`）：CLI `snapshot`（全参数显式、store/log/recovery 与 Vault 互斥校验、runtime-limits 内置哈希绑定并被验证器静态门机器化）、`restore`（空目标策略 + 新进程 fresh-process 恢复 + 失败清理）与内部 `__restore-worker`。实现中发现并修复 crypto `asArrayBuffer` 的 Buffer 池化视图缺陷（`Buffer.prototype.slice` 返回视图导致 WebCrypto 收到整个内存池、Recovery File HMAC 必然失败），配两处回归测试。`test:all`、design+samples 门与嵌套证据门均 PASS；5-B 插件 UI 未获授权。
+- Phase 5-A 原实现由提交 `3489871` 纳管（报告见 `docs/test-plans/phase5a-cli-report.md`），但 2026-09-04 独立核验发现 CLI 与 Node snapshot I/O 只按路径字符串判断 containment：同一 Vault 的 Windows 8.3 短路径可作为词法上“外部”的 Recovery File 路径，命令返回 `complete` 并实际写回物理 Vault，违反 ADR-0021 §2.3，初审结论为 `REQUEST CHANGES`。真实路径身份修复已覆盖 CLI 的 vault/store/log/recovery/restore-target 与 Node snapshot I/O preflight，新增别名回归；修复后统一门、短路径攻击重放和构建产物 fresh-process 往返均通过，开发者已确认独立复审 PASS。当前 diff 仍未提交，等待明确 commit/push 授权。历史 `9443cb1` R1 evidence gate 的通过不证明当前 Phase 5-A/crypto diff；5-B 插件 UI 未获授权。
 
 ## 15. 当前状态一致性
 

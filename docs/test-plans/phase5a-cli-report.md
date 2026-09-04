@@ -2,7 +2,7 @@
 
 > 日期：2026-09-02
 >
-> 状态：已纳管（实现提交 `3489871`；实现经门禁验证后由开发者授权提交）
+> 状态：原实现已纳管（提交 `3489871`）；2026-09-04 初审为 `REQUEST CHANGES`。真实路径身份修复已在未提交工作区通过本地门禁，开发者已确认独立复审 PASS，等待明确 commit/push 授权
 >
 > 合同：ADR-0021（Phase 5-0 接线合同 v1，开发者四点确认）
 >
@@ -21,7 +21,7 @@
 
 - `pnpm run test:all` → **exit 0**（lint、typecheck、新增 CLI 5 项 + crypto 2 项 + core 1 项回归测试、Python 验证器 5 项、shared-core import gate、全部 workspace 构建）。
 - `python -B tools/verify_phase0_contracts.py --validate-samples` → PASS（含新 CLI 绑定门）。
-- `python -B tools/verify_phase0_contracts.py --validate-samples --evidence-root artifacts` → PASS（既有 R1 证据不受 crypto 修复影响：独立精确数组输入的输出逐字节不变）。
+- `python -B tools/verify_phase0_contracts.py --validate-samples --evidence-root artifacts` → PASS。该结果只验证绑定 clean commit `9443cb1` 的历史 P0-R1 evidence 包及其嵌套 artifacts；它不绑定、也不证明提交 `3489871` 或后续 dirty Phase 5-A/crypto 修改。当前修改只由本报告列出的实现级测试支持。
 - **构建产物 fresh-process 端到端**（`node apps/cli/dist/main.js`，真实子进程派生）：
   - snapshot（2 文件 vault）→ `status: complete`；restore 到不存在路径 → 父进程创建空目录、子进程恢复 `complete`（2 文件、25 字节），`cmp` 逐字节一致；
   - restore 到非空已存在目录 → 拒绝（"--target exists and is not empty"），原文件保留，非零退出；
@@ -33,3 +33,30 @@
 - 本报告不升级任何 ACC（P0-R1 已按 ADR-0020 关闭）；本阶段产物为 git 忽略的运行时 artifacts。
 - §16 的插件职责（进度展示、密文字节/可见性摘要、`p0-plugin-snapshot-report-v1` 测试报告导出）属 Phase 5-B，未在本阶段实现。
 - 已知限制：CLI 不创建 store/log/recovery 的父目录（沿用适配器显式路径语义，帮助文本已说明）；restore 的 fresh-process 边界依赖构建产物入口（源码直跑无 dist 时报 usage 错误）。
+
+## 4. 2026-09-04 独立核验与修复状态
+
+### 4.1 原提交结论：REQUEST CHANGES
+
+原 CLI 的 `requireDisjoint` 与 Node snapshot I/O 的 `outsideRoot` 只比较 `resolve()` 后的路径字符串，没有比较真实文件系统身份。在 Windows 上，同一目录可同时由长路径和 8.3 短路径表示。定向复现把 `--vault` 指向长路径，把 `--recovery` 指向同一 Vault 子目录的短路径：提交 `3489871` 的构建产物返回 `status: complete`，Recovery File 实际出现在物理源 Vault 内。现有 unit tests、`test:all` 和 runtime-limits 静态门都没有覆盖该别名面。
+
+这直接违反 ADR-0021 §2.3 的源 Vault 零写入规则，因此不能用原报告的绿测把 Phase 5-A 判为通过。
+
+### 4.2 当前未提交修复
+
+- CLI 保留词法快速拒绝，并新增真实文件系统身份比较：已存在路径用 `realpath`；尚不存在的 log/recovery/restore target 用“真实父目录 + 最终 basename”构造身份。Windows 8.3 短名和祖先 Junction 因而会归一到同一物理位置。
+- snapshot 对 vault/store/log/recovery 的原有五组 containment 全部增加物理身份检查；restore 的 store/target 同样增加物理身份检查，且发生在创建目标目录之前。
+- `NodeSnapshotLogSink` 与 `NodeRecoveryFileTarget` 的 preflight 同步使用物理身份检查，避免未来插件或其他调用方绕过 CLI 直接实例化适配器时重新出现相同缺陷。
+- 新增 CLI 别名回归（Vault 内的 store/log/recovery 三种写目标、ObjectStore 内 restore target）和 adapter Recovery File preflight 别名回归。
+
+### 4.3 修复后验证
+
+- `pnpm run test:all` → exit 0：153 个 TypeScript tests、10 个 Python tests、shared-core import gate、六个 workspace typecheck 与全部构建通过。
+- 原 8.3 短路径攻击对新构建产物重放 → exit 2；Vault 内无 Recovery File、无 log，ObjectStore 保持空。
+- 构建产物正常 fresh-process 往返 → snapshot/restore 均 exit 0，两文件 SHA-256 逐一相等。
+- 非空 restore target → exit 2，原 sentinel 保留；损坏 Recovery File → exit 1，由 CLI 新建且仍为空的 target 被删除。
+- `git diff --check` 与定向 ESLint/typecheck 均通过。
+
+### 4.4 当前门槛
+
+上述结果证明已知短路径缺陷在当前 dirty diff 中得到定向修复。开发者已于 2026-09-04 明确确认独立复审 PASS；该裁决关闭“待复审”门，但不自动授权 Git 状态变化，也不把未提交实现写成已纳管。Phase 5-A 当前状态是“原提交已纳管、初审 REQUEST CHANGES、修复复审 PASS、等待明确 commit/push 授权”；在提交授权和远端核对完成以前，不进入 Phase 5-B，不提交、不推送，也不把历史 P0-R1 evidence 外推为当前代码的正式运行证据。

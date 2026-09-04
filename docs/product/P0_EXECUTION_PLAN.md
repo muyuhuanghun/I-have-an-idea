@@ -756,11 +756,11 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 已按合同实现并由提交 `3489871` 纳管（CLI `snapshot` + `restore` fresh-process + `__restore-worker`，runtime-limits 绑定机器门，crypto Buffer 视图缺陷修复；报告 `docs/test-plans/phase5a-cli-report.md`）。下一授权门槛为 **Phase 5-B**：极薄插件 snapshot-only UI（快照命令 + 端口拦截进度 + 密文字节/可见性摘要 + `p0-plugin-snapshot-report-v1` schema 与样本 9→10 对接入机器门），不得提前进入实现。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现由提交 `3489871` 纳管；2026-09-04 独立核验复现 Windows 8.3 短路径别名可绕过词法 containment、把 Recovery File 写回物理源 Vault，故初审结论为 `REQUEST CHANGES`。CLI 与 Node snapshot I/O 的真实路径身份修复及回归测试已落在未提交工作区，统一门与构建产物定向复测通过；开发者现已确认独立复审 PASS。当前下一门槛是明确授权把这组修复按 feat+docs 两个提交纳管并推送；在授权与远端核对完成前，不得把 Phase 5-A 写成已提交关闭，也不得进入 Phase 5-B。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
 
 1. 本轮 R1 重做中的全部修复（`9000d63`、`d861e28`、`62ad56f`、`9443cb1`）与收尾提交均经用户显式授权后提交并推送；
 2. ACC-37 的裁决 token 只对生成它的 machine-scan（即提交 `9443cb1` 时的 10 份扫描目标）有效；任何被扫描文档的后续变更都会使既有 token 失效，重跑证据需要新的开发者裁决；
-3. Phase 5-B 实现未获明确授权前不得开工；5-B 不得引入插件 restore 命令或任何 crypto/Manifest 实现复制（ADR-0021 §2）；
+3. Phase 5-A 短路径修复虽已取得独立 PASS，但经明确授权提交并完成远端核对前，Phase 5-B 不得开工；5-B 不得引入插件 restore 命令或任何 crypto/Manifest 实现复制（ADR-0021 §2）；
 4. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义、ADR-0021 接线边界的修改都必须先停下并形成明确合同裁决；
 5. 本计划不授权自动提交、推送或把未授权的 dirty diff 描述为已提交。
 

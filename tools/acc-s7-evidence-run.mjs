@@ -191,18 +191,8 @@ async function main() {
   const sourceAlpha = await readFile(join(vaultRoot, "alpha.md"));
   const sourceBeta = await readFile(join(vaultRoot, "sub", "beta.py"));
   const coreClean = execFileSync("git", ["status", "--porcelain=v1", "--", "packages/core", "packages/crypto"], { cwd: REPO_ROOT, encoding: "utf8" }).trim().length === 0;
-  writeEvidence("ACC-38", {
-    schema_valid: boolCheck("schema_valid", true),
-    http_server_started: boolCheck("http_server_started", running.port > 0 && running.token.length > 0, `server bound to 127.0.0.1:${running.port}`),
-    port_conformance_roundtrip: boolCheck("port_conformance_roundtrip", restored.status === "complete" && restored.restoredFileCount === 2, `restore status=${restored.status}, files=${restored.restoredFileCount}`),
-    restored_bytes_identical: boolCheck("restored_bytes_identical", restoredAlpha.equals(sourceAlpha) && restoredBeta.equals(sourceBeta), "restored alpha.md and sub/beta.py are byte-identical to the source Vault"),
-    core_sources_unchanged: boolCheck("core_sources_unchanged", coreClean, "packages/core and packages/crypto have no uncommitted changes; restore used the standard workspace build")
-  }, [], { source_vault_modified: false, partial_success_reported: false, write_outside_target: false }, [
-    artifactFile("test-reports/acc-39-session-capture.json"),
-    artifactFile("test-reports/acc-39-server-log.txt")
-  ]);
 
-  // ---- ACC-39: write the capture + server log, then prove the exposure surface shrank.
+  // Persist the capture + server log BEFORE any evidence references them.
   const capturePath = join(REPORTS, "acc-39-session-capture.json");
   const serverLogPath = join(REPORTS, "acc-39-server-log.txt");
   writeFileSync(capturePath, `${JSON.stringify({
@@ -221,6 +211,19 @@ async function main() {
   const plaintextSamples = ["alpha stage-7 body", "print('beta-s7')"];
   const fixturePaths = [vaultRoot, directoryStoreRoot, targetRoot, logPath, recoveryPath];
   const keysOk = sessionEntries.length > 0 && sessionEntries.every((entry) => /^[A-Za-z0-9_-]{22}$/.test(entry.object_key));
+
+  writeEvidence("ACC-38", {
+    schema_valid: boolCheck("schema_valid", true),
+    http_server_started: boolCheck("http_server_started", running.port > 0 && running.token.length > 0, `server bound to 127.0.0.1:${running.port}`),
+    port_conformance_roundtrip: boolCheck("port_conformance_roundtrip", restored.status === "complete" && restored.restoredFileCount === 2, `restore status=${restored.status}, files=${restored.restoredFileCount}`),
+    restored_bytes_identical: boolCheck("restored_bytes_identical", restoredAlpha.equals(sourceAlpha) && restoredBeta.equals(sourceBeta), "restored alpha.md and sub/beta.py are byte-identical to the source Vault"),
+    core_sources_unchanged: boolCheck("core_sources_unchanged", coreClean, "packages/core and packages/crypto have no uncommitted changes; restore used the standard workspace build")
+  }, [], { source_vault_modified: false, partial_success_reported: false, write_outside_target: false }, [
+    artifactFile("test-reports/acc-39-session-capture.json"),
+    artifactFile("test-reports/acc-39-server-log.txt")
+  ]);
+
+  // ---- ACC-39: the exposure-surface proof over the persisted capture and server log.
   writeEvidence("ACC-39", {
     schema_valid: boolCheck("schema_valid", true),
     session_capture_schema_valid: boolCheck("session_capture_schema_valid", schemaAccepts("s7-http-session-v1.schema.json", "artifacts/test-reports/acc-39-session-capture.json"), "capture validated against s7-http-session-v1 by the contract verifier"),
@@ -248,14 +251,16 @@ async function main() {
   const slow = new httpStore.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${faultRunning.port}`, token: faultRunning.token, timeoutMs: 120 });
   const value = new Uint8Array([7, 8, 9]);
 
-  await client.put(KEY, value);
-  await client.put(KEY, value);
-  const storedAfterDuplicate = await client.get(KEY);
+  // ACC-40 runs on a plain (non-recording) client so the ACC-39 capture keeps the restore window only.
+  const plainClient = new adapters.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${running.port}`, token: running.token });
+  await plainClient.put(KEY, value);
+  await plainClient.put(KEY, value);
+  const storedAfterDuplicate = await plainClient.get(KEY);
   const duplicatePutIdempotent = storedAfterDuplicate !== undefined && storedAfterDuplicate.every((byte, index) => byte === value[index]);
 
   let contentMismatchCollisionRejected = false;
   try {
-    await client.put(KEY, new Uint8Array([1, 1, 1]));
+    await plainClient.put(KEY, new Uint8Array([1, 1, 1]));
   } catch (error) {
     contentMismatchCollisionRejected = error instanceof adapters.ObjectStoreAdapterError && error.code === "OBJECT_ID_COLLISION";
     observed.push("OBJECT_ID_COLLISION");
@@ -307,9 +312,17 @@ async function main() {
     no_partial_success: boolCheck("no_partial_success", noPartialSuccess, "no temp files and the original object is intact after faults")
   }, observed, { partial_success_reported: false }, [artifactFile("test-reports/acc-39-session-capture.json")]);
 
-  await running.close();
-  await faultRunning.close();
+  for (const server of [running, faultRunning]) {
+    try {
+      await server.close();
+    } catch (error) {
+      console.error(`server close: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
   console.log(`S7_EVIDENCE_RUN_DONE ${written.length} reports at HEAD ${GIT_COMMIT}`);
+  // Evidence files are written synchronously; a hard exit avoids the libuv teardown
+  // assertion Windows raises for servers that closed sockets mid-run.
+  process.exit(0);
 }
 
 await main();

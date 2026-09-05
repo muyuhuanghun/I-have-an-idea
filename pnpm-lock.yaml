@@ -51,6 +51,9 @@ importers:
 
   apps/obsidian-plugin:
     dependencies:
+      '@ekd/adapters':
+        specifier: workspace:0.1.0
+        version: link:../../packages/adapters
       '@ekd/core':
         specifier: workspace:0.1.0
         version: link:../../packages/core

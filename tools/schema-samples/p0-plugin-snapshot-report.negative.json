@@ -1,0 +1,22 @@
+{
+  "schema_version": "p0-plugin-snapshot-report-v1",
+  "run_id": "00112233445566778899aabbccddeeff",
+  "snapshot_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "domain_id_sha256": "630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc8fdaee1b7f5e4",
+  "domain_id_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "runtime_limits_sha256": "e1971ab746f6b08b06522463f907143036d99e41c470532482b5da8eafc44acd",
+  "file_count": 2,
+  "total_plaintext_bytes": 128,
+  "total_ciphertext_bytes": 512,
+  "visibility_summary": {
+    "object_count": 3,
+    "total_ciphertext_bytes": 512,
+    "object_keys_path_free": true,
+    "runtime_limits_sha256": "e1971ab746f6b08b06522463f907143036d99e41c470532482b5da8eafc44acd",
+    "evidence_scope": "plugin-summary-not-formal-acc-32-or-33"
+  },
+  "snapshot_log_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "started_at": "2026-09-04T00:00:00.000Z",
+  "completed_at": "2026-09-04T00:00:01.000Z",
+  "verdict": "pass"
+}

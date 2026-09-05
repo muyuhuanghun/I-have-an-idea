@@ -30,4 +30,9 @@ export type {
 } from "./errors.js";
 export type { StableReadDependencies } from "./node-vault.js";
 export { ObsidianVaultSource } from "./obsidian-vault.js";
-export type { ObsidianVaultLike } from "./obsidian-vault.js";
+export type {
+  ObsidianFileLike,
+  ObsidianFileStatLike,
+  ObsidianVaultLike,
+  ObsidianVaultSourceOptions
+} from "./obsidian-vault.js";

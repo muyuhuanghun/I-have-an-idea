@@ -49,6 +49,23 @@ class Phase0EvidenceVerifierTests(unittest.TestCase):
         with self.assertRaises(verifier.ContractError):
             verifier._require_cli_runtime_limits_binding("NOT_A_HASH", "c" * 64)
 
+    def test_plugin_snapshot_report_schema_rejects_plaintext_domain_id(self) -> None:
+        schema = verifier._load_schema("p0-plugin-snapshot-report-v1.schema.json")
+        sample = verifier.load_json(verifier.SAMPLES / "p0-plugin-snapshot-report.positive.json")
+        verifier._validate_against_schema(sample, schema, "positive")
+
+        leaked = dict(sample)
+        leaked["domain_id_hex"] = "00" * 32
+        with self.assertRaises(verifier.ContractError):
+            verifier._validate_against_schema(leaked, schema, "plaintext-domain-id")
+
+    def test_plugin_snapshot_only_gate_rejects_restore_surface_and_broad_adapter_import(self) -> None:
+        valid = 'id: "p0-create-snapshot"\nimport("@ekd/adapters/obsidian-vault")\n'
+        verifier._require_plugin_snapshot_only(valid)
+        for forbidden in ('id: "p0-restore"', "restoreSnapshotV1", "NodeRestoreTarget", 'import("@ekd/adapters")'):
+            with self.assertRaises(verifier.ContractError):
+                verifier._require_plugin_snapshot_only(valid + forbidden)
+
     def test_nested_perf_raw_artifact_hash_is_enforced(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ekd-phase0-verifier-") as temporary:
             evidence_root = Path(temporary)

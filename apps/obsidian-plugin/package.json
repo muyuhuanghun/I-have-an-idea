@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Minimal Windows and Android Obsidian shell for the Phase 1 shared-core smoke entry point.",
+  "description": "Obsidian shell for Phase 1 portability smoke and the Phase 5-B P0 snapshot entry point.",
   "dependencies": {
+    "@ekd/adapters": "workspace:0.1.0",
     "@ekd/core": "workspace:0.1.0",
     "@ekd/crypto": "workspace:0.1.0",
     "@ekd/smoke": "workspace:0.1.0"
@@ -15,6 +16,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.typecheck.json",
+    "test": "vitest run --passWithNoTests",
     "build": "node build.mjs"
   }
 }

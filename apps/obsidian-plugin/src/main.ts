@@ -9,6 +9,8 @@ import {
   type App
 } from "obsidian";
 import type { CryptoProvider } from "@ekd/core";
+import type { ObsidianVaultLike } from "@ekd/adapters/obsidian-vault";
+import type * as NodePathApi from "node:path";
 import { NobleAes256Provider, NOBLE_CANDIDATE } from "@ekd/crypto/noble";
 import { WebCryptoAes256Provider, WEBCRYPTO_CANDIDATE } from "@ekd/crypto/webcrypto";
 import {
@@ -16,6 +18,7 @@ import {
   bytesToBase64Url,
   createSmokeReport,
   createSmokeReportSchemaValidator,
+  hexToBytes,
   parseCryptoVectorManifest,
   parseCryptoVectorsFile,
   runSmokeVectors,
@@ -29,6 +32,17 @@ import {
   type SmokeExecutionOptions,
   type SmokeReportSchemaValidator
 } from "@ekd/smoke";
+import {
+  runPluginSnapshotV1,
+  type PluginSnapshotProgress
+} from "./p0-snapshot.js";
+import {
+  createNodeVaultPathValidator,
+  requireNewReportTarget,
+  requireRealDirectory,
+  requireSnapshotPathsDisjoint,
+  writeReportExclusive
+} from "./node-path-safety.js";
 
 interface BuildMeta {
   readonly schema_version: "phase1-build-meta-v1";
@@ -40,10 +54,16 @@ interface BuildMeta {
   readonly bundle_sha256: string;
 }
 
-interface Phase1Settings {
+interface EkdSettings {
   readonly androidDeviceModel: string;
   readonly androidOsVersion: string;
   readonly androidArchitecture: string;
+  readonly domainIdHex: string;
+  readonly objectStorePath: string;
+  readonly snapshotLogPath: string;
+  readonly recoveryFilePath: string;
+  readonly runtimeLimitsPath: string;
+  readonly snapshotReportPath: string;
 }
 
 interface StoredDeviceKey {
@@ -53,11 +73,20 @@ interface StoredDeviceKey {
 
 type CandidateName = "webcrypto" | "noble";
 
-const DEFAULT_SETTINGS: Phase1Settings = {
+const DEFAULT_SETTINGS: EkdSettings = {
   androidDeviceModel: "",
   androidOsVersion: "",
-  androidArchitecture: ""
+  androidArchitecture: "",
+  domainIdHex: "",
+  objectStorePath: "",
+  snapshotLogPath: "",
+  recoveryFilePath: "",
+  runtimeLimitsPath: "",
+  snapshotReportPath: ""
 };
+
+/** SHA-256 of `docs/contracts/p0-runtime-limits-v1.json`; cross-checked against the real file by the contract verifier. */
+const PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256 = "e1971ab746f6b08b06522463f907143036d99e41c470532482b5da8eafc44acd";
 
 function isBuildMeta(value: unknown): value is BuildMeta {
   if (typeof value !== "object" || value === null) return false;
@@ -189,6 +218,35 @@ async function createAndroidDeviceBinding(
   };
 }
 
+type NodePath = typeof NodePathApi;
+
+interface SnapshotPathSettings {
+  readonly objectStorePath: string;
+  readonly snapshotLogPath: string;
+  readonly recoveryFilePath: string;
+  readonly runtimeLimitsPath: string;
+  readonly snapshotReportPath: string;
+}
+
+function requireSnapshotSettings(settings: EkdSettings, nodePath: NodePath): SnapshotPathSettings {
+  if (!/^[0-9a-f]{64}$/u.test(settings.domainIdHex)) {
+    throw new Error("Domain ID must be exactly 64 lowercase hexadecimal characters.");
+  }
+  const paths: SnapshotPathSettings = {
+    objectStorePath: settings.objectStorePath,
+    snapshotLogPath: settings.snapshotLogPath,
+    recoveryFilePath: settings.recoveryFilePath,
+    runtimeLimitsPath: settings.runtimeLimitsPath,
+    snapshotReportPath: settings.snapshotReportPath
+  };
+  for (const [label, pathValue] of Object.entries(paths)) {
+    if (pathValue.length === 0 || !nodePath.isAbsolute(pathValue)) {
+      throw new Error(`${label} must be an explicit absolute path.`);
+    }
+  }
+  return paths;
+}
+
 class Phase1SettingTab extends PluginSettingTab {
   readonly #plugin: EkdPhase1Plugin;
 
@@ -199,11 +257,34 @@ class Phase1SettingTab extends PluginSettingTab {
 
   display(): void {
     this.containerEl.empty();
+    this.containerEl.createEl("h2", { text: "EKD P0 snapshot creation" });
+    this.containerEl.createEl("p", {
+      text: "Windows desktop only. Set every path explicitly; the ObjectStore directory and every output parent must already exist outside the source Vault. Snapshot creation never writes protocol artifacts into the Vault."
+    });
+    const snapshotFields: readonly [keyof EkdSettings, string, string][] = [
+      ["domainIdHex", "Domain ID", "64 lowercase hexadecimal characters"],
+      ["objectStorePath", "ObjectStore directory", "Absolute path to an existing directory"],
+      ["snapshotLogPath", "Snapshot log", "Absolute path to a new .jsonl file"],
+      ["recoveryFilePath", "Recovery File", "Absolute path to a new .ekdr file"],
+      ["runtimeLimitsPath", "Runtime limits contract", "Absolute path to p0-runtime-limits-v1.json"],
+      ["snapshotReportPath", "Plugin snapshot report", "Absolute path to a new .json report file"]
+    ];
+    for (const [key, name, placeholder] of snapshotFields) {
+      new Setting(this.containerEl)
+        .setName(name)
+        .addText((text) => text
+          .setPlaceholder(placeholder)
+          .setValue(this.#plugin.settings[key])
+          .onChange(async (value) => {
+            if (!(await this.#plugin.updateSetting(key, value))) text.setValue(this.#plugin.settings[key]);
+          }));
+    }
+
     this.containerEl.createEl("h2", { text: "EKD Phase 1 Android smoke metadata" });
     this.containerEl.createEl("p", {
       text: "These fields identify the physical Android smoke environment. The generated key binds the report to this plugin runtime; it is not a production keystore or hardware attestation."
     });
-    const fields: readonly [keyof Phase1Settings, string, string][] = [
+    const fields: readonly [keyof EkdSettings, string, string][] = [
       ["androidDeviceModel", "Device model", "Example: Pixel 8"],
       ["androidOsVersion", "Android version", "Example: Android 16"],
       ["androidArchitecture", "Architecture", "Example: arm64-v8a"]
@@ -215,22 +296,45 @@ class Phase1SettingTab extends PluginSettingTab {
           .setPlaceholder(placeholder)
           .setValue(this.#plugin.settings[key])
           .onChange(async (value) => {
-            this.#plugin.settings = { ...this.#plugin.settings, [key]: value.trim() };
-            await this.#plugin.saveData(this.#plugin.settings);
+            if (!(await this.#plugin.updateSetting(key, value))) text.setValue(this.#plugin.settings[key]);
           }));
     }
   }
 }
 
 export default class EkdPhase1Plugin extends Plugin {
-  settings: Phase1Settings = DEFAULT_SETTINGS;
+  settings: EkdSettings = DEFAULT_SETTINGS;
   #running = false;
   #reportValidator: SmokeReportSchemaValidator | undefined;
+  #pluginReportValidator: SmokeReportSchemaValidator | undefined;
+  #snapshotStatus: HTMLElement | undefined;
+  #settingsWrites: Promise<void> = Promise.resolve();
+
+  async updateSetting(key: keyof EkdSettings, value: string): Promise<boolean> {
+    if (this.#running) {
+      new Notice("Settings cannot change while an EKD operation is active.");
+      return false;
+    }
+    this.settings = { ...this.settings, [key]: value.trim() };
+    const settingsToPersist = this.settings;
+    const write = this.#settingsWrites.then(async () => this.saveData(settingsToPersist));
+    this.#settingsWrites = write.then(() => undefined, () => undefined);
+    await write;
+    return true;
+  }
 
   async onload(): Promise<void> {
-    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<Phase1Settings> | null ?? {}) };
+    this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<EkdSettings> | null ?? {}) };
     this.#reportValidator = createSmokeReportSchemaValidator(JSON.parse(__SMOKE_REPORT_SCHEMA_JSON__) as unknown);
+    this.#pluginReportValidator = createSmokeReportSchemaValidator(JSON.parse(__PLUGIN_SNAPSHOT_REPORT_SCHEMA_JSON__) as unknown);
+    this.#snapshotStatus = this.addStatusBarItem();
+    this.#snapshotStatus.setText("EKD snapshot: idle");
     this.addSettingTab(new Phase1SettingTab(this.app, this));
+    this.addCommand({
+      id: "p0-create-snapshot",
+      name: "Create P0 snapshot",
+      callback: () => { void this.runSnapshot(); }
+    });
     for (const selected of ["webcrypto", "noble"] as const) {
       this.addCommand({
         id: `phase1-smoke-${selected}`,
@@ -253,6 +357,164 @@ export default class EkdPhase1Plugin extends Plugin {
     return value;
   }
 
+  #showSnapshotProgress(progress: PluginSnapshotProgress): void {
+    let text: string;
+    if (progress.phase === "scanning") {
+      text = progress.status === "active"
+        ? `EKD snapshot: scanning ${progress.scannedFiles} file(s)`
+        : `EKD snapshot: scanned ${progress.fileCount} file(s), ${progress.totalPlaintextBytes} plaintext byte(s)`;
+    } else if (progress.phase === "encrypting") {
+      text = progress.status === "active"
+        ? `EKD snapshot: encrypting ${progress.fileOrdinal}/${progress.fileCount}, ${progress.totalPlaintextBytes} plaintext byte(s)`
+        : `EKD snapshot: encrypted ${progress.fileCount} file(s)`;
+    } else {
+      text = progress.status === "verifying"
+        ? "EKD snapshot: verifying Recovery File ownership target"
+        : "EKD snapshot: Recovery File ownership complete";
+    }
+    this.#snapshotStatus?.setText(text);
+  }
+
+  async runSnapshot(): Promise<void> {
+    if (this.#running) {
+      new Notice("An EKD operation is already active.");
+      return;
+    }
+    this.#running = true;
+    try {
+      this.#snapshotStatus?.setText("EKD snapshot: waiting for settings writes");
+      await this.#settingsWrites;
+      if (!Platform.isDesktopApp || !Platform.isWin) {
+        throw new Error("P0 snapshot creation is currently scoped to Obsidian on Windows desktop.");
+      }
+      const [nodeFs, nodePath, obsidianAdapter, objectStoreAdapter, snapshotIoAdapter, adapterErrors] = await Promise.all([
+        import("node:fs/promises"),
+        import("node:path"),
+        import("@ekd/adapters/obsidian-vault"),
+        import("@ekd/adapters/node-object-store"),
+        import("@ekd/adapters/node-snapshot-io"),
+        import("@ekd/adapters/errors")
+      ]);
+      const configured = requireSnapshotSettings(this.settings, nodePath);
+      const fileSystemAdapter = this.app.vault.adapter as unknown as { readonly getBasePath?: () => string };
+      if (typeof fileSystemAdapter.getBasePath !== "function") {
+        throw new Error("Obsidian did not expose a desktop Vault filesystem path.");
+      }
+      const vaultRoot = nodePath.resolve(fileSystemAdapter.getBasePath());
+      const objectStorePath = nodePath.resolve(configured.objectStorePath);
+      const snapshotLogPath = nodePath.resolve(configured.snapshotLogPath);
+      const recoveryFilePath = nodePath.resolve(configured.recoveryFilePath);
+      const runtimeLimitsPath = nodePath.resolve(configured.runtimeLimitsPath);
+      const snapshotReportPath = nodePath.resolve(configured.snapshotReportPath);
+      const snapshotPaths = [
+        ["Source Vault", vaultRoot],
+        ["ObjectStore", objectStorePath],
+        ["snapshot log", snapshotLogPath],
+        ["Recovery File", recoveryFilePath],
+        ["plugin snapshot report", snapshotReportPath]
+      ] as const;
+
+      await Promise.all([
+        requireRealDirectory(vaultRoot, "Source Vault", nodeFs),
+        requireRealDirectory(objectStorePath, "ObjectStore", nodeFs),
+        requireNewReportTarget(snapshotReportPath, nodeFs, nodePath),
+        requireSnapshotPathsDisjoint(snapshotPaths, nodeFs, nodePath)
+      ]);
+
+      const embeddedLimitsBytes = utf8Bytes(__P0_RUNTIME_LIMITS_JSON__);
+      if (sha256Hex(embeddedLimitsBytes) !== PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256) {
+        throw new Error("Embedded runtime-limits bytes do not match the accepted contract hash.");
+      }
+      const embeddedLimits = JSON.parse(__P0_RUNTIME_LIMITS_JSON__) as { readonly schema_version?: unknown };
+      if (embeddedLimits.schema_version !== "p0-runtime-limits-v1") {
+        throw new Error("Embedded runtime-limits copy is not p0-runtime-limits-v1.");
+      }
+      const diskLimitsBytes = new Uint8Array(await nodeFs.readFile(runtimeLimitsPath));
+      const diskLimitsSha256 = sha256Hex(diskLimitsBytes);
+      if (diskLimitsSha256 !== PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256) {
+        throw new Error(`Configured runtime-limits sha256 ${diskLimitsSha256} does not match the accepted contract.`);
+      }
+      const diskLimits = JSON.parse(new TextDecoder().decode(diskLimitsBytes)) as { readonly schema_version?: unknown };
+      if (diskLimits.schema_version !== "p0-runtime-limits-v1") {
+        throw new Error("Configured runtime-limits file is not p0-runtime-limits-v1.");
+      }
+      if (this.#pluginReportValidator === undefined) {
+        throw new Error("Plugin snapshot report validator is unavailable.");
+      }
+
+      const pathValidator = createNodeVaultPathValidator(
+        vaultRoot,
+        nodeFs,
+        nodePath,
+        (code, relativePath, message, cause) => new adapterErrors.VaultAdapterError(
+          code,
+          relativePath,
+          message,
+          cause === undefined ? undefined : { cause }
+        )
+      );
+      const provider = new WebCryptoAes256Provider();
+      this.#snapshotStatus?.setText("EKD snapshot: starting");
+      const execution = await runPluginSnapshotV1({
+        domainId: hexToBytes(this.settings.domainIdHex),
+        runtimeLimits: {
+          schemaVersion: "p0-runtime-limits-v1",
+          sha256Hex: diskLimitsSha256
+        }
+      }, {
+        vaultSource: new obsidianAdapter.ObsidianVaultSource(
+          this.app.vault as unknown as ObsidianVaultLike,
+          { validatePath: pathValidator }
+        ),
+        objectStore: new objectStoreAdapter.DirectoryObjectStoreV1(objectStorePath),
+        cryptoProvider: provider,
+        randomSource: provider,
+        clock: { nowMilliseconds: () => Date.now() },
+        logSink: new snapshotIoAdapter.NodeSnapshotLogSink(snapshotLogPath, {
+          vaultRoot,
+          objectStoreRoot: objectStorePath
+        }),
+        recoveryFileTarget: new snapshotIoAdapter.NodeRecoveryFileTarget(recoveryFilePath, {
+          vaultRoot,
+          objectStoreRoot: objectStorePath
+        }),
+        readSnapshotLogBytes: async () => new Uint8Array(await nodeFs.readFile(snapshotLogPath)),
+        writeReportExclusive: async (bytes) => {
+          await requireNewReportTarget(snapshotReportPath, nodeFs, nodePath);
+          await requireSnapshotPathsDisjoint(snapshotPaths, nodeFs, nodePath);
+          await writeReportExclusive(snapshotReportPath, bytes, nodeFs);
+        },
+        validateReport: (value) => this.#pluginReportValidator?.validateSmokeReport(value) ?? {
+          valid: false,
+          errors: ["validator unavailable"]
+        }
+      }, (progress) => { this.#showSnapshotProgress(progress); });
+
+      if (execution.snapshot.status !== "complete" || execution.report === undefined) {
+        throw new Error(
+          `Snapshot failed in ${execution.snapshot.failedPhase ?? "unknown phase"} ` +
+          `(${execution.snapshot.errorCode ?? "unknown error"}); no pass report was exported.`
+        );
+      }
+      const summary = execution.report.visibility_summary;
+      this.#snapshotStatus?.setText(
+        `EKD snapshot complete: ${execution.report.file_count} file(s), ` +
+        `${execution.report.total_plaintext_bytes} plaintext / ${summary.total_ciphertext_bytes} ciphertext byte(s)`
+      );
+      new Notice(
+        `P0 snapshot complete: ${summary.object_count} object(s), ${execution.report.file_count} file(s). ` +
+        "The plugin visibility summary is not formal ACC-32/33 evidence.",
+        10000
+      );
+    } catch (error) {
+      console.error("EKD P0 snapshot failed", error);
+      this.#snapshotStatus?.setText("EKD snapshot: failed");
+      new Notice(`P0 snapshot failed: ${error instanceof Error ? error.message : String(error)}`, 10000);
+    } finally {
+      this.#running = false;
+    }
+  }
+
   async runSmoke(selected: CandidateName): Promise<void> {
     if (this.#running) {
       new Notice("A Phase 1 smoke run is already active.");
@@ -261,7 +523,11 @@ export default class EkdPhase1Plugin extends Plugin {
     this.#running = true;
     try {
       if (!Platform.isAndroidApp && !Platform.isWin) throw new Error("Phase 1 plugin smoke is scoped to Windows and Android.");
-      if (Platform.isAndroidApp && Object.values(this.settings).some((value) => value.length === 0)) {
+      if (Platform.isAndroidApp && [
+        this.settings.androidDeviceModel,
+        this.settings.androidOsVersion,
+        this.settings.androidArchitecture
+      ].some((value) => value.length === 0)) {
         throw new Error("Set device model, Android version, and architecture before the Android smoke run.");
       }
       const meta = await this.#loadBuildMeta();

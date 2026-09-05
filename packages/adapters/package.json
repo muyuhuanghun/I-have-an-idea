@@ -7,6 +7,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    },
+    "./node-object-store": {
+      "types": "./dist/node-object-store.d.ts",
+      "import": "./dist/node-object-store.js"
+    },
+    "./node-snapshot-io": {
+      "types": "./dist/node-snapshot-io.d.ts",
+      "import": "./dist/node-snapshot-io.js"
+    },
+    "./obsidian-vault": {
+      "types": "./dist/obsidian-vault.d.ts",
+      "import": "./dist/obsidian-vault.js"
     }
   },
   "files": ["dist"],

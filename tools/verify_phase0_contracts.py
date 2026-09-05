@@ -317,6 +317,7 @@ def validate_schema_files() -> None:
         "smoke-aggregate-v1.schema.json",
         "smoke-report-v1.schema.json",
         "p0-roundtrip-report-v1.schema.json",
+        "p0-plugin-snapshot-report-v1.schema.json",
         "p0-runtime-limits-v1.schema.json",
         "snapshot-log-v1.schema.json",
         "storage-visibility-scan-v1.schema.json",
@@ -598,6 +599,7 @@ def validate_schema_samples() -> None:
         ("smoke-aggregate-v1.schema.json", "smoke-aggregate"),
         ("smoke-report-v1.schema.json", "smoke-report"),
         ("p0-roundtrip-report-v1.schema.json", "p0-roundtrip-report"),
+        ("p0-plugin-snapshot-report-v1.schema.json", "p0-plugin-snapshot-report"),
         ("p0-runtime-limits-v1.schema.json", "p0-runtime-limits"),
         ("snapshot-log-v1.schema.json", "snapshot-log"),
         ("storage-visibility-scan-v1.schema.json", "storage-visibility-scan"),
@@ -651,6 +653,29 @@ def validate_cli_runtime_limits_binding() -> None:
     _require_cli_runtime_limits_binding(match.group(1), actual)
 
 
+def validate_plugin_runtime_limits_binding() -> None:
+    source = (ROOT / "apps" / "obsidian-plugin" / "src" / "main.ts").read_text(encoding="utf-8")
+    match = re.search(r'PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256 = "([0-9a-f]{64})"', source)
+    require(match is not None,
+            "apps/obsidian-plugin/src/main.ts lacks a PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256 binding constant")
+    actual = hashlib.sha256((ROOT / "docs" / "contracts" / "p0-runtime-limits-v1.json").read_bytes()).hexdigest()
+    require(match.group(1) == actual,
+            "plugin embedded runtime-limits hash does not match docs/contracts/p0-runtime-limits-v1.json")
+
+
+def _require_plugin_snapshot_only(source: str) -> None:
+    require('id: "p0-create-snapshot"' in source, "plugin lacks the authorized P0 snapshot command")
+    for forbidden in ('id: "p0-restore"', "restoreSnapshotV1", "NodeRestoreTarget"):
+        require(forbidden not in source, f"plugin contains forbidden restore surface: {forbidden}")
+    require('import("@ekd/adapters")' not in source,
+            "plugin must use narrow adapter subpath imports so restore adapters are not bundled")
+
+
+def validate_plugin_snapshot_only() -> None:
+    source = (ROOT / "apps" / "obsidian-plugin" / "src" / "main.ts").read_text(encoding="utf-8")
+    _require_plugin_snapshot_only(source)
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -664,6 +689,8 @@ def main() -> int:
         validate_deferred(deferred)
         validate_traceability(trace)
         validate_cli_runtime_limits_binding()
+        validate_plugin_runtime_limits_binding()
+        validate_plugin_snapshot_only()
         if args.evidence_root is not None:
             validate_evidence(trace, args.evidence_root.resolve())
     except ContractError as exc:

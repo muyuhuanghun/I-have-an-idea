@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/p0-plugin-snapshot-report-v1.schema.json",
+  "title": "P0 Obsidian plugin snapshot report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "snapshot_id_hex",
+    "domain_id_sha256",
+    "runtime_limits_sha256",
+    "file_count",
+    "total_plaintext_bytes",
+    "total_ciphertext_bytes",
+    "visibility_summary",
+    "snapshot_log_sha256",
+    "started_at",
+    "completed_at",
+    "verdict"
+  ],
+  "properties": {
+    "schema_version": {"const": "p0-plugin-snapshot-report-v1"},
+    "run_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "snapshot_id_hex": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "domain_id_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_limits_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "file_count": {"type": "integer", "minimum": 0},
+    "total_plaintext_bytes": {"type": "integer", "minimum": 0},
+    "total_ciphertext_bytes": {"type": "integer", "minimum": 1},
+    "visibility_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "object_count",
+        "total_ciphertext_bytes",
+        "object_keys_path_free",
+        "runtime_limits_sha256",
+        "evidence_scope"
+      ],
+      "properties": {
+        "object_count": {"type": "integer", "minimum": 1},
+        "total_ciphertext_bytes": {"type": "integer", "minimum": 1},
+        "object_keys_path_free": {"const": true},
+        "runtime_limits_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "evidence_scope": {"const": "plugin-summary-not-formal-acc-32-or-33"}
+      }
+    },
+    "snapshot_log_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "verdict": {"const": "pass"}
+  }
+}

@@ -20,7 +20,8 @@
       "@ekd/crypto/*": ["packages/crypto/src/*.ts"],
       "@ekd/smoke": ["packages/smoke/src/index.ts"],
       "@ekd/smoke/*": ["packages/smoke/src/*.ts"],
-      "@ekd/adapters": ["packages/adapters/src/index.ts"]
+      "@ekd/adapters": ["packages/adapters/src/index.ts"],
+      "@ekd/adapters/*": ["packages/adapters/src/*.ts"]
     }
   }
 }

@@ -1,8 +1,8 @@
 {
   "id": "ekd-phase1",
-  "name": "EKD Phase 1 Scaffold",
+  "name": "EKD P0",
   "version": "0.1.0",
   "minAppVersion": "1.13.0",
-  "description": "Run the Phase 1 portability smoke harness without enabling production protocol codecs.",
+  "description": "Run Phase 1 portability smoke and create P0 snapshots through the shared core.",
   "isDesktopOnly": false
 }

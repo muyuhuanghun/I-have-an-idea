@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  AdapterNotImplementedError,
   NodeVaultSource,
   ObsidianVaultSource,
   VaultAdapterError,
@@ -67,11 +66,77 @@ describe("Node Vault adapter", () => {
 });
 
 describe("adapter phase boundaries", () => {
-  it("keeps the Obsidian product scanner binding disabled", async () => {
-    const source = new ObsidianVaultSource({ getMarkdownFiles: () => [] });
-    await expect((async () => {
-      for await (const entry of source.listFiles()) void entry;
-    })()).rejects.toBeInstanceOf(AdapterNotImplementedError);
+  it("reads Obsidian files through the read-only Vault API", async () => {
+    const files = [
+      { path: "z.md", stat: { ctime: 1, mtime: 2, size: 1 } },
+      { path: "a.png", stat: { ctime: 3, mtime: 4, size: 2 } }
+    ];
+    const byPath = new Map(files.map((file) => [file.path, file]));
+    const source = new ObsidianVaultSource({
+      getFiles: () => files,
+      getAbstractFileByPath: (path) => byPath.get(path) ?? null,
+      readBinary: async (file) => file.path === "z.md"
+        ? new Uint8Array([0x7a]).buffer
+        : new Uint8Array([0x61, 0x62]).buffer
+    });
+    const entries = [];
+    for await (const entry of source.listFiles()) entries.push(entry);
+
+    expect(entries.map((entry) => entry.relativePath)).toEqual(["a.png", "z.md"]);
+    expect(Array.from(await entries[0]?.readBytes() ?? [])).toEqual([0x61, 0x62]);
+    expect(Array.from(await entries[1]?.readBytes() ?? [])).toEqual([0x7a]);
+  });
+
+  it("fails closed when an Obsidian file changes during read", async () => {
+    const file = { path: "changing.md", stat: { ctime: 1, mtime: 2, size: 1 } };
+    const source = new ObsidianVaultSource({
+      getFiles: () => [file],
+      getAbstractFileByPath: () => file,
+      readBinary: async () => {
+        file.stat = { ...file.stat, mtime: 3 };
+        return new Uint8Array([0x61]).buffer;
+      }
+    });
+    const entries = [];
+    for await (const entry of source.listFiles()) entries.push(entry);
+
+    await expect(entries[0]?.readBytes()).rejects.toMatchObject({
+      code: "FILE_CHANGED_DURING_SCAN",
+      relativePath: "changing.md"
+    });
+  });
+
+  it("maps an Obsidian read failure to the stable adapter code", async () => {
+    const file = { path: "broken.md", stat: { ctime: 1, mtime: 2, size: 1 } };
+    const source = new ObsidianVaultSource({
+      getFiles: () => [file],
+      getAbstractFileByPath: () => file,
+      readBinary: async () => { throw new Error("host read failed"); }
+    });
+    const entries = [];
+    for await (const entry of source.listFiles()) entries.push(entry);
+
+    await expect(entries[0]?.readBytes()).rejects.toMatchObject({
+      code: "SOURCE_FILE_READ_FAILED",
+      relativePath: "broken.md"
+    });
+  });
+
+  it("runs the injected desktop path validator before listing and each stable read", async () => {
+    const file = { path: "safe.md", stat: { ctime: 1, mtime: 2, size: 1 } };
+    const validated: string[] = [];
+    const source = new ObsidianVaultSource({
+      getFiles: () => [file],
+      getAbstractFileByPath: () => file,
+      readBinary: async () => new Uint8Array([0x61]).buffer
+    }, {
+      validatePath: async (path) => { validated.push(path); }
+    });
+    const entries = [];
+    for await (const entry of source.listFiles()) entries.push(entry);
+    await entries[0]?.readBytes();
+
+    expect(validated).toEqual(["safe.md", "safe.md", "safe.md"]);
   });
 
   it("exposes stable adapter errors", () => {

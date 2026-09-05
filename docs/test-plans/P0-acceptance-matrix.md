@@ -378,7 +378,7 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 测试方法：Directory 后端经 localhost HTTP 服务暴露，restore 仅经实现既有 ObjectStore 端口的 HTTP 客户端完成，逐字节比对且共享核心零改动
 - 错误判定：任一对象经 HTTP 取回不一致、恢复不完整，或需要改动 core/恢复语义才能接入即失败
 - 证据路径：`artifacts/test-reports/acc-38-http-roundtrip.json`
-- 状态：untested
+- 状态：passed
 
 **ACC-39：网络观察面不扩大且令牌不泄露**
 - 来源：DP-014 close_artifact；ADR-0024 §2.4
@@ -386,7 +386,7 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 测试方法：抓包/日志经 `s7-http-session-v1` schema 校验；断言无明文、无 Vault 路径、无 domainId、无 bearer token，对象键仅以 22 字符 base64url 出现
 - 错误判定：会话记录出现明文/路径/domainId/token 或非规范键即失败
 - 证据路径：`artifacts/test-reports/acc-39-http-session.json`
-- 状态：untested
+- 状态：passed
 
 **ACC-40：幂等重试与故障按冻结语义收敛**
 - 来源：ADR-0024 §2.2/§2.6；执行计划 §18
@@ -394,4 +394,4 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 测试方法：重复 PUT 幂等、异内容 409、缺失对象 MISSING_OBJECT、超时/断线/半开统一 `OBJECT_STORE_IO_FAILED`，无部分写入伪成功
 - 错误判定：重复发布非幂等、故障报告为成功、或观测到部分写入即失败
 - 证据路径：`artifacts/test-reports/acc-40-http-faults.json`
-- 状态：untested
+- 状态：passed

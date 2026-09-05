@@ -559,7 +559,6 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     closeout_text = (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8")
     closeout_commit = _r1_closure_commit(closeout_text)
     s7_commit: str | None = None
-    evidence_commit: str | None = None
     for item in trace["acceptance"]:
         acc_id = item["id"]
         if item.get("status") != "passed":
@@ -580,10 +579,6 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
         require(report.get("acc_id") == acc_id, f"{acc_id}: evidence acc_id mismatch")
         require(report.get("status") == "passed", f"{acc_id}: evidence status is not passed")
         report_commit = report.get("git_commit")
-        if evidence_commit is None:
-            evidence_commit = report_commit
-        require(report_commit == evidence_commit,
-                f"{acc_id}: evidence commit {report_commit} differs from {evidence_commit}")
         if item.get("evidence_scope") == "stage-7":
             if s7_commit is None:
                 s7_commit = _s7_closure_commit(closeout_text)

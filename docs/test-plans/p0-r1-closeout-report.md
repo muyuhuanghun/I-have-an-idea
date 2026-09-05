@@ -10,6 +10,8 @@
 
 R1_EVIDENCE_CLOSED_AT_COMMIT: 9443cb11903fa3c9608022d933980475225ad7cb
 
+S7_EVIDENCE_CLOSED_AT_COMMIT: cd0999465022cafc6094153db84471abe1119315
+
 ## -1. 2026-09-02 关闭记录（当前权威）
 
 本节取代下方全部历史与撤回章节，成为本报告的当前权威结论。关闭依据：
@@ -21,7 +23,7 @@ R1_EVIDENCE_CLOSED_AT_COMMIT: 9443cb11903fa3c9608022d933980475225ad7cb
 5. **机器门**：`--validate-samples`（9 对正/负样本）与 `--evidence-root artifacts`（嵌套 schema + raw hash + 同 commit + registry/matrix 同步 + closeout 绑定行交叉验证）均 PASS；设计门 closure 规则（全部 untested 或全部 passed + 绑定行）配 4 项单元测试。
 6. **证据运行前的阻塞修复**：`9000d63`（Windows .cmd spawn EINVAL）、`d861e28`（per-run raw 目录清理，Recovery File 永不覆盖语义）、`62ad56f`（矩阵中段环境漂移 fail-fast——首次重跑中途电源计划被外部切换触发过 `same_environment` 硬门）、`9443cb1`（历史章节措辞避免扫描器自匹配）。
 
-边界：本关闭只覆盖 P0-R1 证据阶段；不声明生产安全，不豁免后续独立审计；Phase 5 须另立 Phase 5-0 合同（执行计划 §16 snapshot-only 薄接线）；DP-014/HTTP ObjectStore 保持 hard_stop。
+边界：本关闭只覆盖 P0-R1 证据阶段；不声明生产安全，不豁免后续独立审计。Phase 5（CLI/插件/面板 UI）与 Stage 7（localhost HTTP ObjectStore，DP-014 已按 ADR-0025 关闭）的后续验收见各自报告；网络面的安全声明专属 ACC-39 会话捕获证据，ACC-32/33 的 Directory 存储证据不外推为网络传输安全证据。
 
 ## 0. 2026-08-31 复审纠正（历史记录，已被 2026-09-02 关闭取代）
 

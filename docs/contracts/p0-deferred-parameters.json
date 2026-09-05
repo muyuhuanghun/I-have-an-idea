@@ -157,9 +157,10 @@
       "name": "Stage 7 localhost HTTP 的网络观察、日志和传输边界",
       "owner": "OWNER-SECURITY",
       "phase": "Stage 7 HTTP ObjectStore",
-      "status": "deferred",
+      "status": "closed",
       "close_artifact": "HTTP threat-model delta + THR-02 ACC 扩展 + 抓包/日志 evidence schema",
-      "hard_stop": "未关闭前不得把 Directory ObjectStore 的 ACC-32/33 证据外推为网络传输安全证据"
+      "hard_stop": "未关闭前不得把 Directory ObjectStore 的 ACC-32/33 证据外推为网络传输安全证据",
+      "closure_adr": "docs/decisions/0025-p0-dp014-stage7-closure.md"
     },
     {
       "id": "DP-015",

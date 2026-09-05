@@ -1,0 +1,28 @@
+/* ADR-0023: minimal presentation styles for the P0 snapshot view. */
+.ekd-p0-snapshot-view .ekd-p0-muted {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.ekd-p0-snapshot-view .ekd-p0-error {
+  color: var(--text-error);
+}
+
+.ekd-p0-snapshot-view .ekd-p0-header h4 {
+  margin-bottom: 4px;
+}
+
+.ekd-p0-snapshot-view .ekd-p0-summary table {
+  margin-top: 4px;
+}
+
+.ekd-p0-snapshot-view .ekd-p0-summary td {
+  padding-right: 12px;
+  padding-bottom: 2px;
+}
+
+.ekd-p0-snapshot-view .ekd-p0-progress ul {
+  margin: 4px 0;
+  max-height: 220px;
+  overflow-y: auto;
+}

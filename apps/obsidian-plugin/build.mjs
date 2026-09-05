@@ -22,7 +22,7 @@ await build({
   format: "cjs",
   platform: "browser",
   target: "es2020",
-  external: ["obsidian", "node:*"],
+  external: ["obsidian", "electron", "node:*"],
   outfile: "dist/main.js",
   sourcemap: false,
   minify: true,
@@ -44,6 +44,7 @@ for (const forbidden of ["NodeRestoreTarget", "restoreSnapshotV1", "p0-restore"]
 }
 
 await copyFile("manifest.json", "dist/manifest.json");
+await copyFile("styles.css", "dist/styles.css");
 await writeBundleMeta({
   bundlePath: "dist/main.js",
   outputPath: "dist/build-meta.json",

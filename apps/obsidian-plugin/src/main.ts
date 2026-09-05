@@ -35,8 +35,11 @@ import {
 } from "@ekd/smoke";
 import {
   runPluginSnapshotV1,
-  type PluginSnapshotProgress
+  type PluginSnapshotProgress,
+  type PluginSnapshotReportV1
 } from "./p0-snapshot.js";
+import { SnapshotPanelModel } from "./snapshot-panel-model.js";
+import { P0SnapshotView, VIEW_TYPE_EKD_P0_SNAPSHOT } from "./snapshot-view.js";
 import {
   createNodeVaultPathValidator,
   requireNewReportTarget,
@@ -310,6 +313,7 @@ export default class EkdPhase1Plugin extends Plugin {
   #pluginReportValidator: SmokeReportSchemaValidator | undefined;
   #snapshotStatus: HTMLElement | undefined;
   #settingsWrites: Promise<void> = Promise.resolve();
+  readonly #panelModel = new SnapshotPanelModel();
 
   async updateSetting(key: keyof EkdSettings, value: string): Promise<boolean> {
     if (this.#running) {
@@ -331,10 +335,16 @@ export default class EkdPhase1Plugin extends Plugin {
     this.#snapshotStatus = this.addStatusBarItem();
     this.#snapshotStatus.setText("EKD snapshot: idle");
     this.addSettingTab(new Phase1SettingTab(this.app, this));
+    this.registerView(VIEW_TYPE_EKD_P0_SNAPSHOT, (leaf) => new P0SnapshotView(leaf, {
+      onTrigger: () => { void this.runSnapshot(); },
+      onOpenReport: (reportPath) => { this.#openReportFile(reportPath); },
+      isRunning: () => this.#running
+    }));
+    this.addRibbonIcon("lock", "EKD P0 snapshot", () => { void this.activateSnapshotView(); });
     this.addCommand({
       id: "p0-create-snapshot",
       name: "Create P0 snapshot",
-      callback: () => { void this.runSnapshot(); }
+      callback: () => { void this.activateSnapshotView().then(() => this.runSnapshot()); }
     });
     for (const selected of ["webcrypto", "noble"] as const) {
       this.addCommand({
@@ -374,6 +384,34 @@ export default class EkdPhase1Plugin extends Plugin {
         : "EKD snapshot: Recovery File ownership complete";
     }
     this.#snapshotStatus?.setText(text);
+    this.#panelModel.onProgress(progress);
+    this.#syncSnapshotView();
+  }
+
+  /** ADR-0023 §2.1: the dockable panel view; commands open it before triggering a run. */
+  async activateSnapshotView(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_EKD_P0_SNAPSHOT);
+    const leaf = existing[0] ?? this.app.workspace.getRightLeaf(false);
+    if (leaf === null) return;
+    if (existing.length === 0) await leaf.setViewState({ type: VIEW_TYPE_EKD_P0_SNAPSHOT, active: true });
+    this.app.workspace.revealLeaf(leaf);
+    this.#syncSnapshotView();
+  }
+
+  #syncSnapshotView(): void {
+    const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_EKD_P0_SNAPSHOT)[0];
+    if (leaf !== undefined) (leaf.view as P0SnapshotView).updateFromModel(this.#panelModel.render);
+  }
+
+  #openReportFile(reportPath: string): void {
+    const nodeRequire = (globalThis as { require?: (id: string) => unknown }).require;
+    if (typeof nodeRequire !== "function") throw new Error("Node module loader unavailable.");
+    const electron = nodeRequire("electron") as { shell?: { openPath?: (path: string) => Promise<string> } };
+    const openPath = electron.shell?.openPath;
+    if (typeof openPath !== "function") throw new Error("Electron shell.openPath is unavailable in this runtime.");
+    void openPath.call(electron.shell, reportPath).then((message) => {
+      if (typeof message === "string" && message.length > 0) new Notice(`Could not open report: ${message}`);
+    });
   }
 
   async runSnapshot(): Promise<void> {
@@ -382,6 +420,8 @@ export default class EkdPhase1Plugin extends Plugin {
       return;
     }
     this.#running = true;
+    this.#panelModel.reset();
+    this.#syncSnapshotView();
     try {
       this.#snapshotStatus?.setText("EKD snapshot: waiting for settings writes");
       await this.#settingsWrites;
@@ -495,7 +535,9 @@ export default class EkdPhase1Plugin extends Plugin {
           valid: false,
           errors: ["validator unavailable"]
         }
-      }, (progress) => { this.#showSnapshotProgress(progress); });
+      }, (progress) => {
+        this.#showSnapshotProgress(progress);
+      });
 
       if (execution.snapshot.status !== "complete" || execution.report === undefined) {
         throw new Error(
@@ -503,6 +545,7 @@ export default class EkdPhase1Plugin extends Plugin {
           `(${execution.snapshot.errorCode ?? "unknown error"}); no pass report was exported.`
         );
       }
+      this.#showSnapshotResult(execution.report, snapshotReportPath);
       const summary = execution.report.visibility_summary;
       this.#snapshotStatus?.setText(
         `EKD snapshot complete: ${execution.report.file_count} file(s), ` +
@@ -516,10 +559,19 @@ export default class EkdPhase1Plugin extends Plugin {
     } catch (error) {
       console.error("EKD P0 snapshot failed", error);
       this.#snapshotStatus?.setText("EKD snapshot: failed");
+      this.#panelModel.onError(error);
+      this.#syncSnapshotView();
       new Notice(`P0 snapshot failed: ${error instanceof Error ? error.message : String(error)}`, 10000);
     } finally {
       this.#running = false;
     }
+  }
+
+  #showSnapshotResult(report: PluginSnapshotReportV1, snapshotReportPath: string): void {
+    this.#panelModel.onResult(report);
+    const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_EKD_P0_SNAPSHOT)[0];
+    if (leaf !== undefined) (leaf.view as P0SnapshotView).setReportPath(snapshotReportPath);
+    this.#syncSnapshotView();
   }
 
   async runSmoke(selected: CandidateName): Promise<void> {

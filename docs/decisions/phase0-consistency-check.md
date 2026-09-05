@@ -1,7 +1,7 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5 全部纳管推送；Phase 6 完成（§17 以 R1 证据关闭 + 真实 GUI 运行证据）；Stage 7 完成（DP-014 按 ADR-0025 关闭，ACC-38/39/40 正式证据绑定 `cd09994`）。registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。**
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5 全部纳管推送；Phase 6 完成（§17 以 R1 证据关闭 + 真实 GUI 运行证据）；Stage 7 完成（DP-014 按 ADR-0025 关闭，ACC-38/39/40 正式证据绑定 `cd09994`）。registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。P1-alpha-0 状态协议合同已冻结（ADR-0026，开发者三点确认：head 目录签名指针、ECDSA P-256 + devices.json 显式注册、分叉拒绝并输出证据），实现待单独授权；网页端未立项（§24.2 规划条目）。**
 > 日期：2026-09-02
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
@@ -348,6 +348,8 @@ PHASE_7_0_HTTP_OBJECT_STORE_CONTRACT_ACCEPTED
 PHASE_7_A_HTTP_OBJECT_STORE_IMPLEMENTED
 PHASE_7_B_FORMAL_EVIDENCE_GENERATED_AND_DP014_CLOSED
 P0_EXECUTION_PLAN_FULLY_EXECUTED
+P1_ALPHA_0_STATE_PROTOCOL_CONTRACT_ACCEPTED
+P1_ALPHA_A_STATE_PROTOCOL_IMPLEMENTATION_NOT_AUTHORIZED
 ```
 
 含义：
@@ -379,6 +381,7 @@ P0_EXECUTION_PLAN_FULLY_EXECUTED
 - Phase 5-C 已实现并由提交 `9678978` 纳管（报告见 `docs/test-plans/phase5c-plugin-ui-report.md`）：可停靠面板视图三段式（执行按钮 / 端口派生进度 / 最近结果摘要卡含免责标注与 Electron shell 打开报告）、ribbon + 命令入口、纯状态机 `SnapshotPanelModel` 单元测试（插件 11/11）、styles.css 与 electron external 构建。真实 Obsidian 1.13.7 GUI 验证通过（面板触发快照 complete，3 文件/4 对象/661 密文字节，源 Vault 零写入）。开发者裁决：插件中文本地化与登录等功能推迟到后期完善，不属 P0 范围。
 - Phase 7-0 已完成：ADR-0024 经开发者三点确认接受（2026-09-05）——localhost HTTP ObjectStore 合同冻结：127.0.0.1 + 每运行随机 bearer token + 2 MiB 对象上限；`HttpClientObjectStore` 走既有 ObjectStore 端口（core 零改动，§18 端口边界）；威胁面 delta = 键/大小/时序可见，明文/路径/domainId/token 不可见；registry 将随 7-A 扩至 40（ACC-38 端口等价往返、ACC-39 网络观察面不扩大、ACC-40 幂等与故障收敛，`evidence_scope: "stage-7"`），设计/证据门规则同步演化；7-A 实现与 7-B 正式证据 + DP-014 收尾各自单独授权。
 - Phase 7-A 已实现（报告见 `docs/test-plans/phase7a-http-object-store-report.md`）：`startHttpObjectStoreServer`（127.0.0.1、随机 bearer token、2 MiB 上限、Directory 后端复用、幂等/碰撞/缺失语义镜像、脱敏访问日志、测试专用故障钩子）+ `HttpClientObjectStore`（既有 ObjectStore 端口，超时/网络错误收敛 `OBJECT_STORE_IO_FAILED`）；registry/矩阵扩至 40（ACC-38/39/40 `evidence_scope: "stage-7"` untested，THR-02 回链），设计/证据门演化（37 passed + stage-7 untested 合法共存），`s7-http-session-v1` 第 11 份 schema + 样本（10→11 对）；`test:all`、design+samples 与嵌套证据门均 PASS。DP-014 仍 `deferred`，7-B 正式证据与收尾未获授权。
+- P1-alpha-0 已完成：ADR-0026 经开发者三点确认接受（2026-09-05）——状态协议冻结：head 对象（canonical bytes + ECDSA P-256 签名，进 ObjectStore 不可变体系）、head 目录签名指针（唯一可变状态，Vault 外，防回滚单调检查）、`devices.json` 显式设备注册（未注册设备的 head 无效）、分叉默认拒绝并输出证据；INV-17/18 与 ACC-41/42/43 delta 随 P1-alpha-A 实现同 commit 落库（registry 40→43 + `evidence_scope: "p1-alpha"` 门机制），DP-015 关闭被阻断直至三项证据齐备。网页端未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。
 
 ## 15. 当前状态一致性
 

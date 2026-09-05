@@ -263,7 +263,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
 | 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 已于 2026-09-02 关闭（closure_adr = ADR-0020），DP-014 保持 `deferred` |
-| Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 10 对正/负样本反身校验 10 份 schema | design+samples PASS | 10 份正样本通过、10 份负样本被拒 |
+| Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 11 对正/负样本反身校验 11 份 schema | design+samples PASS | 11 份正样本通过、11 份负样本被拒 |
 
 ## 13. 当前机器门禁
 
@@ -345,7 +345,8 @@ PHASE_6_A_GUI_RUN_COMPLETE_B53865E
 PHASE_5_C_PLUGIN_UI_CONTRACT_ACCEPTED
 PHASE_5_C_PLUGIN_UI_IMPLEMENTED_AND_GUI_VERIFIED
 PHASE_7_0_HTTP_OBJECT_STORE_CONTRACT_ACCEPTED
-PHASE_7_A_HTTP_OBJECT_STORE_IMPLEMENTATION_NOT_AUTHORIZED
+PHASE_7_A_HTTP_OBJECT_STORE_IMPLEMENTED
+PHASE_7_B_FORMAL_EVIDENCE_AND_DP014_CLOSEOUT_NOT_AUTHORIZED
 ```
 
 含义：
@@ -376,6 +377,7 @@ PHASE_7_A_HTTP_OBJECT_STORE_IMPLEMENTATION_NOT_AUTHORIZED
 - Phase 5-C 已完成：ADR-0023 经开发者三点确认接受（2026-09-05）——插件快照 UI 为可停靠侧边栏视图（`ekd-p0-snapshot-view`）+ ribbon 入口，三段式（执行按钮 / 端口派生实时进度 / 最近结果摘要卡含 ACC-32/33 免责标注）；设置页保持文本字段 + 即时校验；不加历史报告列表；ADR-0021 全部禁令与 core 零改动继续有效。实现未获授权不得开工。
 - Phase 5-C 已实现并由提交 `9678978` 纳管（报告见 `docs/test-plans/phase5c-plugin-ui-report.md`）：可停靠面板视图三段式（执行按钮 / 端口派生进度 / 最近结果摘要卡含免责标注与 Electron shell 打开报告）、ribbon + 命令入口、纯状态机 `SnapshotPanelModel` 单元测试（插件 11/11）、styles.css 与 electron external 构建。真实 Obsidian 1.13.7 GUI 验证通过（面板触发快照 complete，3 文件/4 对象/661 密文字节，源 Vault 零写入）。开发者裁决：插件中文本地化与登录等功能推迟到后期完善，不属 P0 范围。
 - Phase 7-0 已完成：ADR-0024 经开发者三点确认接受（2026-09-05）——localhost HTTP ObjectStore 合同冻结：127.0.0.1 + 每运行随机 bearer token + 2 MiB 对象上限；`HttpClientObjectStore` 走既有 ObjectStore 端口（core 零改动，§18 端口边界）；威胁面 delta = 键/大小/时序可见，明文/路径/domainId/token 不可见；registry 将随 7-A 扩至 40（ACC-38 端口等价往返、ACC-39 网络观察面不扩大、ACC-40 幂等与故障收敛，`evidence_scope: "stage-7"`），设计/证据门规则同步演化；7-A 实现与 7-B 正式证据 + DP-014 收尾各自单独授权。
+- Phase 7-A 已实现（报告见 `docs/test-plans/phase7a-http-object-store-report.md`）：`startHttpObjectStoreServer`（127.0.0.1、随机 bearer token、2 MiB 上限、Directory 后端复用、幂等/碰撞/缺失语义镜像、脱敏访问日志、测试专用故障钩子）+ `HttpClientObjectStore`（既有 ObjectStore 端口，超时/网络错误收敛 `OBJECT_STORE_IO_FAILED`）；registry/矩阵扩至 40（ACC-38/39/40 `evidence_scope: "stage-7"` untested，THR-02 回链），设计/证据门演化（37 passed + stage-7 untested 合法共存），`s7-http-session-v1` 第 11 份 schema + 样本（10→11 对）；`test:all`、design+samples 与嵌套证据门均 PASS。DP-014 仍 `deferred`，7-B 正式证据与收尾未获授权。
 
 ## 15. 当前状态一致性
 
@@ -386,6 +388,6 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `historical/superseded/withdrawn`：仅保留决策演进，不是当前权威；
 - `deferred/open/conditional/closed`：只在延期 registry 中使用；`closed` 还必须绑定存在的 closure ADR；
 - `PASS design-only`：只指静态合同检查；registry 全部 `untested` 时期它绝不构成 P0-R1 PASS，registry 全部 `passed` 时期它也不重新验证运行时 artifacts（运行时验证专属 `--evidence-root` 模式）；
-- `PASS design-only+samples`：design-only 加上 10 份 schema 的 10 对正/负样本反身校验通过，证明 schema 强制路径在 work；运行时证据仍以 `--evidence-root` 为准。
+- `PASS design-only+samples`：design-only 加上 11 份 schema 的 11 对正/负样本反身校验通过，证明 schema 强制路径在 work；运行时证据仍以 `--evidence-root` 为准。
 
 本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`。2026-09-02 的 R1 关闭轮（验证器 closure 规则、registry/矩阵/DP 同步、ADR-0020 与状态文档对账）见 ADR-0020 与收尾报告 §-1；证据门结果为 `PHASE0_CONTRACT_CHECK_PASS mode=design+evidence+samples ACC=37 INV=16 THR=5 DP=26`。

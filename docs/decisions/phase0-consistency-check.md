@@ -342,6 +342,8 @@ PHASE_5_B_PLUGIN_UI_INDEPENDENT_REVIEW_PASS_COMMITTED_18C9B77_PENDING_PUSH
 PHASE_5_B_PUSHED_AND_REMOTE_VERIFIED_66354BD
 PHASE_6_0_SCOPE_RULING_ACCEPTED
 PHASE_6_A_GUI_RUN_COMPLETE_B53865E
+PHASE_5_C_PLUGIN_UI_CONTRACT_ACCEPTED
+PHASE_5_C_PLUGIN_UI_IMPLEMENTATION_NOT_AUTHORIZED
 PHASE_7_0_HTTP_OBJECT_STORE_CONTRACT_NOT_AUTHORIZED
 ```
 
@@ -370,6 +372,7 @@ PHASE_7_0_HTTP_OBJECT_STORE_CONTRACT_NOT_AUTHORIZED
 - Phase 5-B 已获开发者明确进入授权：Obsidian 插件的 Windows desktop 快照命令、显式设置、Obsidian 只读 VaultSource、端口派生进度、计数型 ObjectStore、最小可见性摘要、runtime-limits 双侧运行时绑定、第 10 份机器 schema/样本和报告导出通过统一门（164 个 TypeScript tests + 12 个 Python tests），构建产物不含 restore command/`NodeRestoreTarget`。开发者于 2026-09-05 确认独立复审 PASS 并授权进入本地纳管步骤，代码由 `18c9b77` 纳管；状态文档随后的 docs 提交纳管。真实 Obsidian GUI 手工运行尚未执行，也不升级任何 ACC。实现与状态文档已随后推送：`18c9b77`/`66354bd`，远端核对一致（`HEAD == origin/main == 66354bd`），误生成的空未跟踪文件 `日期：2026-09-02` 已删除。
 - Phase 6-0 已完成：ADR-0022 经开发者三点确认接受（2026-09-05）——§17 压力/破坏性清单逐项映射到 `9443cb1` 的 R1 正式证据并关闭（仅"扫描中文件消失"由适配器 `SOURCE_FILE_READ_FAILED` 语义 + 单元测试覆盖）；下一实现切片为 Phase 6-A 真实 Obsidian GUI 运行证据（自动化驱动、`artifacts/gui-test-vault/` 专用测试 Vault、绝不触碰 `D:\Obsidian\muyu_note`）；DP-014 解锁裁决推迟到 Phase 7-0 合同。
 - Phase 6-A 已完成并由 `b53865e` 纳管修复（报告见 `docs/test-plans/phase6a-gui-report.md`）：真实 Obsidian 1.13.7 GUI 运行发现渲染进程 ESM 动态 `import("node:*")` 被 CORS 拦截，修复为 CJS `require` 加载；修复后从 clean commit 构建重跑成功——快照 complete（3 文件/4 对象/661 密文字节）、机器报告 schema-valid、log 哈希绑定、源 Vault 零写入、domainId 仅以 SHA-256 出现。该运行不升级任何 ACC。
+- Phase 5-C 已完成：ADR-0023 经开发者三点确认接受（2026-09-05）——插件快照 UI 为可停靠侧边栏视图（`ekd-p0-snapshot-view`）+ ribbon 入口，三段式（执行按钮 / 端口派生实时进度 / 最近结果摘要卡含 ACC-32/33 免责标注）；设置页保持文本字段 + 即时校验；不加历史报告列表；ADR-0021 全部禁令与 core 零改动继续有效。实现未获授权不得开工。
 
 ## 15. 当前状态一致性
 

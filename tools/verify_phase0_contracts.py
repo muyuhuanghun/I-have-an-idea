@@ -411,6 +411,12 @@ def _r1_closure_commit(closeout_text: str) -> str:
     return match.group(1)
 
 
+def _s7_closure_commit(closeout_text: str) -> str:
+    match = re.search(r"^S7_EVIDENCE_CLOSED_AT_COMMIT: ([0-9a-f]{40})$", closeout_text, flags=re.MULTILINE)
+    require(match is not None, "closeout report lacks an 'S7_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
+    return match.group(1)
+
+
 def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> None:
     allowed_statuses = {"passed", "failed", "untested", "known-limitation", "out-of-scope"}
     statuses = [item.get("status") for item in items]
@@ -423,7 +429,10 @@ def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> No
     for item in untested:
         require(item.get("evidence_scope") == "stage-7",
                 f"{item.get('id')}: untested ACC without evidence_scope=stage-7 is not allowed while other ACCs are passed")
+    has_stage7 = any(item.get("evidence_scope") == "stage-7" for item in items)
     _r1_closure_commit(closeout_text)
+    if has_stage7 and not untested:
+        _s7_closure_commit(closeout_text)
 
 
 def validate_traceability(trace: dict[str, Any]) -> None:
@@ -547,8 +556,9 @@ def _validate_nested_artifacts(artifact_paths: list[Path], evidence_root: Path) 
 
 def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     acc_schema = _load_schema("acc-evidence-v1.schema.json")
-    closeout_commit = _r1_closure_commit(
-        (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8"))
+    closeout_text = (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8")
+    closeout_commit = _r1_closure_commit(closeout_text)
+    s7_commit: str | None = None
     evidence_commit: str | None = None
     for item in trace["acceptance"]:
         acc_id = item["id"]
@@ -574,8 +584,14 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
             evidence_commit = report_commit
         require(report_commit == evidence_commit,
                 f"{acc_id}: evidence commit {report_commit} differs from {evidence_commit}")
-        require(report_commit == closeout_commit,
-                f"{acc_id}: evidence commit {report_commit} differs from closeout-declared {closeout_commit}")
+        if item.get("evidence_scope") == "stage-7":
+            if s7_commit is None:
+                s7_commit = _s7_closure_commit(closeout_text)
+            require(report_commit == s7_commit,
+                    f"{acc_id}: evidence commit {report_commit} differs from stage-7 closeout-declared {s7_commit}")
+        else:
+            require(report_commit == closeout_commit,
+                    f"{acc_id}: evidence commit {report_commit} differs from closeout-declared {closeout_commit}")
 
         checks = report.get("checks")
         require(isinstance(checks, dict), f"{acc_id}: checks object missing")

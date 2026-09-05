@@ -39,6 +39,13 @@ class Phase0EvidenceVerifierTests(unittest.TestCase):
         verifier._require_acc_statuses([{"id": f"ACC-{index:02d}", "status": "untested"} for index in range(1, 41)], "")
         verifier._require_acc_statuses(self.__status_items(37), closure)
         verifier._require_acc_statuses(self.__status_items(37, stage7_untested=3), closure)
+        items40 = self.__status_items(37, stage7_untested=3)
+        for item in items40:
+            item["status"] = "passed"
+        both = closure + "S7_EVIDENCE_CLOSED_AT_COMMIT: " + "f" * 40 + "\n"
+        verifier._require_acc_statuses(items40, both)
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_acc_statuses(items40, closure)
         with self.assertRaises(verifier.ContractError):
             verifier._require_acc_statuses(self.__status_items(37), "")
         with self.assertRaises(verifier.ContractError):

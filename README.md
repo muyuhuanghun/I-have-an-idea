@@ -4,7 +4,7 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过独立复审，代码与状态文档已由 `18c9b77`/`66354bd` 推送并远端核对一致；真实 Obsidian UI 运行证据尚未形成，属 Phase 6-A。Phase 6-0 裁决（ADR-0022，开发者三点确认）已将执行计划 §17 压力/破坏性矩阵以 R1 证据关闭，当前执行 Phase 6-A。本关闭不声明生产安全，不豁免后续独立审计。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过独立复审，代码与状态文档已由 `18c9b77`/`66354bd` 推送并远端核对一致；真实 Obsidian UI 运行证据尚未形成，属 Phase 6-A。Phase 6-0 裁决（ADR-0022，开发者三点确认）已将执行计划 §17 压力/破坏性矩阵以 R1 证据关闭，Phase 6-A 真实 Obsidian GUI 运行证据已完成（`b53865e`：修复渲染进程 ESM import CORS 缺陷后重跑 complete，机器报告核验通过，详见 `docs/test-plans/phase6a-gui-report.md`）。本关闭不声明生产安全，不豁免后续独立审计。
 >
 > 最后更新：2026-09-05
 
@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-0 合同已冻结；Phase 5-A 短路径/Junction 绕过修复与状态对账已由 `eb9a2db`、`10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已由 `18c9b77`/`66354bd` 纳管并推送；真实 Obsidian UI 运行证据属 Phase 6-A，尚未形成。Phase 6-0 裁决（ADR-0022）已将 §17 压力/破坏性矩阵以 R1 证据关闭。
+当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-0 合同已冻结；Phase 5-A 短路径/Junction 绕过修复与状态对账已由 `eb9a2db`、`10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已由 `18c9b77`/`66354bd` 纳管并推送；Phase 6-0 裁决（ADR-0022）已将 §17 压力/破坏性矩阵以 R1 证据关闭；真实 Obsidian UI 运行证据已由 Phase 6-A 补齐（`b53865e`，GUI 运行 complete 且机器核验通过）。
 
 ## 30. 仓库状态
 

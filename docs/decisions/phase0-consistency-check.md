@@ -1,7 +1,7 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5 仍未关闭。**
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-A 已修复、复审、纳管并推送；Phase 5-B 已通过独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权但尚未推送。Phase 5 整体仍未关闭。**
 > 日期：2026-09-02
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
@@ -263,7 +263,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
 | 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 已于 2026-09-02 关闭（closure_adr = ADR-0020），DP-014 保持 `deferred` |
-| Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 9 对正/负样本反身校验 9 份 schema | design+samples PASS | 9 份正样本通过、9 份负样本被拒 |
+| Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 10 对正/负样本反身校验 10 份 schema | design+samples PASS | 10 份正样本通过、10 份负样本被拒 |
 
 ## 13. 当前机器门禁
 
@@ -335,8 +335,10 @@ ACC_37_OF_37_PASSED
 PHASE_5_0_WIRING_CONTRACT_ACCEPTED
 PHASE_5_A_CLI_WIRING_IMPLEMENTED
 PHASE_5_A_CLI_WIRING_REVIEW_REQUEST_CHANGES
-PHASE_5_A_SHORT_PATH_ALIAS_REMEDIATION_INDEPENDENT_REVIEW_PASS_PENDING_COMMIT
-PHASE_5_B_PLUGIN_UI_NOT_AUTHORIZED
+PHASE_5_A_SHORT_PATH_ALIAS_REMEDIATION_COMMITTED_EB9A2DB
+PHASE_5_A_STATUS_RECONCILED_AND_PUSHED_10666CD
+PHASE_5_B_PLUGIN_UI_AUTHORIZED
+PHASE_5_B_PLUGIN_UI_INDEPENDENT_REVIEW_PASS_COMMITTED_18C9B77_PENDING_PUSH
 ```
 
 含义：
@@ -358,9 +360,10 @@ PHASE_5_B_PLUGIN_UI_NOT_AUTHORIZED
 - Phase 4-B-0 已完成并经独立复审纠错：保持 `INCOMPLETE_RESTORE` v1 不使用，机器 registry 新增 `RESTORE_TARGET_WRITE_FAILED`（+1），ACC-25 oracle 同步到该码，并冻结不含原始路径的 `partialOutputInventory`；
 - Phase 4-B-A 已单独授权：恢复编排（core `restoreSnapshotV1`，ADR-0018 §4 顺序与拒绝规则映射、全量校验先于任何写入）与 `NodeRestoreTarget`、fresh-process worker CLI、纯 stdlib Python 验证器已实现；独立复审指出的错误码闭包、验证器 missing-root 假 PASS/fingerprint 漏检、ASCII fold、清零时序和负面测试缺口已修正；第二轮独立复审边界内 PASS，F7（探针失败错误码语义）经开发者裁决按方案 A 修复（→ `REPARSE_POINT_FOUND`），已由提交 `a6cd59f` 纳管；CLI 接线、HTTP ObjectStore、插件接线与 P0-R1 证据门仍被禁止；
 - 2026-08-31 复审曾确认当时的 candidate evidence 不能通过修复后的嵌套 schema/provenance/oracle 门；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成 12 份 perf report 与 37 份 acc-evidence，全部通过嵌套证据门，ACC-37 经开发者精确 token 裁决 ACCEPT（machine-scan sha256 `5dbc2a72…`）；
-- P0-R1 已按 ADR-0020 关闭：registry 与矩阵 37 个 ACC 同步为 `passed`（closure 门控规则 + `R1_EVIDENCE_CLOSED_AT_COMMIT` 绑定行交叉验证），DP-007/008/010/011/012 以本次证据关闭；这不等同于生产安全声明，Phase 5 与 HTTP ObjectStore 仍未解锁。
-- Phase 5-0 已完成：ADR-0021 经开发者四点确认接受（5-A CLI 先行/5-B 插件后行、端口拦截 core 零改动、新增 `p0-plugin-snapshot-report-v1` schema + 机器门、log/store/recovery 全部显式路径无默认、domainId 仅设置页 64-hex 且源 Vault 零写入、runtime-limits hash 必须对真实文件字节计算）。无错误码新增、无 DP/ACC 状态变化；5-A/5-B 实现未获授权不得开工。
-- Phase 5-A 原实现由提交 `3489871` 纳管（报告见 `docs/test-plans/phase5a-cli-report.md`），但 2026-09-04 独立核验发现 CLI 与 Node snapshot I/O 只按路径字符串判断 containment：同一 Vault 的 Windows 8.3 短路径可作为词法上“外部”的 Recovery File 路径，命令返回 `complete` 并实际写回物理 Vault，违反 ADR-0021 §2.3，初审结论为 `REQUEST CHANGES`。真实路径身份修复已覆盖 CLI 的 vault/store/log/recovery/restore-target 与 Node snapshot I/O preflight，新增别名回归；修复后统一门、短路径攻击重放和构建产物 fresh-process 往返均通过，开发者已确认独立复审 PASS。当前 diff 仍未提交，等待明确 commit/push 授权。历史 `9443cb1` R1 evidence gate 的通过不证明当前 Phase 5-A/crypto diff；5-B 插件 UI 未获授权。
+- P0-R1 已按 ADR-0020 关闭：registry 与矩阵 37 个 ACC 同步为 `passed`（closure 门控规则 + `R1_EVIDENCE_CLOSED_AT_COMMIT` 绑定行交叉验证），DP-007/008/010/011/012 以本次证据关闭；这不等同于生产安全声明，Phase 5 整体仍未关闭，HTTP ObjectStore 仍未解锁。
+- Phase 5-0 已完成：ADR-0021 经开发者四点确认接受（5-A CLI 先行/5-B 插件后行、端口拦截 core 零改动、新增 `p0-plugin-snapshot-report-v1` schema + 机器门、log/store/recovery 全部显式路径无默认、domainId 仅设置页 64-hex 且源 Vault 零写入、runtime-limits hash 必须对真实文件字节计算）。无错误码新增、无 DP/ACC 状态变化。
+- Phase 5-A 原实现由提交 `3489871` 纳管（报告见 `docs/test-plans/phase5a-cli-report.md`），但 2026-09-04 独立核验发现 CLI 与 Node snapshot I/O 只按路径字符串判断 containment：同一 Vault 的 Windows 8.3 短路径可作为词法上“外部”的 Recovery File 路径，命令返回 `complete` 并实际写回物理 Vault，违反 ADR-0021 §2.3，初审结论为 `REQUEST CHANGES`。真实路径身份修复通过独立复审后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管；两者已按开发者授权推送，核对时本地与远端均为 `10666cd3edb0e8b20fbfb18b8e3e5044c32005e0`。
+- Phase 5-B 已获开发者明确进入授权：Obsidian 插件的 Windows desktop 快照命令、显式设置、Obsidian 只读 VaultSource、端口派生进度、计数型 ObjectStore、最小可见性摘要、runtime-limits 双侧运行时绑定、第 10 份机器 schema/样本和报告导出通过统一门（164 个 TypeScript tests + 12 个 Python tests），构建产物不含 restore command/`NodeRestoreTarget`。开发者于 2026-09-05 确认独立复审 PASS 并授权进入本地纳管步骤，代码由 `18c9b77` 纳管；状态文档随后的 docs 提交纳管。真实 Obsidian GUI 手工运行尚未执行，尚未推送，也不升级任何 ACC。
 
 ## 15. 当前状态一致性
 
@@ -371,6 +374,6 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `historical/superseded/withdrawn`：仅保留决策演进，不是当前权威；
 - `deferred/open/conditional/closed`：只在延期 registry 中使用；`closed` 还必须绑定存在的 closure ADR；
 - `PASS design-only`：只指静态合同检查；registry 全部 `untested` 时期它绝不构成 P0-R1 PASS，registry 全部 `passed` 时期它也不重新验证运行时 artifacts（运行时验证专属 `--evidence-root` 模式）；
-- `PASS design-only+samples`：design-only 加上 9 份 schema 的 9 对正/负样本反身校验通过，证明 schema 强制路径在 work；运行时证据仍以 `--evidence-root` 为准。
+- `PASS design-only+samples`：design-only 加上 10 份 schema 的 10 对正/负样本反身校验通过，证明 schema 强制路径在 work；运行时证据仍以 `--evidence-root` 为准。
 
 本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`。2026-09-02 的 R1 关闭轮（验证器 closure 规则、registry/矩阵/DP 同步、ADR-0020 与状态文档对账）见 ADR-0020 与收尾报告 §-1；证据门结果为 `PHASE0_CONTRACT_CHECK_PASS mode=design+evidence+samples ACC=37 INV=16 THR=5 DP=26`。

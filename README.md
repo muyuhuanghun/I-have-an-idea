@@ -4,9 +4,9 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 原实现由提交 `3489871` 纳管；2026-09-04 独立核验复现 Windows 8.3 短路径可把 Recovery File 写回物理源 Vault，初审结论为 `REQUEST CHANGES`。真实路径身份修复、回归测试和状态对账已落在当前未提交工作区，统一门通过；开发者现已确认复审 PASS，等待明确 commit/push 授权。5-B 插件 UI 仍未获授权。本关闭不声明生产安全，不豁免后续独立审计。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），DP-014 保持 `deferred`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过本地统一门和开发者确认的独立复审 PASS，代码由 `18c9b77` 纳管；状态文档随后的本地 docs 提交纳管，尚未推送，也未形成真实 Obsidian UI 运行证据。Phase 5 整体仍未关闭。本关闭不声明生产安全，不豁免后续独立审计。
 >
-> 最后更新：2026-09-04
+> 最后更新：2026-09-05
 
 ## 1. 项目一句话定义
 
@@ -907,7 +907,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 2. ADR-0012 和 5 份 JSON Schema 已冻结 smoke/fixture/performance/ACC evidence 的 required 与缺项失败规则；
 3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
 4. deferred registry 已逐项绑定 26 个参数的 owner、阶段、状态、关闭产物和硬停止；DP-001..005 已由 ADR-0013 关闭；
-5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 9 对正/负样本反身校验当前 9 份 schema；`--evidence-root` 模式除校验 `acc-evidence-v1` 外，还递归校验 perf、storage-visibility、roundtrip artifact schema 与 perf raw artifact hash，缺字段、未知字段、非法值或嵌套 hash 不一致都立即被拒；
+5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 10 对正/负样本反身校验当前 10 份 schema；`--evidence-root` 模式除校验 `acc-evidence-v1` 外，还递归校验 perf、storage-visibility、roundtrip artifact schema 与 perf raw artifact hash，缺字段、未知字段、非法值或嵌套 hash 不一致都立即被拒；
 6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已按单独授权完成；clean-source 正式矩阵中 Web Crypto 和 Noble 均取得 `cross_env_pass`，ADR-0013 已选择 Web Crypto 并关闭 DP-001..005；Phase 2 Tiny fixture generator/fixture 已纳管，其余 ACC 已于 2026-09-02 随 P0-R1 关闭统一升级为 `passed`（ADR-0020）。
 
 ### 27.4 推迟到 P1-alpha 以后裁决
@@ -950,7 +950,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 - 把候选审核、正式历史、发布保留和删除语义分开；
 - 对配额、恢复、退出和误操作给出可验证的不变式。
 
-当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-0 合同已冻结；Phase 5-A 原提交 `3489871` 因 Windows 短路径别名可绕过源 Vault 零写入规则而在 2026-09-04 初审中收到 `REQUEST CHANGES`，当前未提交修复已由开发者确认复审 PASS，等待明确 commit/push 授权；Phase 5-B 尚未授权。
+当前 P0 的设计合同、Phase 1 正式矩阵、Phase 2、Phase 3 与 Phase 4 snapshot/restore 实现已经落库。旧 R1 evidence 在 2026-08-31 复审中被证明不满足冻结计划并撤回；2026-09-02 修复后的 runner 在 clean commit `9443cb1` 上重新生成全部正式证据（12 份 perf + 37 份 ACC，含 ACC-37 开发者 token 裁决），P0-R1 已按 ADR-0020 关闭。现状：37 个 ACC 在 registry 与矩阵中均为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-0 合同已冻结；Phase 5-A 短路径/Junction 绕过修复与状态对账已由 `eb9a2db`、`10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过本地门与独立复审，代码由 `18c9b77` 纳管，状态文档已获本地提交授权；尚未推送，也未形成真实 Obsidian UI 运行证据。
 
 ## 30. 仓库状态
 

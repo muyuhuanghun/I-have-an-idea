@@ -2,7 +2,7 @@
 
 > 日期：2026-09-02
 >
-> 状态：原实现已纳管（提交 `3489871`）；2026-09-04 初审为 `REQUEST CHANGES`。真实路径身份修复已在未提交工作区通过本地门禁，开发者已确认独立复审 PASS，等待明确 commit/push 授权
+> 状态：原实现已纳管（提交 `3489871`）；2026-09-04 初审为 `REQUEST CHANGES`。真实路径身份修复经开发者确认独立复审 PASS 后已由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管；两者已推送到 `origin/main`
 >
 > 合同：ADR-0021（Phase 5-0 接线合同 v1，开发者四点确认）
 >
@@ -42,7 +42,7 @@
 
 这直接违反 ADR-0021 §2.3 的源 Vault 零写入规则，因此不能用原报告的绿测把 Phase 5-A 判为通过。
 
-### 4.2 当前未提交修复
+### 4.2 随后实施的修复（现已纳管）
 
 - CLI 保留词法快速拒绝，并新增真实文件系统身份比较：已存在路径用 `realpath`；尚不存在的 log/recovery/restore target 用“真实父目录 + 最终 basename”构造身份。Windows 8.3 短名和祖先 Junction 因而会归一到同一物理位置。
 - snapshot 对 vault/store/log/recovery 的原有五组 containment 全部增加物理身份检查；restore 的 store/target 同样增加物理身份检查，且发生在创建目标目录之前。
@@ -57,6 +57,6 @@
 - 非空 restore target → exit 2，原 sentinel 保留；损坏 Recovery File → exit 1，由 CLI 新建且仍为空的 target 被删除。
 - `git diff --check` 与定向 ESLint/typecheck 均通过。
 
-### 4.4 当前门槛
+### 4.4 纳管结果与后续边界
 
-上述结果证明已知短路径缺陷在当前 dirty diff 中得到定向修复。开发者已于 2026-09-04 明确确认独立复审 PASS；该裁决关闭“待复审”门，但不自动授权 Git 状态变化，也不把未提交实现写成已纳管。Phase 5-A 当前状态是“原提交已纳管、初审 REQUEST CHANGES、修复复审 PASS、等待明确 commit/push 授权”；在提交授权和远端核对完成以前，不进入 Phase 5-B，不提交、不推送，也不把历史 P0-R1 evidence 外推为当前代码的正式运行证据。
+上述结果证明已知短路径缺陷得到定向修复。开发者于 2026-09-04 明确确认独立复审 PASS，随后明确授权按 feat + docs 两提交纳管并推送：代码提交为 `eb9a2db`，状态文档提交为 `10666cd`；推送后核对 `HEAD = origin/main = 10666cd3edb0e8b20fbfb18b8e3e5044c32005e0`。开发者之后另行授权进入 Phase 5-B。该纳管结果不把历史 P0-R1 evidence 外推为 Phase 5-A/5-B 的新正式运行证据。

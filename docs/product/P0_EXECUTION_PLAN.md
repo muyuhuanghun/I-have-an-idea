@@ -2,7 +2,7 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回；Phase 5 `841c26e` 同因不可构建与越界被移除出工作树。2026-09-02 修复后的 runner（含 Windows `.cmd` spawn、per-run raw 目录清理、环境漂移 fail-fast、ACC-37 扫描措辞四项阻塞修复）在 clean commit `9443cb1` 上重新生成 12 份 perf report（`PERF_RUNS_PASS`）与 37 份 acc-evidence（37/37），ACC-37 经开发者精确 token 裁决 ACCEPT；P0-R1 已按 ADR-0020 关闭。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 同步为 `passed`；DP-007/008/010/011/012 已关闭（closure_adr = ADR-0020），DP-014 保持 `deferred`。设计门同步修订为 closure 规则（全部 `untested` 或全部 `passed` + 收尾报告 `R1_EVIDENCE_CLOSED_AT_COMMIT` 绑定行，evidence 门交叉验证 commit 一致）。Phase 5 与 HTTP ObjectStore 未解锁。
+> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回；Phase 5 `841c26e` 同因不可构建与越界被移除出工作树。2026-09-02 修复后的 runner（含 Windows `.cmd` spawn、per-run raw 目录清理、环境漂移 fail-fast、ACC-37 扫描措辞四项阻塞修复）在 clean commit `9443cb1` 上重新生成 12 份 perf report（`PERF_RUNS_PASS`）与 37 份 acc-evidence（37/37），ACC-37 经开发者精确 token 裁决 ACCEPT；P0-R1 已按 ADR-0020 关闭。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 同步为 `passed`；DP-007/008/010/011/012 已关闭（closure_adr = ADR-0020），DP-014 保持 `deferred`。Phase 5-0 合同已冻结；Phase 5-A 的真实路径身份修复与状态对账已由 `eb9a2db`、`10666cd` 纳管并推送。Phase 5-B 已通过独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权但尚未推送；真实 Obsidian UI 运行证据仍未形成。HTTP ObjectStore 仍未解锁。
 >
 > 日期：2026-08-30
 >
@@ -499,7 +499,7 @@ GLM 评审指出原“七个一小时工作单元”不足以容纳完整一致�
 - ADR-0011 消除 Manifest AAD/recovery material 循环依赖，冻结 wire bytes/HKDF/object ID；
 - ADR-0012 冻结 5 份 JSON Schema、缺项失败规则和数值 oracle；
 - registry 机器闭合 37 ACC / 16 INV / 5 THR，并登记 26 个逐项负责的延期参数；
-- `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会自动升级 ACC；`--validate-samples` 模式用 9 对正/负样本反身校验当前 9 份 schema；`--evidence-root` 模式同时校验 ACC 外层与 perf/visibility/roundtrip 内层 schema、raw artifact hash、同一 evidence commit 及 registry/matrix 的 `passed` 状态；
+- `python tools/verify_phase0_contracts.py` 可检查设计合同，但不会自动升级 ACC；`--validate-samples` 模式用 10 对正/负样本反身校验当前 10 份 schema；`--evidence-root` 模式同时校验 ACC 外层与 perf/visibility/roundtrip 内层 schema、raw artifact hash、同一 evidence commit 及 registry/matrix 的 `passed` 状态；
 - Phase 0 修复已通过 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；Phase 1 实现与 dev-only 复审已由用户手动提交并推送，实施提交为 `927eb4efc5c33117df72e95256a9ffe7120a8902`；
 - Phase 1 已按用户单独授权完成工程骨架、共享核心/适配器骨架、统一门禁、最小 Obsidian 插件和正式三环境 smoke；六份 source report 绑定 clean commit `63db4eeb71a3ddab527000453a389a53cabe0db1`，Android 两份 verified binding 已独立验签，两个候选均取得 `cross_env_pass`；ADR-0013 已选择 Web Crypto 并关闭 DP-001..005。
 - Phase 2 实现提交为 `dc41fe435b7df95208ffb334dae9a90080bbbb3a`；fixture 绑定修正提交 `d170d97bce59f991dc180319c12a7127cc3dc1bd` 后取得 `mode=formal`，ADR-0014 关闭 DP-006/009。
@@ -756,11 +756,11 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现由提交 `3489871` 纳管；2026-09-04 独立核验复现 Windows 8.3 短路径别名可绕过词法 containment、把 Recovery File 写回物理源 Vault，故初审结论为 `REQUEST CHANGES`。CLI 与 Node snapshot I/O 的真实路径身份修复及回归测试已落在未提交工作区，统一门与构建产物定向复测通过；开发者现已确认独立复审 PASS。当前下一门槛是明确授权把这组修复按 feat+docs 两个提交纳管并推送；在授权与远端核对完成前，不得把 Phase 5-A 写成已提交关闭，也不得进入 Phase 5-B。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现 `3489871` 的 Windows 8.3/Junction 绕过经修复和独立复审后，代码提交 `eb9a2db` 与状态提交 `10666cd` 已按开发者授权推送。Phase 5-B 插件快照、进度、摘要和报告导出通过 `pnpm run test:all`、10 对 schema 样本/历史 evidence 门与独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权。当前下一门槛是明确的 push 授权与远端核对；在此之前不得写成已推送，不得进入 Phase 6。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
 
 1. 本轮 R1 重做中的全部修复（`9000d63`、`d861e28`、`62ad56f`、`9443cb1`）与收尾提交均经用户显式授权后提交并推送；
 2. ACC-37 的裁决 token 只对生成它的 machine-scan（即提交 `9443cb1` 时的 10 份扫描目标）有效；任何被扫描文档的后续变更都会使既有 token 失效，重跑证据需要新的开发者裁决；
-3. Phase 5-A 短路径修复虽已取得独立 PASS，但经明确授权提交并完成远端核对前，Phase 5-B 不得开工；5-B 不得引入插件 restore 命令或任何 crypto/Manifest 实现复制（ADR-0021 §2）；
+3. Phase 5-A 已完成授权提交、推送和远端核对；Phase 5-B 已通过独立复审并由 `18c9b77` 纳管实现，状态文档获本地提交授权；推送仍需单独授权，推送和远端核对完成前不得进入 Phase 6（ADR-0021 §2）；
 4. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义、ADR-0021 接线边界的修改都必须先停下并形成明确合同裁决；
 5. 本计划不授权自动提交、推送或把未授权的 dirty diff 描述为已提交。
 

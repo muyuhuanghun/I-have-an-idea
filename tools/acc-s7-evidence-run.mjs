@@ -18,10 +18,11 @@ const GIT_COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, 
 const RUN_ID = randomUUID();
 const RUNTIME_LIMITS_SHA256 = "e1971ab746f6b08b06522463f907143036d99e41c470532482b5da8eafc44acd";
 
-let core, adapters;
+let core, adapters, httpStore;
 try {
   core = await import("../packages/core/dist/index.js");
   adapters = await import("../packages/adapters/dist/index.js");
+  httpStore = await import("../packages/adapters/dist/http-object-store.js");
 } catch {
   console.error("acc-s7-evidence-run: dist is missing; run `pnpm build` first.");
   process.exit(2);
@@ -169,11 +170,11 @@ async function main() {
     return response;
   };
 
-  const running = await adapters.startHttpObjectStoreServer({
+  const running = await httpStore.startHttpObjectStoreServer({
     store: new adapters.DirectoryObjectStoreV1(directoryStoreRoot),
     log: (line) => serverLogLines.push(line)
   });
-  const client = new adapters.HttpClientObjectStore({
+  const client = new httpStore.HttpClientObjectStore({
     baseUrl: `http://127.0.0.1:${running.port}`,
     token: running.token,
     fetchImpl: recordingFetch
@@ -236,7 +237,7 @@ async function main() {
   const faultStore = new adapters.DirectoryObjectStoreV1(faultStoreRoot);
   let delay = false;
   let destroy = false;
-  const faultRunning = await adapters.startHttpObjectStoreServer({
+  const faultRunning = await httpStore.startHttpObjectStoreServer({
     store: faultStore,
     faultInjector: async (request) => {
       if (delay) await new Promise((resolvePromise) => globalThis.setTimeout(resolvePromise, 800));
@@ -244,7 +245,7 @@ async function main() {
     }
   });
   const observed = [];
-  const slow = new adapters.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${faultRunning.port}`, token: faultRunning.token, timeoutMs: 120 });
+  const slow = new httpStore.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${faultRunning.port}`, token: faultRunning.token, timeoutMs: 120 });
   const value = new Uint8Array([7, 8, 9]);
 
   await client.put(KEY, value);
@@ -274,7 +275,7 @@ async function main() {
   destroy = true;
   let disconnectConverges = false;
   try {
-    await new adapters.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${faultRunning.port}`, token: faultRunning.token }).get(KEY);
+    await new httpStore.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${faultRunning.port}`, token: faultRunning.token }).get(KEY);
   } catch (error) {
     disconnectConverges = error instanceof adapters.ObjectStoreAdapterError && error.code === "OBJECT_STORE_IO_FAILED";
     observed.push("OBJECT_STORE_IO_FAILED");

@@ -339,6 +339,9 @@ PHASE_5_A_SHORT_PATH_ALIAS_REMEDIATION_COMMITTED_EB9A2DB
 PHASE_5_A_STATUS_RECONCILED_AND_PUSHED_10666CD
 PHASE_5_B_PLUGIN_UI_AUTHORIZED
 PHASE_5_B_PLUGIN_UI_INDEPENDENT_REVIEW_PASS_COMMITTED_18C9B77_PENDING_PUSH
+PHASE_5_B_PUSHED_AND_REMOTE_VERIFIED_66354BD
+PHASE_6_0_SCOPE_RULING_ACCEPTED
+PHASE_6_A_GUI_RUN_IN_PROGRESS
 ```
 
 含义：
@@ -363,7 +366,8 @@ PHASE_5_B_PLUGIN_UI_INDEPENDENT_REVIEW_PASS_COMMITTED_18C9B77_PENDING_PUSH
 - P0-R1 已按 ADR-0020 关闭：registry 与矩阵 37 个 ACC 同步为 `passed`（closure 门控规则 + `R1_EVIDENCE_CLOSED_AT_COMMIT` 绑定行交叉验证），DP-007/008/010/011/012 以本次证据关闭；这不等同于生产安全声明，Phase 5 整体仍未关闭，HTTP ObjectStore 仍未解锁。
 - Phase 5-0 已完成：ADR-0021 经开发者四点确认接受（5-A CLI 先行/5-B 插件后行、端口拦截 core 零改动、新增 `p0-plugin-snapshot-report-v1` schema + 机器门、log/store/recovery 全部显式路径无默认、domainId 仅设置页 64-hex 且源 Vault 零写入、runtime-limits hash 必须对真实文件字节计算）。无错误码新增、无 DP/ACC 状态变化。
 - Phase 5-A 原实现由提交 `3489871` 纳管（报告见 `docs/test-plans/phase5a-cli-report.md`），但 2026-09-04 独立核验发现 CLI 与 Node snapshot I/O 只按路径字符串判断 containment：同一 Vault 的 Windows 8.3 短路径可作为词法上“外部”的 Recovery File 路径，命令返回 `complete` 并实际写回物理 Vault，违反 ADR-0021 §2.3，初审结论为 `REQUEST CHANGES`。真实路径身份修复通过独立复审后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管；两者已按开发者授权推送，核对时本地与远端均为 `10666cd3edb0e8b20fbfb18b8e3e5044c32005e0`。
-- Phase 5-B 已获开发者明确进入授权：Obsidian 插件的 Windows desktop 快照命令、显式设置、Obsidian 只读 VaultSource、端口派生进度、计数型 ObjectStore、最小可见性摘要、runtime-limits 双侧运行时绑定、第 10 份机器 schema/样本和报告导出通过统一门（164 个 TypeScript tests + 12 个 Python tests），构建产物不含 restore command/`NodeRestoreTarget`。开发者于 2026-09-05 确认独立复审 PASS 并授权进入本地纳管步骤，代码由 `18c9b77` 纳管；状态文档随后的 docs 提交纳管。真实 Obsidian GUI 手工运行尚未执行，尚未推送，也不升级任何 ACC。
+- Phase 5-B 已获开发者明确进入授权：Obsidian 插件的 Windows desktop 快照命令、显式设置、Obsidian 只读 VaultSource、端口派生进度、计数型 ObjectStore、最小可见性摘要、runtime-limits 双侧运行时绑定、第 10 份机器 schema/样本和报告导出通过统一门（164 个 TypeScript tests + 12 个 Python tests），构建产物不含 restore command/`NodeRestoreTarget`。开发者于 2026-09-05 确认独立复审 PASS 并授权进入本地纳管步骤，代码由 `18c9b77` 纳管；状态文档随后的 docs 提交纳管。真实 Obsidian GUI 手工运行尚未执行，也不升级任何 ACC。实现与状态文档已随后推送：`18c9b77`/`66354bd`，远端核对一致（`HEAD == origin/main == 66354bd`），误生成的空未跟踪文件 `日期：2026-09-02` 已删除。
+- Phase 6-0 已完成：ADR-0022 经开发者三点确认接受（2026-09-05）——§17 压力/破坏性清单逐项映射到 `9443cb1` 的 R1 正式证据并关闭（仅"扫描中文件消失"由适配器 `SOURCE_FILE_READ_FAILED` 语义 + 单元测试覆盖）；下一实现切片为 Phase 6-A 真实 Obsidian GUI 运行证据（自动化驱动、`artifacts/gui-test-vault/` 专用测试 Vault、绝不触碰 `D:\Obsidian\muyu_note`）；DP-014 解锁裁决推迟到 Phase 7-0 合同。
 
 ## 15. 当前状态一致性
 

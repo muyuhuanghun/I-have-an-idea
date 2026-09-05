@@ -756,7 +756,7 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现 `3489871` 的 Windows 8.3/Junction 绕过经修复和独立复审后，代码提交 `eb9a2db` 与状态提交 `10666cd` 已按开发者授权推送。Phase 5-B 插件快照、进度、摘要和报告导出通过 `pnpm run test:all`、10 对 schema 样本/历史 evidence 门与独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权。当前下一门槛是明确的 push 授权与远端核对；在此之前不得写成已推送，不得进入 Phase 6。DP-014（HTTP ObjectStore）解锁评估仍被其 hard_stop 阻止，除非另立合同裁决。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现 `3489871` 的 Windows 8.3/Junction 绕过经修复和独立复审后，代码提交 `eb9a2db` 与状态提交 `10666cd` 已按开发者授权推送。Phase 5-B 插件快照、进度、摘要和报告导出通过 `pnpm run test:all`、10 对 schema 样本/历史 evidence 门与独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权。Phase 5-B 已随 `66354bd` 推送并远端核对一致。Phase 6-0 已完成：ADR-0022 经开发者三点确认接受——§17 压力/破坏性矩阵以 R1 证据关闭（仅"扫描中文件消失"由适配器 `SOURCE_FILE_READ_FAILED` 语义 + 单测覆盖），当前下一门槛为 **Phase 6-A**（真实 Obsidian GUI 运行证据：clean build `66354bd` + `artifacts/gui-test-vault/` 专用测试 Vault + 自动化驱动 + 机器报告），完成后另行起草 Phase 7-0（HTTP ObjectStore，DP-014 解锁裁决）合同。
 
 1. 本轮 R1 重做中的全部修复（`9000d63`、`d861e28`、`62ad56f`、`9443cb1`）与收尾提交均经用户显式授权后提交并推送；
 2. ACC-37 的裁决 token 只对生成它的 machine-scan（即提交 `9443cb1` 时的 10 份扫描目标）有效；任何被扫描文档的后续变更都会使既有 token 失效，重跑证据需要新的开发者裁决；

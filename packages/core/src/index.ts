@@ -37,9 +37,25 @@ export {
   generateRecoveryFileV1
 } from "./recovery.js";
 export { scanVault } from "./scan.js";
+export {
+  HEAD_RECORD_WIRE_LENGTH,
+  HEAD_SIGNED_BYTES_LENGTH,
+  createHeadRecordV1,
+  decodeHeadRecordWire,
+  encodeHeadRecordWire,
+  encodeHeadSignedBytes,
+  verifyHeadRecordWire,
+  HeadError,
+  type HeadErrorCode,
+  type HeadRecordInputV1,
+  type HeadRecordV1,
+  type HeadSigner,
+  type HeadVerifier
+} from "./head.js";
 export { createSnapshotV1 } from "./snapshot.js";
 export { restoreSnapshotV1 } from "./restore.js";
 export type { Core } from "./core.js";
+export type { DeviceSignaturePort } from "./ports.js";
 export type {
   ManifestCodecErrorCode,
   ObjectCodecErrorCode,

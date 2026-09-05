@@ -50,7 +50,7 @@
     "INCOMPLETE_RESTORE",
     "LOG_WRITE_FAILED",
     "REPORT_SCHEMA_INVALID",
-    "HONEST_CLAIM_VIOLATION"
+    "HONEST_CLAIM_VIOLATION", "HEAD_SIGNATURE_INVALID", "HEAD_DEVICE_UNREGISTERED", "HEAD_ROLLBACK_DETECTED", "HEAD_FORK_DETECTED"
   ],
   "threats": [
     {
@@ -77,7 +77,8 @@
       "disposition": "mitigated_in_p0_r1",
       "acceptance_ids": [
         "ACC-06", "ACC-08", "ACC-09", "ACC-10", "ACC-14", "ACC-15", "ACC-16", "ACC-17",
-        "ACC-18", "ACC-19", "ACC-20", "ACC-21", "ACC-23", "ACC-24", "ACC-25", "ACC-34"
+        "ACC-18", "ACC-19", "ACC-20", "ACC-21", "ACC-23", "ACC-24", "ACC-25", "ACC-34",
+        "ACC-41", "ACC-42", "ACC-43"
       ],
       "oracle": "all listed acceptance evidence must be passed"
     },
@@ -114,7 +115,9 @@
     {"id": "INV-13", "source": "docs/threat-model/P0-security-invariants.md#inv-13", "acceptance_ids": ["ACC-25", "ACC-34"]},
     {"id": "INV-14", "source": "docs/threat-model/P0-security-invariants.md#inv-14", "acceptance_ids": ["ACC-06", "ACC-08", "ACC-09", "ACC-10", "ACC-14", "ACC-15", "ACC-16", "ACC-17", "ACC-18", "ACC-19", "ACC-21"]},
     {"id": "INV-15", "source": "docs/threat-model/P0-security-invariants.md#inv-15", "acceptance_ids": ["ACC-23"]},
-    {"id": "INV-16", "source": "docs/threat-model/P0-security-invariants.md#inv-16", "acceptance_ids": ["ACC-24"]}
+    {"id": "INV-16", "source": "docs/threat-model/P0-security-invariants.md#inv-16", "acceptance_ids": ["ACC-24"]},
+    {"id": "INV-17", "source": "docs/decisions/0026-p1-alpha-state-protocol-contract-v1.md#2", "acceptance_ids": ["ACC-41"]},
+    {"id": "INV-18", "source": "docs/decisions/0026-p1-alpha-state-protocol-contract-v1.md#2", "acceptance_ids": ["ACC-42", "ACC-43"]}
   ],
   "acceptance": [
     {
@@ -316,6 +319,21 @@
       "id": "ACC-40", "title": "幂等重试与故障按冻结语义收敛", "kind": "security", "threat_ids": ["THR-02"], "invariant_ids": [],
       "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-40-http-faults.json", "status": "passed", "evidence_scope": "stage-7",
       "oracle": {"required_checks": ["schema_valid", "duplicate_put_idempotent", "content_mismatch_collision_rejected", "missing_object_maps_to_undefined", "timeout_converges", "disconnect_converges", "no_partial_success"], "required_error_code_groups": [["OBJECT_ID_COLLISION", "MISSING_OBJECT", "OBJECT_STORE_IO_FAILED"]], "forbidden_side_effects": ["partial_success_reported"]}
+    },
+    {
+      "id": "ACC-41", "title": "Head 链验证通过", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-17"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-41-head-chain.json", "status": "untested", "evidence_scope": "p1-alpha",
+      "oracle": {"required_checks": ["schema_valid", "head_object_published", "pointer_signature_valid", "head_signature_valid", "device_registered", "sequence_monotonic"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-42", "title": "回滚与篡改被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-18"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-42-rollback.json", "status": "untested", "evidence_scope": "p1-alpha",
+      "oracle": {"required_checks": ["schema_valid", "rollback_pointer_rejected", "tampered_pointer_rejected", "tampered_head_rejected", "unregistered_device_rejected"], "required_error_code_groups": [["HEAD_ROLLBACK_DETECTED", "HEAD_SIGNATURE_INVALID", "HEAD_DEVICE_UNREGISTERED"]], "forbidden_side_effects": ["partial_success_reported"]}
+    },
+    {
+      "id": "ACC-43", "title": "分叉被检测并拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-18"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-43-fork.json", "status": "untested", "evidence_scope": "p1-alpha",
+      "oracle": {"required_checks": ["schema_valid", "fork_detected", "fork_evidence_complete", "restore_rejected_on_fork"], "required_error_code_groups": [["HEAD_FORK_DETECTED"]], "forbidden_side_effects": ["partial_success_reported"]}
     }
   ]
 }

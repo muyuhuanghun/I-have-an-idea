@@ -417,6 +417,12 @@ def _s7_closure_commit(closeout_text: str) -> str:
     return match.group(1)
 
 
+def _p1_alpha_closure_commit(closeout_text: str) -> str:
+    match = re.search(r"^P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT: ([0-9a-f]{40})$", closeout_text, flags=re.MULTILINE)
+    require(match is not None, "closeout report lacks a 'P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
+    return match.group(1)
+
+
 def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> None:
     allowed_statuses = {"passed", "failed", "untested", "known-limitation", "out-of-scope"}
     statuses = [item.get("status") for item in items]
@@ -426,13 +432,16 @@ def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> No
     require(all(status == "passed" for status in statuses if status != "untested"),
             "passed and untested ACC entries may only coexist while the untested ones are stage-7 pending")
     untested = [item for item in items if item.get("status") == "untested"]
+    allowed_scopes = {"stage-7", "p1-alpha"}
     for item in untested:
-        require(item.get("evidence_scope") == "stage-7",
-                f"{item.get('id')}: untested ACC without evidence_scope=stage-7 is not allowed while other ACCs are passed")
-    has_stage7 = any(item.get("evidence_scope") == "stage-7" for item in items)
+        require(item.get("evidence_scope") in allowed_scopes,
+                f"{item.get('id')}: untested ACC without a recognized evidence_scope is not allowed while other ACCs are passed")
     _r1_closure_commit(closeout_text)
-    if has_stage7 and not untested:
+    scopes_of_passed = {item.get("evidence_scope") for item in items if item.get("status") == "passed"}
+    if "stage-7" in scopes_of_passed:
         _s7_closure_commit(closeout_text)
+    if "p1-alpha" in scopes_of_passed:
+        _p1_alpha_closure_commit(closeout_text)
 
 
 def validate_traceability(trace: dict[str, Any]) -> None:
@@ -444,8 +453,8 @@ def validate_traceability(trace: dict[str, Any]) -> None:
     invariant_ids = [item.get("id") for item in invariants]
     acceptance_ids = [item.get("id") for item in acceptance]
     require(threat_ids == expected_ids("THR", 5), f"THR registry must be THR-01..THR-05; got {threat_ids}")
-    require(invariant_ids == expected_ids("INV", 16), f"INV registry must be INV-01..INV-16; got {invariant_ids}")
-    require(acceptance_ids == expected_ids("ACC", 40), f"ACC registry must be ACC-01..ACC-40; got {acceptance_ids}")
+    require(invariant_ids == expected_ids("INV", 18), f"INV registry must be INV-01..INV-18; got {invariant_ids}")
+    require(acceptance_ids == expected_ids("ACC", 43), f"ACC registry must be ACC-01..ACC-43; got {acceptance_ids}")
 
     evidence_paths = [item.get("evidence_path") for item in acceptance]
     assert_unique(evidence_paths, "ACC evidence paths")
@@ -562,7 +571,7 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     for item in trace["acceptance"]:
         acc_id = item["id"]
         if item.get("status") != "passed":
-            require(item.get("status") == "untested" and item.get("evidence_scope") == "stage-7",
+            require(item.get("status") == "untested" and item.get("evidence_scope") in {"stage-7", "p1-alpha"},
                     f"{acc_id}: registry status {item.get('status')!r} has no evidence to validate")
             continue
         relative = Path(item["evidence_path"])
@@ -720,14 +729,14 @@ def main() -> int:
     mode_parts = ["design-only"] if args.evidence_root is None else ["design+evidence"]
     if args.validate_samples:
         mode_parts.append("samples")
-    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV=16 THR=5 DP=26")
+    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV={len(trace['invariants'])} THR=5 DP=26")
     if args.evidence_root is None:
         statuses = [item.get("status") for item in trace["acceptance"]]
         if all(status == "passed" for status in statuses):
             print("P0_R1 registry records all ACC passed; design-only mode did not revalidate runtime artifacts.")
         elif all(status in ("passed", "untested") for status in statuses):
-            pending = [item["id"] for item in trace["acceptance"] if item.get("status") == "untested"]
-            print(f"P0_R1 registry: R1 ACC all passed; stage-7 ACC pending evidence: {', '.join(pending)}.")
+            pending = [f"{item['id']}({item.get('evidence_scope')})" for item in trace["acceptance"] if item.get("status") == "untested"]
+            print(f"P0_R1 registry: R1 ACC all passed; ACC pending evidence: {', '.join(pending)}.")
         else:
             print("P0_R1 remains NOT_IMPLEMENTED / NOT_TESTED; no ACC status was upgraded.")
     return 0

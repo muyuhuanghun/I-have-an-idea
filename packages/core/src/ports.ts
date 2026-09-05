@@ -111,3 +111,14 @@ export interface CorePorts {
   readonly randomSource: RandomSource;
   readonly clock: Clock;
 }
+
+/**
+ * ADR-0026 §2.4 (P1-alpha state protocol): device signing boundary. The private key
+ * never leaves the platform boundary; implementations must fail rather than substitute
+ * a weak algorithm. Keys are ECDSA P-256 with SHA-256 digests; signatures are 64-byte
+ * raw r||s values on the wire.
+ */
+export interface DeviceSignaturePort {
+  readonly signHead: (signedBytes: Bytes) => Promise<Bytes>;
+  readonly verifyHeadSignature: (signedBytes: Bytes, signature: Bytes, publicKeySpki: Bytes) => Promise<boolean>;
+}

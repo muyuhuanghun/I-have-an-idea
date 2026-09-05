@@ -9,3 +9,4 @@ export type {
   Bytes,
   CryptoProvider
 } from "@ekd/core";
+export { WebCryptoDeviceSignatureProvider } from "./device-signature.js";

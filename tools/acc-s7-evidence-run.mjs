@@ -296,11 +296,12 @@ async function main() {
     }
   };
   walkStore(faultStoreRoot);
+  // The fault server only ever saw GETs: convergence means nothing was created and no
+  // temp file remains (a faulted operation must never leave partial state behind).
   const storedAfterFaults = await faultStore.get(KEY);
   const noPartialSuccess =
     storeFiles.every((file) => !file.endsWith(".tmp")) &&
-    storedAfterFaults !== undefined &&
-    storedAfterFaults.every((byte, index) => byte === value[index]);
+    storedAfterFaults === undefined;
 
   writeEvidence("ACC-40", {
     schema_valid: boolCheck("schema_valid", true),

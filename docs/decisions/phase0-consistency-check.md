@@ -1,7 +1,7 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5-A 已修复、复审、纳管并推送；Phase 5-B 已通过独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权但尚未推送。Phase 5 整体仍未关闭。**
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5 全部纳管推送；Phase 6 完成（§17 以 R1 证据关闭 + 真实 GUI 运行证据）；Stage 7 完成（DP-014 按 ADR-0025 关闭，ACC-38/39/40 正式证据绑定 `cd09994`）。registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。**
 > 日期：2026-09-02
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
@@ -262,7 +262,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
-| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 已于 2026-09-02 关闭（closure_adr = ADR-0020），DP-014 保持 `deferred` |
+| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 绑定 ADR-0020，DP-014 绑定 ADR-0025（2026-09-05 关闭）；其余 DP 属 P1+ 范围 |
 | Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 11 对正/负样本反身校验 11 份 schema | design+samples PASS | 11 份正样本通过、11 份负样本被拒 |
 
 ## 13. 当前机器门禁
@@ -346,7 +346,8 @@ PHASE_5_C_PLUGIN_UI_CONTRACT_ACCEPTED
 PHASE_5_C_PLUGIN_UI_IMPLEMENTED_AND_GUI_VERIFIED
 PHASE_7_0_HTTP_OBJECT_STORE_CONTRACT_ACCEPTED
 PHASE_7_A_HTTP_OBJECT_STORE_IMPLEMENTED
-PHASE_7_B_FORMAL_EVIDENCE_AND_DP014_CLOSEOUT_NOT_AUTHORIZED
+PHASE_7_B_FORMAL_EVIDENCE_GENERATED_AND_DP014_CLOSED
+P0_EXECUTION_PLAN_FULLY_EXECUTED
 ```
 
 含义：

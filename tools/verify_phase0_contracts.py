@@ -321,6 +321,7 @@ def validate_schema_files() -> None:
         "p0-runtime-limits-v1.schema.json",
         "snapshot-log-v1.schema.json",
         "storage-visibility-scan-v1.schema.json",
+        "s7-http-session-v1.schema.json",
     }
     actual = {path.name for path in SCHEMAS.glob("*.schema.json")}
     require(expected <= actual, f"missing JSON Schema files: {sorted(expected - actual)}")
@@ -410,13 +411,18 @@ def _r1_closure_commit(closeout_text: str) -> str:
     return match.group(1)
 
 
-def _require_acc_statuses(statuses: list[Any], closeout_text: str) -> None:
+def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> None:
     allowed_statuses = {"passed", "failed", "untested", "known-limitation", "out-of-scope"}
+    statuses = [item.get("status") for item in items]
     require(all(status in allowed_statuses for status in statuses), "acceptance registry contains an invalid status")
     if all(status == "untested" for status in statuses):
         return
-    require(all(status == "passed" for status in statuses),
-            "either all 37 ACC stay untested or all 37 are passed with evidence")
+    require(all(status == "passed" for status in statuses if status != "untested"),
+            "passed and untested ACC entries may only coexist while the untested ones are stage-7 pending")
+    untested = [item for item in items if item.get("status") == "untested"]
+    for item in untested:
+        require(item.get("evidence_scope") == "stage-7",
+                f"{item.get('id')}: untested ACC without evidence_scope=stage-7 is not allowed while other ACCs are passed")
     _r1_closure_commit(closeout_text)
 
 
@@ -430,7 +436,7 @@ def validate_traceability(trace: dict[str, Any]) -> None:
     acceptance_ids = [item.get("id") for item in acceptance]
     require(threat_ids == expected_ids("THR", 5), f"THR registry must be THR-01..THR-05; got {threat_ids}")
     require(invariant_ids == expected_ids("INV", 16), f"INV registry must be INV-01..INV-16; got {invariant_ids}")
-    require(acceptance_ids == expected_ids("ACC", 37), f"ACC registry must be ACC-01..ACC-37; got {acceptance_ids}")
+    require(acceptance_ids == expected_ids("ACC", 40), f"ACC registry must be ACC-01..ACC-40; got {acceptance_ids}")
 
     evidence_paths = [item.get("evidence_path") for item in acceptance]
     assert_unique(evidence_paths, "ACC evidence paths")
@@ -439,7 +445,7 @@ def validate_traceability(trace: dict[str, Any]) -> None:
     require(known_errors and len(known_errors) == len(trace.get("error_codes", [])), "error code registry must be non-empty and unique")
 
     closeout_text = (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8")
-    _require_acc_statuses([item.get("status") for item in acceptance], closeout_text)
+    _require_acc_statuses(acceptance, closeout_text)
 
     for item in acceptance:
         acc_id = item["id"]
@@ -545,13 +551,16 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
         (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8"))
     evidence_commit: str | None = None
     for item in trace["acceptance"]:
+        acc_id = item["id"]
+        if item.get("status") != "passed":
+            require(item.get("status") == "untested" and item.get("evidence_scope") == "stage-7",
+                    f"{acc_id}: registry status {item.get('status')!r} has no evidence to validate")
+            continue
         relative = Path(item["evidence_path"])
         if relative.parts and relative.parts[0].lower() == "artifacts":
             relative = Path(*relative.parts[1:])
         report_path = evidence_root / relative
         report = load_json(report_path)
-        acc_id = item["id"]
-        require(item.get("status") == "passed", f"{acc_id}: registry status is not passed")
 
         # Real schema enforcement first; this catches unknown fields, missing
         # required, type mismatches, enum/pattern/format violations and the rest
@@ -603,6 +612,7 @@ def validate_schema_samples() -> None:
         ("p0-runtime-limits-v1.schema.json", "p0-runtime-limits"),
         ("snapshot-log-v1.schema.json", "snapshot-log"),
         ("storage-visibility-scan-v1.schema.json", "storage-visibility-scan"),
+        ("s7-http-session-v1.schema.json", "s7-http-session"),
     ]
     for schema_name, base in pairs:
         schema = _load_schema(schema_name)
@@ -699,11 +709,14 @@ def main() -> int:
     mode_parts = ["design-only"] if args.evidence_root is None else ["design+evidence"]
     if args.validate_samples:
         mode_parts.append("samples")
-    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC=37 INV=16 THR=5 DP=26")
+    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV=16 THR=5 DP=26")
     if args.evidence_root is None:
         statuses = [item.get("status") for item in trace["acceptance"]]
         if all(status == "passed" for status in statuses):
-            print("P0_R1 registry records 37 passed ACC; design-only mode did not revalidate runtime artifacts.")
+            print("P0_R1 registry records all ACC passed; design-only mode did not revalidate runtime artifacts.")
+        elif all(status in ("passed", "untested") for status in statuses):
+            pending = [item["id"] for item in trace["acceptance"] if item.get("status") == "untested"]
+            print(f"P0_R1 registry: R1 ACC all passed; stage-7 ACC pending evidence: {', '.join(pending)}.")
         else:
             print("P0_R1 remains NOT_IMPLEMENTED / NOT_TESTED; no ACC status was upgraded.")
     return 0

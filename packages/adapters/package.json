@@ -23,6 +23,10 @@
     "./obsidian-vault": {
       "types": "./dist/obsidian-vault.d.ts",
       "import": "./dist/obsidian-vault.js"
+    },
+    "./http-object-store": {
+      "types": "./dist/http-object-store.d.ts",
+      "import": "./dist/http-object-store.js"
     }
   },
   "files": ["dist"],

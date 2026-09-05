@@ -66,8 +66,8 @@
       "title": "被动网络观察者",
       "source": "docs/threat-model/P0-threat-model.md#thr-02",
       "disposition": "deferred_until_stage_7_http",
-      "acceptance_ids": [],
-      "oracle": "P0-R1 closeout must mark this threat out-of-scope; Stage 7 must activate DP-014 before HTTP evidence is accepted",
+      "acceptance_ids": ["ACC-38", "ACC-39", "ACC-40"],
+      "oracle": "Stage 7 evidence: network observation must not expand the exposure surface (ACC-38/39/40); DP-014 stays closed until their evidence, the threat-model delta and the session-capture schema all exist",
       "deferred_parameter_id": "DP-014"
     },
     {
@@ -301,6 +301,21 @@
       "id": "ACC-37", "title": "声明边界诚实且历史状态显式", "kind": "claims", "threat_ids": ["THR-04", "THR-05"], "invariant_ids": [],
       "nonsecurity_reason": "声明治理同时承担已接受限制的 oracle", "evidence_path": "artifacts/test-reports/acc-37-honest-claims.json", "status": "passed",
       "oracle": {"required_checks": ["schema_valid", "no_unsupported_current_claims", "rollback_limitation_present", "bearer_secret_limitation_present", "out_of_scope_attackers_present", "historical_conclusions_labeled", "machine_scan_and_human_rulings_bound"], "required_error_code_groups": [], "forbidden_side_effects": []}
+    },
+    {
+      "id": "ACC-38", "title": "HTTP ObjectStore 经既有端口完成完整往返", "kind": "security", "threat_ids": ["THR-02"], "invariant_ids": [],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-38-http-roundtrip.json", "status": "untested", "evidence_scope": "stage-7",
+      "oracle": {"required_checks": ["schema_valid", "http_server_started", "port_conformance_roundtrip", "restored_bytes_identical", "core_sources_unchanged"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "partial_success_reported", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-39", "title": "网络观察面不扩大且令牌不泄露", "kind": "security", "threat_ids": ["THR-02"], "invariant_ids": [],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-39-http-session.json", "status": "untested", "evidence_scope": "stage-7",
+      "oracle": {"required_checks": ["schema_valid", "session_capture_schema_valid", "no_plaintext_in_capture", "no_vault_paths_in_capture", "no_domain_id_in_capture", "token_absent_from_logs_and_capture", "object_keys_base64url_only"], "required_error_code_groups": [], "forbidden_side_effects": []}
+    },
+    {
+      "id": "ACC-40", "title": "幂等重试与故障按冻结语义收敛", "kind": "security", "threat_ids": ["THR-02"], "invariant_ids": [],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-40-http-faults.json", "status": "untested", "evidence_scope": "stage-7",
+      "oracle": {"required_checks": ["schema_valid", "duplicate_put_idempotent", "content_mismatch_collision_rejected", "missing_object_maps_to_undefined", "timeout_converges", "disconnect_converges", "no_partial_success"], "required_error_code_groups": [["OBJECT_ID_COLLISION", "MISSING_OBJECT", "OBJECT_STORE_IO_FAILED"]], "forbidden_side_effects": ["partial_success_reported"]}
     }
   ]
 }

@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "s7-http-session-v1",
+  "title": "Stage 7 localhost HTTP ObjectStore session capture (ADR-0024 §2.4)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "base_origin",
+    "started_at",
+    "completed_at",
+    "token_redacted",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "s7-http-session-v1"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "base_origin": {
+      "type": "string",
+      "pattern": "^http://127\\.0\\.0\\.1:[0-9]+$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "token_redacted": {
+      "const": true,
+      "description": "The bearer token must never appear anywhere in the capture or server logs."
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "object_key",
+          "request_bytes",
+          "response_status",
+          "response_bytes",
+          "duration_ms"
+        ],
+        "properties": {
+          "method": {
+            "enum": ["PUT", "GET", "HEAD"]
+          },
+          "object_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{22}$"
+          },
+          "request_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "response_status": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 599
+          },
+          "response_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

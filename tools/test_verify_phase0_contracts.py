@@ -25,16 +25,28 @@ class Phase0EvidenceVerifierTests(unittest.TestCase):
         with self.assertRaises(verifier.ContractError):
             verifier._validate_against_schema(without_raw, schema, "without-raw")
 
+    @staticmethod
+    def __status_items(passed: int, stage7_untested: int = 0) -> list[dict[str, object]]:
+        items: list[dict[str, object]] = [{"id": f"ACC-{index:02d}", "status": "passed"} for index in range(1, passed + 1)]
+        items.extend(
+            {"id": f"ACC-{len(items) + 1:02d}", "status": "untested", "evidence_scope": "stage-7"}
+            for _ in range(stage7_untested)
+        )
+        return items
+
     def test_acc_status_rule_allows_only_full_evidence_backed_flip(self) -> None:
         closure = "R1_EVIDENCE_CLOSED_AT_COMMIT: " + "a" * 40 + "\n"
-        verifier._require_acc_statuses(["untested"] * 37, "")
-        verifier._require_acc_statuses(["passed"] * 37, closure)
+        verifier._require_acc_statuses([{"id": f"ACC-{index:02d}", "status": "untested"} for index in range(1, 41)], "")
+        verifier._require_acc_statuses(self.__status_items(37), closure)
+        verifier._require_acc_statuses(self.__status_items(37, stage7_untested=3), closure)
         with self.assertRaises(verifier.ContractError):
-            verifier._require_acc_statuses(["passed"] * 37, "")
+            verifier._require_acc_statuses(self.__status_items(37), "")
         with self.assertRaises(verifier.ContractError):
-            verifier._require_acc_statuses(["passed"] * 36 + ["untested"], closure)
+            verifier._require_acc_statuses(self.__status_items(36) + [{"id": "ACC-37", "status": "untested"}], closure)
         with self.assertRaises(verifier.ContractError):
-            verifier._require_acc_statuses(["bogus"] * 37, closure)
+            verifier._require_acc_statuses([{"id": "ACC-01", "status": "bogus"}], closure)
+        with self.assertRaises(verifier.ContractError):
+            verifier._require_acc_statuses(self.__status_items(37) + [{"id": "ACC-38", "status": "untested"}], closure)
 
     def test_evidence_commit_must_match_closeout_declaration(self) -> None:
         closure = "R1_EVIDENCE_CLOSED_AT_COMMIT: " + "b" * 40 + "\n"

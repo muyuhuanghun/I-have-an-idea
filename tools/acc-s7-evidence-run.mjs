@@ -252,7 +252,7 @@ async function main() {
   const value = new Uint8Array([7, 8, 9]);
 
   // ACC-40 runs on a plain (non-recording) client so the ACC-39 capture keeps the restore window only.
-  const plainClient = new adapters.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${running.port}`, token: running.token });
+  const plainClient = new httpStore.HttpClientObjectStore({ baseUrl: `http://127.0.0.1:${running.port}`, token: running.token });
   await plainClient.put(KEY, value);
   await plainClient.put(KEY, value);
   const storedAfterDuplicate = await plainClient.get(KEY);

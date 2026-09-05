@@ -11,6 +11,7 @@ import {
 import type { CryptoProvider } from "@ekd/core";
 import type { ObsidianVaultLike } from "@ekd/adapters/obsidian-vault";
 import type * as NodePathApi from "node:path";
+import type * as NodeFsPromisesApi from "node:fs/promises";
 import { NobleAes256Provider, NOBLE_CANDIDATE } from "@ekd/crypto/noble";
 import { WebCryptoAes256Provider, WEBCRYPTO_CANDIDATE } from "@ekd/crypto/webcrypto";
 import {
@@ -387,9 +388,15 @@ export default class EkdPhase1Plugin extends Plugin {
       if (!Platform.isDesktopApp || !Platform.isWin) {
         throw new Error("P0 snapshot creation is currently scoped to Obsidian on Windows desktop.");
       }
+      // Electron's renderer blocks ESM dynamic import of node: specifiers (CORS on
+      // app://obsidian.md); Obsidian desktop exposes the CJS loader instead.
+      const nodeRequire = (globalThis as { require?: (id: string) => unknown }).require;
+      if (typeof nodeRequire !== "function") {
+        throw new Error("Obsidian desktop did not expose the Node module loader; P0 snapshot cannot load filesystem adapters.");
+      }
       const [nodeFs, nodePath, obsidianAdapter, objectStoreAdapter, snapshotIoAdapter, adapterErrors] = await Promise.all([
-        import("node:fs/promises"),
-        import("node:path"),
+        Promise.resolve(nodeRequire("node:fs/promises") as typeof NodeFsPromisesApi),
+        Promise.resolve(nodeRequire("node:path") as typeof NodePathApi),
         import("@ekd/adapters/obsidian-vault"),
         import("@ekd/adapters/node-object-store"),
         import("@ekd/adapters/node-snapshot-io"),

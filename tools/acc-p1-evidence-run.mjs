@@ -197,6 +197,9 @@ async function main() {
           signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spkiBytes)
       }
     });
+    // The device must be registered in this root too, so the tamper check (not the
+    // registration boundary) is what fires.
+    await tamperedDirectory.registerDevice(deviceId, Buffer.from(spki).toString("base64url"));
     await tamperedDirectory.readLatestHead(DOMAIN, objectStore);
   } catch (error) {
     tamperedPointerRejected = error instanceof core.HeadError && error.code === "HEAD_SIGNATURE_INVALID";

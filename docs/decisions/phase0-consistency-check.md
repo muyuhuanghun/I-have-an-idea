@@ -262,7 +262,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
-| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 绑定 ADR-0020，DP-014 绑定 ADR-0025（2026-09-05 关闭）；其余 DP 属 P1+ 范围 |
+| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 绑定 ADR-0020，DP-014 绑定 ADR-0025，DP-016 绑定 ADR-0028（2026-09-05 关闭）；其余 DP 属 P1+ 范围 |
 | Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 11 对正/负样本反身校验 11 份 schema | design+samples PASS | 11 份正样本通过、11 份负样本被拒 |
 
 ## 13. 当前机器门禁
@@ -351,6 +351,7 @@ P0_EXECUTION_PLAN_FULLY_EXECUTED
 P1_ALPHA_0_STATE_PROTOCOL_CONTRACT_ACCEPTED
 P1_ALPHA_A_STATE_PROTOCOL_IMPLEMENTED
 P1_ALPHA_B_FORMAL_EVIDENCE_GENERATED_AND_DP015_CLOSED
+P1_DEPLOYMENT_MODE_RULING_ACCEPTED
 ```
 
 含义：

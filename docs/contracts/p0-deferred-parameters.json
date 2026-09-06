@@ -177,9 +177,10 @@
       "name": "中心托管、自托管或并行模式",
       "owner": "OWNER-PRODUCT",
       "phase": "P1-alpha deployment planning",
-      "status": "deferred",
+      "status": "closed",
       "close_artifact": "deployment ADR 和迁移/运维成本表",
-      "hard_stop": "未裁决前不得承诺部署形态或迁移兼容性"
+      "hard_stop": "未裁决前不得承诺部署形态或迁移兼容性",
+      "closure_adr": "docs/decisions/0028-p1-deployment-mode-ruling.md"
     },
     {
       "id": "DP-017",

@@ -17,10 +17,11 @@ const E2E = join(ARTIFACTS, "p1-e2e");
 const GIT_COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
 const RUN_ID = randomUUID();
 
-let core, adapters;
+let core, adapters, headDirectory;
 try {
   core = await import("../packages/core/dist/index.js");
   adapters = await import("../packages/adapters/dist/index.js");
+  headDirectory = await import("../packages/adapters/dist/head-directory.js");
 } catch {
   console.error("acc-p1-evidence-run: dist is missing; run `pnpm build` first.");
   process.exit(2);

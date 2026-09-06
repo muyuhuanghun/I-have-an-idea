@@ -8,7 +8,7 @@ import { generateKeyPairSync } from "node:crypto";
 import { randomUUID, createHash } from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -183,7 +183,7 @@ async function main() {
     observed.push("HEAD_ROLLBACK_DETECTED");
   }
 
-  const tamperedPath = join(E2E, "tampered-pointer.json");
+  const tamperedPath = join(E2E, basename(pointerPath));
   const pointerJson = JSON.parse(await readFile(pointerPath, "utf8"));
   pointerJson.sequence += 1;
   writeFileSync(tamperedPath, `${JSON.stringify(pointerJson, null, 2)}\n`);

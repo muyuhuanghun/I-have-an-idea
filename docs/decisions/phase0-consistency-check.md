@@ -350,7 +350,7 @@ PHASE_7_B_FORMAL_EVIDENCE_GENERATED_AND_DP014_CLOSED
 P0_EXECUTION_PLAN_FULLY_EXECUTED
 P1_ALPHA_0_STATE_PROTOCOL_CONTRACT_ACCEPTED
 P1_ALPHA_A_STATE_PROTOCOL_IMPLEMENTED
-P1_ALPHA_B_FORMAL_EVIDENCE_AND_DP015_CLOSEOUT_NOT_AUTHORIZED
+P1_ALPHA_B_FORMAL_EVIDENCE_GENERATED_AND_DP015_CLOSED
 ```
 
 含义：
@@ -383,7 +383,8 @@ P1_ALPHA_B_FORMAL_EVIDENCE_AND_DP015_CLOSEOUT_NOT_AUTHORIZED
 - Phase 7-0 已完成：ADR-0024 经开发者三点确认接受（2026-09-05）——localhost HTTP ObjectStore 合同冻结：127.0.0.1 + 每运行随机 bearer token + 2 MiB 对象上限；`HttpClientObjectStore` 走既有 ObjectStore 端口（core 零改动，§18 端口边界）；威胁面 delta = 键/大小/时序可见，明文/路径/domainId/token 不可见；registry 将随 7-A 扩至 40（ACC-38 端口等价往返、ACC-39 网络观察面不扩大、ACC-40 幂等与故障收敛，`evidence_scope: "stage-7"`），设计/证据门规则同步演化；7-A 实现与 7-B 正式证据 + DP-014 收尾各自单独授权。
 - Phase 7-A 已实现（报告见 `docs/test-plans/phase7a-http-object-store-report.md`）：`startHttpObjectStoreServer`（127.0.0.1、随机 bearer token、2 MiB 上限、Directory 后端复用、幂等/碰撞/缺失语义镜像、脱敏访问日志、测试专用故障钩子）+ `HttpClientObjectStore`（既有 ObjectStore 端口，超时/网络错误收敛 `OBJECT_STORE_IO_FAILED`）；registry/矩阵扩至 40（ACC-38/39/40 `evidence_scope: "stage-7"` untested，THR-02 回链），设计/证据门演化（37 passed + stage-7 untested 合法共存），`s7-http-session-v1` 第 11 份 schema + 样本（10→11 对）；`test:all`、design+samples 与嵌套证据门均 PASS。DP-014 仍 `deferred`，7-B 正式证据与收尾未获授权。
 - P1-alpha-0 已完成：ADR-0026 经开发者三点确认接受（2026-09-05）——状态协议冻结：head 对象（canonical bytes + ECDSA P-256 签名，进 ObjectStore 不可变体系）、head 目录签名指针（唯一可变状态，Vault 外，防回滚单调检查）、`devices.json` 显式设备注册（未注册设备的 head 无效）、分叉默认拒绝并输出证据；INV-17/18 与 ACC-41/42/43 delta 随 P1-alpha-A 实现同 commit 落库（registry 40→43 + `evidence_scope: "p1-alpha"` 门机制），DP-015 关闭被阻断直至三项证据齐备。网页端未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。
-- P1-alpha-A 已实现（报告见 `docs/test-plans/p1-alpha-a-state-protocol-report.md`）：core head 编解码/签名/验证（128 字节 canonical layout + 193 字节 wire 记录）、`DeviceSignaturePort` + `WebCryptoDeviceSignatureProvider`（raw r‖s，构造期绑定私钥）、adapters head 目录（签名指针/设备注册/回滚拒绝/分叉证据/history journal/域哈希文件名）；registry/矩阵扩至 43 ACC + 18 INV（ACC-41/42/43 `evidence_scope: "p1-alpha"` untested），验证器 closure 规则按 passed 项 scope 集合演化（stage-7/p1-alpha 各绑定独立 closeout 行）。DP-015 保持 `deferred`，P1-alpha-B 正式证据与收尾未获授权。
+- P1-alpha-A 已实现（报告见 `docs/test-plans/p1-alpha-a-state-protocol-report.md`）：core head 编解码/签名/验证（128 字节 canonical layout + 193 字节 wire 记录）、`DeviceSignaturePort` + `WebCryptoDeviceSignatureProvider`（raw r‖s，构造期绑定私钥）、adapters head 目录（签名指针/设备注册/回滚拒绝/分叉证据/history journal/域哈希文件名）；registry/矩阵扩至 43 ACC + 18 INV（ACC-41/42/43 `evidence_scope: "p1-alpha"` untested），验证器 closure 规则按 passed 项 scope 集合演化（stage-7/p1-alpha 各绑定独立 closeout 行）。DP-015 已按 ADR-0027 关闭。
+- P1-alpha-B 已完成：`tools/acc-p1-evidence-run.mjs` 在 clean commit `bbb5a7e` 生成 ACC-41/42/43 三份正式 evidence（`P1_EVIDENCE_RUN_DONE 3 reports`），registry/矩阵三项翻转为 `passed`（43/43），closeout 报告三重绑定（R1/S7/P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT）齐备，`acc-evidence-v1` schema acc_id 模式扩展至 ACC-01..43，证据门按 `evidence_scope` 三路路由并 PASS。DP-015 已按 ADR-0027 关闭。
 
 ## 15. 当前状态一致性
 

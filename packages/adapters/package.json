@@ -27,6 +27,10 @@
     "./http-object-store": {
       "types": "./dist/http-object-store.d.ts",
       "import": "./dist/http-object-store.js"
+    },
+    "./head-directory": {
+      "types": "./dist/head-directory.d.ts",
+      "import": "./dist/head-directory.js"
     }
   },
   "files": ["dist"],

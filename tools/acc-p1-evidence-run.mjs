@@ -117,7 +117,7 @@ async function main() {
   };
 
   const headDirPath = join(E2E, "head-dir");
-  const directory = new adapters.HeadDirectory(headDirPath, {
+  const directory = new headDirectory.HeadDirectory(headDirPath, {
     signPointer: async (pointer) =>
       signer.signHead(adapters.encodeHeadPointerBytes(pointer)).then((signature) => Buffer.from(signature).toString("base64url")),
     verifier: {
@@ -189,7 +189,7 @@ async function main() {
   writeFileSync(tamperedPath, `${JSON.stringify(pointerJson, null, 2)}\n`);
   let tamperedPointerRejected = false;
   try {
-    const tamperedDirectory = new adapters.HeadDirectory(E2E, {
+    const tamperedDirectory = new headDirectory.HeadDirectory(E2E, {
       signPointer: async () => "",
       verifier: {
         verifyHeadSignature: (signedBytes, signature, spkiBytes) => signer.verifyHeadSignature(signedBytes, signature, spkiBytes),
@@ -224,7 +224,7 @@ async function main() {
   let unregisteredDeviceRejected = false;
   try {
     const strangerDir = join(E2E, "stranger-head-dir");
-    const stranger = new adapters.HeadDirectory(strangerDir, {
+    const stranger = new headDirectory.HeadDirectory(strangerDir, {
       signPointer: async () => "sig",
       verifier: {
         verifyHeadSignature: async () => true,

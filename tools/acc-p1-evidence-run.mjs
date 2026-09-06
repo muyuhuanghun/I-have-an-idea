@@ -146,7 +146,7 @@ async function main() {
       },
       signer
     );
-    const headObjectKey = `p1-head-${sequence}`;
+    const headObjectKey = `p1-head-${sequence}-${snapshotSeed.toString(16)}`;
     await directory.publishHead(DOMAIN, record, headObjectKey, objectStore);
     return { record, headObjectKey };
   };

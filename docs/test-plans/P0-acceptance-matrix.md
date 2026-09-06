@@ -402,7 +402,7 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 测试方法：head 对象经 canonical bytes + ECDSA P-256 签名进入 ObjectStore，指针签名、head 签名、设备注册与 sequence 单调全部验证通过
 - 错误判定：任一签名验证失败、设备未注册或 sequence 与指针不一致即失败
 - 证据路径：`artifacts/test-reports/acc-41-head-chain.json`
-- 状态：untested
+- 状态：passed
 
 **ACC-42：回滚与篡改被拒绝**
 - 来源：ADR-0026 §2.2/§2.3；INV-18
@@ -410,7 +410,7 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 测试方法：回滚指针（sequence 回退）、被篡改的指针与 head 对象、未注册设备签署的 head 全部被拒绝
 - 错误判定：回滚未被检出、篡改后验证仍通过或未注册设备成功发布即失败
 - 证据路径：`artifacts/test-reports/acc-42-rollback.json`
-- 状态：untested
+- 状态：passed
 
 **ACC-43：分叉被检测并拒绝**
 - 来源：ADR-0026 §2.5；INV-18
@@ -418,4 +418,4 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 测试方法：同 sequence 两个不同有效 head 触发发布即抛 `HEAD_FORK_DETECTED`，分叉证据含两个 head 引用，恢复拒绝
 - 错误判定：分叉未检出、证据不完整或恢复静默继续即失败
 - 证据路径：`artifacts/test-reports/acc-43-fork.json`
-- 状态：untested
+- 状态：passed

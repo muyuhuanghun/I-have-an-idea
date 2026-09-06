@@ -167,9 +167,10 @@
       "name": "P1 mutable head、状态序号、设备签名和分叉证明",
       "owner": "OWNER-SECURITY",
       "phase": "P1-alpha state protocol",
-      "status": "deferred",
+      "status": "closed",
       "close_artifact": "state-protocol ADR + threat/invariant/ACC delta",
-      "hard_stop": "未关闭前不得实现或宣称 latest pointer、状态连续性、反回滚或设备签名"
+      "hard_stop": "未关闭前不得实现或宣称 latest pointer、状态连续性、反回滚或设备签名",
+      "closure_adr": "docs/decisions/0027-p1-alpha-state-protocol-closeout.md"
     },
     {
       "id": "DP-016",

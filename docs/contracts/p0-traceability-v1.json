@@ -322,17 +322,17 @@
     },
     {
       "id": "ACC-41", "title": "Head 链验证通过", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-17"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-41-head-chain.json", "status": "untested", "evidence_scope": "p1-alpha",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-41-head-chain.json", "status": "passed", "evidence_scope": "p1-alpha",
       "oracle": {"required_checks": ["schema_valid", "head_object_published", "pointer_signature_valid", "head_signature_valid", "device_registered", "sequence_monotonic"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-42", "title": "回滚与篡改被拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-18"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-42-rollback.json", "status": "untested", "evidence_scope": "p1-alpha",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-42-rollback.json", "status": "passed", "evidence_scope": "p1-alpha",
       "oracle": {"required_checks": ["schema_valid", "rollback_pointer_rejected", "tampered_pointer_rejected", "tampered_head_rejected", "unregistered_device_rejected"], "required_error_code_groups": [["HEAD_ROLLBACK_DETECTED", "HEAD_SIGNATURE_INVALID", "HEAD_DEVICE_UNREGISTERED"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-43", "title": "分叉被检测并拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-18"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-43-fork.json", "status": "untested", "evidence_scope": "p1-alpha",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-43-fork.json", "status": "passed", "evidence_scope": "p1-alpha",
       "oracle": {"required_checks": ["schema_valid", "fork_detected", "fork_evidence_complete", "restore_rejected_on_fork"], "required_error_code_groups": [["HEAD_FORK_DETECTED"]], "forbidden_side_effects": ["partial_success_reported"]}
     }
   ]

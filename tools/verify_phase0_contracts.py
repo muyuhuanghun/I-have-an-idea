@@ -568,6 +568,7 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     closeout_text = (ROOT / "docs" / "test-plans" / "p0-r1-closeout-report.md").read_text(encoding="utf-8")
     closeout_commit = _r1_closure_commit(closeout_text)
     s7_commit: str | None = None
+    p1_commit: str | None = None
     for item in trace["acceptance"]:
         acc_id = item["id"]
         if item.get("status") != "passed":
@@ -593,6 +594,11 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
                 s7_commit = _s7_closure_commit(closeout_text)
             require(report_commit == s7_commit,
                     f"{acc_id}: evidence commit {report_commit} differs from stage-7 closeout-declared {s7_commit}")
+        elif item.get("evidence_scope") == "p1-alpha":
+            if p1_commit is None:
+                p1_commit = _p1_alpha_closure_commit(closeout_text)
+            require(report_commit == p1_commit,
+                    f"{acc_id}: evidence commit {report_commit} differs from p1-alpha closeout-declared {p1_commit}")
         else:
             require(report_commit == closeout_commit,
                     f"{acc_id}: evidence commit {report_commit} differs from closeout-declared {closeout_commit}")

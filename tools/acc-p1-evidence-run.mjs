@@ -17,10 +17,9 @@ const E2E = join(ARTIFACTS, "p1-e2e");
 const GIT_COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
 const RUN_ID = randomUUID();
 
-let core, adapters, headDirectory;
+let core, headDirectory;
 try {
   core = await import("../packages/core/dist/index.js");
-  adapters = await import("../packages/adapters/dist/index.js");
   headDirectory = await import("../packages/adapters/dist/head-directory.js");
 } catch {
   console.error("acc-p1-evidence-run: dist is missing; run `pnpm build` first.");
@@ -180,7 +179,7 @@ async function main() {
   try {
     await publish(1, 0xa9, 0x00);
   } catch (error) {
-    rollbackRejected = error instanceof adapters.HeadError && error.code === "HEAD_ROLLBACK_DETECTED";
+    rollbackRejected = error instanceof core.HeadError && error.code === "HEAD_ROLLBACK_DETECTED";
     observed.push("HEAD_ROLLBACK_DETECTED");
   }
 
@@ -200,7 +199,7 @@ async function main() {
     });
     await tamperedDirectory.readLatestHead(DOMAIN, objectStore);
   } catch (error) {
-    tamperedPointerRejected = error instanceof adapters.HeadError && error.code === "HEAD_SIGNATURE_INVALID";
+    tamperedPointerRejected = error instanceof core.HeadError && error.code === "HEAD_SIGNATURE_INVALID";
     observed.push("HEAD_SIGNATURE_INVALID");
   }
 
@@ -218,7 +217,7 @@ async function main() {
   try {
     await directory.readLatestHead(DOMAIN, tamperedStore);
   } catch (error) {
-    tamperedHeadRejected = error instanceof adapters.HeadError && error.code === "HEAD_SIGNATURE_INVALID";
+    tamperedHeadRejected = error instanceof core.HeadError && error.code === "HEAD_SIGNATURE_INVALID";
     observed.push("HEAD_SIGNATURE_INVALID");
   }
 
@@ -239,7 +238,7 @@ async function main() {
     );
     await stranger.publishHead(DOMAIN, strangerRecord, "stranger-head", objectStore);
   } catch (error) {
-    unregisteredDeviceRejected = error instanceof adapters.HeadError && error.code === "HEAD_DEVICE_UNREGISTERED";
+    unregisteredDeviceRejected = error instanceof core.HeadError && error.code === "HEAD_DEVICE_UNREGISTERED";
     observed.push("HEAD_DEVICE_UNREGISTERED");
   }
 
@@ -256,7 +255,7 @@ async function main() {
   try {
     await publish(2, 0xb2, 0xa2);
   } catch (error) {
-    forkCode = error instanceof adapters.HeadError ? error.code : "";
+    forkCode = error instanceof core.HeadError ? error.code : "";
     forkEvidence = error.message;
     observed.push(forkCode);
   }

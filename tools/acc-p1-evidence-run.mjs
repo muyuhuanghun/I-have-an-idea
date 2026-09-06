@@ -120,11 +120,11 @@ async function main() {
   const headDirPath = join(E2E, "head-dir");
   const directory = new headDirectory.HeadDirectory(headDirPath, {
     signPointer: async (pointer) =>
-      signer.signHead(adapters.encodeHeadPointerBytes(pointer)).then((signature) => Buffer.from(signature).toString("base64url")),
+      signer.signHead(headDirectory.encodeHeadPointerBytes(pointer)).then((signature) => Buffer.from(signature).toString("base64url")),
     verifier: {
       verifyHeadSignature: (signedBytes, signature, spkiBytes) => signer.verifyHeadSignature(signedBytes, signature, spkiBytes),
       verifyPointerSignature: (pointer, spkiBytes, signatureBase64url) =>
-        signer.verifyHeadSignature(adapters.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spkiBytes)
+        signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spkiBytes)
     }
   });
   await directory.ensureDirectory();
@@ -195,7 +195,7 @@ async function main() {
       verifier: {
         verifyHeadSignature: (signedBytes, signature, spkiBytes) => signer.verifyHeadSignature(signedBytes, signature, spkiBytes),
         verifyPointerSignature: (pointer, spkiBytes, signatureBase64url) =>
-          signer.verifyHeadSignature(adapters.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spkiBytes)
+          signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spkiBytes)
       }
     });
     await tamperedDirectory.readLatestHead(DOMAIN, objectStore);

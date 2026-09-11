@@ -2,9 +2,9 @@
 
 > 计划版本：v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回；Phase 5 `841c26e` 同因不可构建与越界被移除出工作树。2026-09-02 修复后的 runner（含 Windows `.cmd` spawn、per-run raw 目录清理、环境漂移 fail-fast、ACC-37 扫描措辞四项阻塞修复）在 clean commit `9443cb1` 上重新生成 12 份 perf report（`PERF_RUNS_PASS`）与 37 份 acc-evidence（37/37），ACC-37 经开发者精确 token 裁决 ACCEPT；P0-R1 已按 ADR-0020 关闭。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 同步为 `passed`；DP-007/008/010/011/012 已关闭（closure_adr = ADR-0020），DP-014 保持 `deferred`。Phase 5-0 合同已冻结；Phase 5-A 的真实路径身份修复与状态对账已由 `eb9a2db`、`10666cd` 纳管并推送。Phase 5-B 已通过独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权但尚未推送；真实 Obsidian UI 运行证据仍未形成。Phase 5-B/5-C 已随 `66354bd`/`9678978` 纳管推送，真实 Obsidian UI 运行证据已由 Phase 6-A 补齐（`b53865e`）。Stage 7 已完成：ADR-0024 合同 + 7-A 实现（`5ad2aba`）+ 7-B 正式证据（`cd09994`，ACC-38/39/40 passed，DP-014 按 ADR-0025 关闭）；registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。
+> 当前状态：Phase 1 至 Phase 4-B 的合同和实现已纳管。2026-08-30 生成的 R1-A/B candidate artifacts 与 `b5fcecf` 关闭报告已于 2026-08-31 复审撤回；Phase 5 `841c26e` 同因不可构建与越界被移除出工作树。2026-09-02 修复后的 runner（含 Windows `.cmd` spawn、per-run raw 目录清理、环境漂移 fail-fast、ACC-37 扫描措辞四项阻塞修复）在 clean commit `9443cb1` 上重新生成 12 份 perf report（`PERF_RUNS_PASS`）与 37 份 acc-evidence（37/37），ACC-37 经开发者精确 token 裁决 ACCEPT；P0-R1 已按 ADR-0020 关闭。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 同步为 `passed`；DP-007/008/010/011/012 已关闭（closure_adr = ADR-0020），DP-014 在 R1 关闭当时仍保持 `deferred`，后由 Stage 7/ADR-0025 关闭。Phase 5-0 合同已冻结；Phase 5-A 的真实路径身份修复与状态对账已由 `eb9a2db`、`10666cd` 纳管并推送。Phase 5-B 已通过独立复审并完成推送与远端核对；真实 Obsidian UI 运行证据已由 Phase 6-A 补齐（`b53865e`）。Phase 5-C 已随 `9678978` 纳管推送。Stage 7 已完成：ADR-0024 合同 + 7-A 实现（`5ad2aba`）+ 7-B 正式证据（`cd09994`，ACC-38/39/40 passed，DP-014 按 ADR-0025 关闭）；registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。P1-alpha 状态协议已完整交付（ADR-0026 合同、实现与 ACC-41/42/43 正式证据绑定 `bbb5a7e`，DP-015 按 ADR-0027 关闭）；DP-016 按 ADR-0028 关闭；DP-017 设计按 ADR-0029 接受并关闭，但真实账号实现仍需另立 P1-release 合同。网页端仍未立项，普通网页登录不是可信设备。
 >
-> 日期：2026-08-30
+> 日期：2026-09-08
 >
 > 适用仓库：`I_have_an_idea`
 
@@ -756,11 +756,11 @@ feat: add localhost HTTP ObjectStore adapter
 
 ## 23. 下一授权门槛
 
-Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现 `3489871` 的 Windows 8.3/Junction 绕过经修复和独立复审后，代码提交 `eb9a2db` 与状态提交 `10666cd` 已按开发者授权推送。Phase 5-B 插件快照、进度、摘要和报告导出通过 `pnpm run test:all`、10 对 schema 样本/历史 evidence 门与独立复审，代码由 `18c9b77` 纳管，状态文档获本地提交授权。Phase 5-B 已随 `66354bd` 推送并远端核对一致。Phase 6-0 已完成：ADR-0022 经开发者三点确认接受——§17 压力/破坏性矩阵以 R1 证据关闭（仅"扫描中文件消失"由适配器 `SOURCE_FILE_READ_FAILED` 语义 + 单测覆盖），当前下一门槛为 **Phase 6-A**（真实 Obsidian GUI 运行证据：clean build `66354bd` + `artifacts/gui-test-vault/` 专用测试 Vault + 自动化驱动 + 机器报告），已完成：Phase 6-A 真实 Obsidian GUI 运行证据由 `b53865e` 纳管（首次真实运行暴露渲染进程 ESM import CORS 缺陷并修复；重跑 complete，机器报告与源 Vault 零写入核验通过）。插件富前端 UI（Phase 5-C，ADR-0023）已实现并由 `9678978` 纳管：停靠侧边栏面板三段式 + ribbon 入口 + 面板状态机单测，真实 Obsidian GUI 验证通过；开发者裁决中文本地化与登录等功能推迟到后期完善。Phase 7-0 已完成：ADR-0024 经开发者三点确认接受（localhost+token+2 MiB、registry 扩至 40 + `evidence_scope: "stage-7"` + 门演化、7-0/7-A/7-B 三段推进）。Phase 7-A 已实现并纳管（HTTP 服务器 + `HttpClientObjectStore` + registry/矩阵/验证器 37→40 扩展与门演化 + 故障注入测试 + `s7-http-session-v1` schema 样本 10→11 对；报告 `docs/test-plans/phase7a-http-object-store-report.md`）。Phase 7-B 已完成（随开发者授权交付）：`tools/acc-s7-evidence-run.mjs` 在 clean commit `cd09994` 生成 ACC-38/39/40 三份正式 evidence（`S7_EVIDENCE_RUN_DONE 3 reports`）并产出 `s7-http-session-v1` 会话捕获；registry/矩阵三项翻转为 passed（40/40）；证据门按 `R1_EVIDENCE_CLOSED_AT_COMMIT`（9443cb1）+ `S7_EVIDENCE_CLOSED_AT_COMMIT`（cd09994）双绑定复跑通过；DP-014 按 ADR-0025 关闭。**执行计划 §0-§23 的全部 P0 阶段至此执行完毕**：40/40 ACC `passed`，26 个 DP 中已关闭 14 个（DP-001..014），其余为 P1+ 范围；P1-alpha-0 已完成：ADR-0026 状态协议合同经开发者三点确认冻结（head 对象 + head 目录签名指针 + devices.json 设备注册 + 分叉拒绝并输出证据；INV-17/18 与 ACC-41/42/43 delta 随实现落库）。P1-alpha-A 已实现并纳管（core head 编解码/签名/验证 + `DeviceSignaturePort` + WebCrypto 提供方 + adapters head 目录 + registry/矩阵/验证器 40→43 扩展与 closure 规则演化；报告 `docs/test-plans/p1-alpha-a-state-protocol-report.md`）。P1-alpha-B 已完成：`tools/acc-p1-evidence-run.mjs` 在 clean commit `bbb5a7e` 生成 ACC-41/42/43 三份正式 evidence，registry/矩阵翻转 passed（43/43），证据门三重绑定复跑通过，DP-015 按 ADR-0027 关闭。P1-alpha（状态协议）至此完整交付。下一门槛为 P1-alpha 后续阶段（DP-016 部署模式、DP-017 账号认证、DP-024/026 移动端、中文本地化）与网页端立项（§24.2），均需开发者单独授权。
+Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08-31 复审撤回的 R1 证据已于 2026-09-02 重做：clean commit `9443cb1` 上重跑 12 份 perf report 与 37 份 ACC evidence，ACC-37 经 machine-scan hash 的显式开发者 token 裁决 ACCEPT，registry/矩阵同步为 `passed`，嵌套 `--evidence-root artifacts` 门通过，新关闭报告与 ADR-0020 成立（P0-R1 关闭）。Phase 5-0 合同已冻结：ADR-0021 经开发者四点确认接受。Phase 5-A 原实现 `3489871` 的 Windows 8.3/Junction 绕过经修复和独立复审后，代码提交 `eb9a2db` 与状态提交 `10666cd` 已按开发者授权推送。Phase 5-B 插件快照、进度、摘要和报告导出通过 `pnpm run test:all`、10 对 schema 样本/历史 evidence 门与独立复审，代码由 `18c9b77` 纳管，状态文档已随 `66354bd` 推送并远端核对一致。Phase 6-0 已完成：ADR-0022 经开发者三点确认接受——§17 压力/破坏性矩阵以 R1 证据关闭（仅"扫描中文件消失"由适配器 `SOURCE_FILE_READ_FAILED` 语义 + 单测覆盖）；Phase 6-A 真实 Obsidian GUI 运行证据由 `b53865e` 纳管（首次真实运行暴露渲染进程 ESM import CORS 缺陷并修复；重跑 complete，机器报告与源 Vault 零写入核验通过）。插件富前端 UI（Phase 5-C，ADR-0023）已实现并由 `9678978` 纳管，真实 Obsidian GUI 验证通过；中文本地化与登录等推迟到后期完善。Phase 7-0、7-A、7-B 已完成；DP-014 按 ADR-0025 关闭，ACC-38/39/40 正式证据绑定 `cd09994`，registry 40/40 `passed`。**执行计划 §0-§23 的全部 P0 阶段至此执行完毕**。P1-alpha 状态协议合同、实现和正式证据已完整交付（ADR-0026/0027，ACC-41/42/43 `passed`，DP-015 关闭）；DP-016 已按 ADR-0028 关闭；DP-017 设计已按 ADR-0029 接受并关闭，但真实账号实现仍需另立 P1-release 合同。当前下一门槛是先确认简单网页控制台的范围与身份边界（§24.2），然后再按独立合同和授权推进；DP-024/026、中文本地化以及其他 P1 项仍需分别授权。
 
 1. 本轮 R1 重做中的全部修复（`9000d63`、`d861e28`、`62ad56f`、`9443cb1`）与收尾提交均经用户显式授权后提交并推送；
 2. ACC-37 的裁决 token 只对生成它的 machine-scan（即提交 `9443cb1` 时的 10 份扫描目标）有效；任何被扫描文档的后续变更都会使既有 token 失效，重跑证据需要新的开发者裁决；
-3. Phase 5-A 已完成授权提交、推送和远端核对；Phase 5-B 已通过独立复审并由 `18c9b77` 纳管实现，状态文档获本地提交授权；推送仍需单独授权，推送和远端核对完成前不得进入 Phase 6（ADR-0021 §2）；
+3. Phase 5-A、5-B、5-C 已完成各自授权的提交、推送和远端核对；真实 Obsidian GUI 证据由 Phase 6-A 补齐。后续 P1 项仍按合同、实现和正式证据分别授权；
 4. 任何偏离 ADR-0009 路径规则、ADR-0011 bytes、ADR-0012 schema、ADR-0013 Suite 1、ADR-0017/0018 编排语义、ADR-0021 接线边界的修改都必须先停下并形成明确合同裁决；
 5. 本计划不授权自动提交、推送或把未授权的 dirty diff 描述为已提交。
 
@@ -772,25 +772,25 @@ Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08
 
 ### 24.1 P1-alpha（状态与账号基座）
 
-1. **状态协议**（DP-015）：mutable head、状态序号、设备签名、分叉证明；关闭产物 = state-protocol ADR + threat/invariant/ACC delta。合同已冻结（ADR-0026，开发者三点确认：head 目录签名指针、ECDSA P-256 + devices.json 显式注册、分叉拒绝并输出证据），实现待单独授权。
+1. **状态协议**（DP-015）：mutable head、状态序号、设备签名、分叉证明；关闭产物 = state-protocol ADR + threat/invariant/ACC delta。合同、实现和正式证据已完成（ADR-0026/0027，ACC-41/42/43 均为 `passed`），DP-015 已关闭；本项不等于生产安全或跨设备并发写一致性已证明。
 2. **部署模式**（DP-016）：已裁决并关闭（ADR-0028，开发者确认推荐选项：并行模式——设备本地默认 + 自托管经 Stage 7 传输进阶 + 中心托管推迟到 P1-release 且 DP-017 前置；三模式迁移/运维成本表见 ADR-0028 §2）。
-3. **账号认证**（DP-017）：登录、2FA、Passkey 与账号删除设计（含网页端身份与"普通网页登录不是可信设备"边界的衔接）。
+3. **账号认证**（DP-017）：登录、2FA、Passkey 与账号删除设计（含网页端身份与"普通网页登录不是可信设备"边界的衔接）。设计合同已按 ADR-0029 接受并关闭；Passkey 优先、一次性恢复码兜底，且账号恢复不等于域密钥恢复。真实账号与服务端实现仍需另立 P1-release 合同。
 4. **移动端验证与密钥保护**（DP-024/DP-026）：Android 电量与多设备压力阈值、移动端正式密钥保护。
 5. **插件中文本地化**（产品项，开发者 2026-09-05 裁决推迟）：UI 文案抽取与翻译，不改变任何协议/机器门。
 
 ### 24.2 网页端（新增规划项，尚无 DP）
 
-计划此前没有独立的网页端阶段；现有约束只有一条：**普通网页登录不是可信设备**（README 设备信任模型）——网页端在完成正式设备注册并持有本地私钥之前，只能作为只读/低权限视图。若立项，需新增：网页端范围 DP（只读摘要 vs 完整客户端）、web 密钥边界合同（Web Crypto 已有 Phase 1 基础）、以及 P1 状态协议 head 链的只读验证路径。**当前未立项、未授权。**
+计划此前没有独立的网页端阶段；现有约束只有一条：**普通网页登录不是可信设备**（README 设备信任模型）——网页端在完成正式设备注册并持有本地私钥之前，只能作为只读/低权限视图。若立项，需新增：网页端范围 DP（只读摘要 vs 完整客户端）、web 密钥边界合同（Web Crypto 已有 Phase 1 基础）、以及 P1 状态协议 head 链的只读验证路径。**当前仍未立项、未授权；DP-017 设计收尾后，下一步先确认此前讨论的简单网页控制台范围与是否需要独立合同，再决定是否开工。**
 
-### 24.4 下一步任务排序（依赖序，2026-09-05）
+### 24.4 下一步任务排序（依赖序，2026-09-08）
 
 | 序 | 任务 | 前置 | 产出 | 授权状态 |
 | --- | --- | --- | --- | --- |
 | 1 | DP-016 部署模式裁决 | 无（原阻塞 2/4/5） | ADR-0028 接受 + DP-016 关闭 | ✅ 已完成（2026-09-05 确认推荐选项） |
-| 2 | DP-017 账号/登录设计合同 | 已解锁（任务 1 完成） | account-lifecycle ADR + 威胁 delta | 草案已备（ADR-0029），待开发者回答三条确认点 |
+| 2 | DP-017 账号/登录设计合同 | 已解锁（任务 1 完成） | account-lifecycle ADR + 威胁 delta | ✅ 已完成（ADR-0029 已接受，DP-017 已关闭；仅设计，不授权实现） |
 | 3 | 插件中文本地化 | 无（纯 UI，不触协议/机器门） | 插件文案抽取 + zh-CN 资源 + 测试 | 开发者 2026-09-05 裁决推迟到后期；提前需重新授权 |
 | 4 | 自托管 head 指针网络化端点 | 任务 1（若裁决列 P1-beta 则顺延） | 网络端点合同 + 实现 | 未授权 |
-| 5 | 网页端立项（§24.2） | 任务 1/2（身份边界依赖部署与账号） | 范围 DP + web 密钥边界合同 | 未立项 |
+| 5 | 网页端立项（§24.2） | 任务 1/2（身份边界依赖部署与账号） | 范围 DP + web 密钥边界合同 | 待确认（本阶段收尾后先确认简单网页控制台范围；未立项、未授权） |
 | 6 | 移动端验证与密钥保护（DP-024/026） | 实体 Android 设备与真实多设备环境 | 移动端验证报告 | 未授权（需设备在场） |
 | 7 | P1-beta 团队协议（DP-018/019/023/025） | 任务 1/2 | 团队密钥生命周期合同族 | 未授权 |
 | 8 | P1-release（DP-020/021/022） | 生产发布前置 | 签名更新/删除 SLA/迁移合同族 | 未授权 |

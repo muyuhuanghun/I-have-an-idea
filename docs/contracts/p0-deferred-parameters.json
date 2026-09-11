@@ -187,9 +187,10 @@
       "name": "账号认证、2FA、Passkey 和账号删除",
       "owner": "OWNER-PRODUCT",
       "phase": "P1-alpha account design",
-      "status": "deferred",
-      "close_artifact": "account-lifecycle ADR + abuse/recovery threat delta",
-      "hard_stop": "未裁决前不得实现真实账号或声称账号恢复可恢复域"
+      "status": "closed",
+      "close_artifact": "account-lifecycle ADR + design-only abuse/recovery threat delta（THR-06/07/INV-19 保持候选，不在本轮翻转正式 registry）",
+      "hard_stop": "真实账号、服务端或网页登录实现仍需另立 P1-release 实现合同；在该合同与正式证据完成前，不得声称账号服务、恢复流程或公网登录已实现。一次性恢复码仅恢复账号登录/托管层会话，不能单独授权写入 E2EE devices registry 或授予 head 签名权；新设备信任仍须既有已授权设备签名批准，且账号恢复不得被描述为域密钥恢复",
+      "closure_adr": "docs/decisions/0029-p1-account-lifecycle-design.md"
     },
     {
       "id": "DP-018",

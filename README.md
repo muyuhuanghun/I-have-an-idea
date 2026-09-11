@@ -4,9 +4,10 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），Stage 7 已完成：DP-014 按 ADR-0025 关闭（localhost HTTP ObjectStore 经 `5ad2aba` 实现，ACC-38/39/40 正式证据绑定 `cd09994`），registry 40/40 ACC `passed`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过独立复审，代码与状态文档已由 `18c9b77`/`66354bd` 推送并远端核对一致；真实 Obsidian UI 运行证据尚未形成，属 Phase 6-A。Phase 6-0 裁决（ADR-0022，开发者三点确认）已将执行计划 §17 压力/破坏性矩阵以 R1 证据关闭，Phase 6-A 真实 Obsidian GUI 运行证据已完成（`b53865e`：修复渲染进程 ESM import CORS 缺陷后重跑 complete，机器报告核验通过，详见 `docs/test-plans/phase6a-gui-report.md`）。插件富前端 UI 已由 Phase 5-C 交付（ADR-0023 + `9678978`：停靠面板三段式，GUI 验证通过；中文本地化与登录等推迟到后期）。P0 执行计划（§0-§23）全部阶段已执行完毕；P1-alpha 状态协议已完整交付（ADR-0026 合同 + 实现 + ACC-41/42/43 正式证据绑定 `bbb5a7e`，DP-015 按 ADR-0027 关闭；INV-17/18 全量验证）；网页端未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。本关闭不声明生产安全，不豁免后续独立审计。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），Stage 7 已完成：DP-014 按 ADR-0025 关闭（localhost HTTP ObjectStore 经 `5ad2aba` 实现，ACC-38/39/40 正式证据绑定 `cd09994`），registry 40/40 ACC `passed`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过独立复审，代码与状态文档已由 `18c9b77`/`66354bd` 推送并远端核对一致；当时真实 Obsidian UI 运行证据尚未形成，后由 Phase 6-A 补齐。Phase 6-0 裁决（ADR-0022，开发者三点确认）已将执行计划 §17 压力/破坏性矩阵以 R1 证据关闭，Phase 6-A 真实 Obsidian GUI 运行证据已完成（`b53865e`：修复渲染进程 ESM import CORS 缺陷后重跑 complete，机器报告核验通过，详见 `docs/test-plans/phase6a-gui-report.md`）。插件富前端 UI 已由 Phase 5-C 交付（ADR-0023 + `9678978`：停靠面板三段式，GUI 验证通过；中文本地化与登录等推迟到后期）。P0 执行计划（§0-§23）全部阶段已执行完毕；P1-alpha 状态协议已完整交付（ADR-0026 合同 + 实现 + ACC-41/42/43 正式证据绑定 `bbb5a7e`，DP-015 按 ADR-0027 关闭；INV-17/18 全量验证）；网页端未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。本关闭不声明生产安全，不豁免后续独立审计。
+> P1 设计状态：DP-016 已按 ADR-0028 关闭；DP-017 设计已按 ADR-0029 接受并关闭，冻结 Passkey 优先、一次性恢复码兜底以及“账号恢复不等于域密钥恢复”。真实账号与服务端实现仍需另立 P1-release 合同；简单网页控制台仍未立项，DP-017 收尾后先确认其范围与身份边界。
 >
-> 最后更新：2026-09-05
+> 最后更新：2026-09-08
 
 ## 1. 项目一句话定义
 
@@ -912,9 +913,9 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 
 ### 27.4 推迟到 P1-alpha 以后裁决
 
-1. 中心托管、自托管或二者并行（DP-016）；
-2. 账号认证方式、2FA、Passkey 和账号删除（DP-017）；
-3. 群组 epoch（DP-025）、设备签名/状态序号/分叉证明（DP-015）；
+1. 中心托管实现、自托管迁移与部署运维（DP-016 裁决已按 ADR-0028 关闭；实现合同另立）；
+2. 中心托管账号实现、2FA/Passkey 工程化和账号删除（DP-017 设计已按 ADR-0029 关闭；实现合同仍待 P1-release）；
+3. 群组 epoch（DP-025）及团队状态治理；
 4. Proposal 密钥的审核者分发方式（DP-018）；
 5. 设备安全存储与移动端正式密钥保护（DP-026）；
 6. 紧急治理恢复的 P1 精确范围（DP-019）；

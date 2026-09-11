@@ -1,8 +1,8 @@
 # 阶段 0 一致性复审与门禁状态
 
 > 文档版本：v1.0
-> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5 全部纳管推送；Phase 6 完成（§17 以 R1 证据关闭 + 真实 GUI 运行证据）；Stage 7 完成（DP-014 按 ADR-0025 关闭，ACC-38/39/40 正式证据绑定 `cd09994`）。registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。P1-alpha-0 状态协议合同已冻结（ADR-0026，开发者三点确认：head 目录签名指针、ECDSA P-256 + devices.json 显式注册、分叉拒绝并输出证据），实现待单独授权；网页端未立项（§24.2 规划条目）。**
-> 日期：2026-09-02
+> 当前状态：**DESIGN CONTRACT STATIC CHECK PASS；Phase 1 至 Phase 4-B 已实现。2026-08-31 撤回的 R1 evidence 已于 2026-09-02 在 clean commit `9443cb1` 上重做并通过嵌套证据门，ACC-37 经开发者 token 裁决；P0-R1 已按 ADR-0020 关闭，37 ACC 在 registry/矩阵中为 `passed`，DP-007/008/010/011/012 已关闭。Phase 5 全部纳管推送；Phase 6 完成（§17 以 R1 证据关闭 + 真实 GUI 运行证据）；Stage 7 完成（DP-014 按 ADR-0025 关闭，ACC-38/39/40 正式证据绑定 `cd09994`）。registry 40/40 ACC `passed`，P0 执行计划全部阶段执行完毕。P1-alpha 状态协议已完整交付（ADR-0026 合同、实现与 ACC-41/42/43 正式证据绑定 `bbb5a7e`，DP-015 按 ADR-0027 关闭）；DP-016 按 ADR-0028 关闭；DP-017 设计按 ADR-0029 接受并关闭，但真实账号实现仍需另立 P1-release 合同；网页端仍未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。**
+> 日期：2026-09-08
 > 权威来源：执行计划 §11.2-11.3、§22
 > 本轮修复前 Git 基线：`583a3a167258bbc223f5f2f78bf4ca04fd5fd847`
 >
@@ -352,6 +352,8 @@ P1_ALPHA_0_STATE_PROTOCOL_CONTRACT_ACCEPTED
 P1_ALPHA_A_STATE_PROTOCOL_IMPLEMENTED
 P1_ALPHA_B_FORMAL_EVIDENCE_GENERATED_AND_DP015_CLOSED
 P1_DEPLOYMENT_MODE_RULING_ACCEPTED
+P1_ACCOUNT_LIFECYCLE_DESIGN_ACCEPTED
+DP017_CLOSED_BY_ADR_0029
 ```
 
 含义：
@@ -384,7 +386,7 @@ P1_DEPLOYMENT_MODE_RULING_ACCEPTED
 - Phase 7-0 已完成：ADR-0024 经开发者三点确认接受（2026-09-05）——localhost HTTP ObjectStore 合同冻结：127.0.0.1 + 每运行随机 bearer token + 2 MiB 对象上限；`HttpClientObjectStore` 走既有 ObjectStore 端口（core 零改动，§18 端口边界）；威胁面 delta = 键/大小/时序可见，明文/路径/domainId/token 不可见；registry 将随 7-A 扩至 40（ACC-38 端口等价往返、ACC-39 网络观察面不扩大、ACC-40 幂等与故障收敛，`evidence_scope: "stage-7"`），设计/证据门规则同步演化；7-A 实现与 7-B 正式证据 + DP-014 收尾各自单独授权。
 - Phase 7-A 已实现（报告见 `docs/test-plans/phase7a-http-object-store-report.md`）：`startHttpObjectStoreServer`（127.0.0.1、随机 bearer token、2 MiB 上限、Directory 后端复用、幂等/碰撞/缺失语义镜像、脱敏访问日志、测试专用故障钩子）+ `HttpClientObjectStore`（既有 ObjectStore 端口，超时/网络错误收敛 `OBJECT_STORE_IO_FAILED`）；registry/矩阵扩至 40（ACC-38/39/40 `evidence_scope: "stage-7"` untested，THR-02 回链），设计/证据门演化（37 passed + stage-7 untested 合法共存），`s7-http-session-v1` 第 11 份 schema + 样本（10→11 对）；`test:all`、design+samples 与嵌套证据门均 PASS。DP-014 仍 `deferred`，7-B 正式证据与收尾未获授权。
 - P1-alpha-0 已完成：ADR-0026 经开发者三点确认接受（2026-09-05）——状态协议冻结：head 对象（canonical bytes + ECDSA P-256 签名，进 ObjectStore 不可变体系）、head 目录签名指针（唯一可变状态，Vault 外，防回滚单调检查）、`devices.json` 显式设备注册（未注册设备的 head 无效）、分叉默认拒绝并输出证据；INV-17/18 与 ACC-41/42/43 delta 随 P1-alpha-A 实现同 commit 落库（registry 40→43 + `evidence_scope: "p1-alpha"` 门机制），DP-015 关闭被阻断直至三项证据齐备。网页端未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。
-- P1-alpha-A 已实现（报告见 `docs/test-plans/p1-alpha-a-state-protocol-report.md`）：core head 编解码/签名/验证（128 字节 canonical layout + 193 字节 wire 记录）、`DeviceSignaturePort` + `WebCryptoDeviceSignatureProvider`（raw r‖s，构造期绑定私钥）、adapters head 目录（签名指针/设备注册/回滚拒绝/分叉证据/history journal/域哈希文件名）；registry/矩阵扩至 43 ACC + 18 INV（ACC-41/42/43 `evidence_scope: "p1-alpha"` untested），验证器 closure 规则按 passed 项 scope 集合演化（stage-7/p1-alpha 各绑定独立 closeout 行）。DP-015 已按 ADR-0027 关闭。
+- P1-alpha-A 已实现（报告见 `docs/test-plans/p1-alpha-a-state-protocol-report.md`）：core head 编解码/签名/验证（128 字节 canonical layout + 193 字节 wire 记录）、`DeviceSignaturePort` + `WebCryptoDeviceSignatureProvider`（raw r‖s，构造期绑定私钥）、adapters head 目录（签名指针/设备注册/回滚拒绝/分叉证据/history journal/域哈希文件名）；registry/矩阵扩至 43 ACC + 18 INV（ACC-41/42/43 `evidence_scope: "p1-alpha"` untested），验证器 closure 规则按 passed 项 scope 集合演化（stage-7/p1-alpha 各绑定独立 closeout 行）。DP-015 仍为 `deferred`，关闭被阻断直至 P1-alpha-B 正式证据完成。
 - P1-alpha-B 已完成：`tools/acc-p1-evidence-run.mjs` 在 clean commit `bbb5a7e` 生成 ACC-41/42/43 三份正式 evidence（`P1_EVIDENCE_RUN_DONE 3 reports`），registry/矩阵三项翻转为 `passed`（43/43），closeout 报告三重绑定（R1/S7/P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT）齐备，`acc-evidence-v1` schema acc_id 模式扩展至 ACC-01..43，证据门按 `evidence_scope` 三路路由并 PASS。DP-015 已按 ADR-0027 关闭。
 
 ## 15. 当前状态一致性
@@ -397,5 +399,9 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 - `deferred/open/conditional/closed`：只在延期 registry 中使用；`closed` 还必须绑定存在的 closure ADR；
 - `PASS design-only`：只指静态合同检查；registry 全部 `untested` 时期它绝不构成 P0-R1 PASS，registry 全部 `passed` 时期它也不重新验证运行时 artifacts（运行时验证专属 `--evidence-root` 模式）；
 - `PASS design-only+samples`：design-only 加上 11 份 schema 的 11 对正/负样本反身校验通过，证明 schema 强制路径在 work；运行时证据仍以 `--evidence-root` 为准。
+
+- P1-alpha 状态协议的合同、实现和正式证据均已完成，ACC-41/42/43 已为 `passed`，DP-015 按 ADR-0027 关闭；这不是生产安全或跨设备并发写一致性声明。
+- DP-017 的账号生命周期设计合同已按 ADR-0029 接受并关闭：Passkey 优先、一次性恢复码兜底，且账号恢复不等于域密钥恢复。INV-19、THR-06、THR-07 仍只是候选设计输入，本轮没有新增或翻转正式 registry 项，也没有授权真实账号或服务端实现。
+- 简单网页控制台仍未立项；本阶段收尾后需另行确认范围、身份边界和是否起草独立合同。
 
 本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`。2026-09-02 的 R1 关闭轮（验证器 closure 规则、registry/矩阵/DP 同步、ADR-0020 与状态文档对账）见 ADR-0020 与收尾报告 §-1；证据门结果为 `PHASE0_CONTRACT_CHECK_PASS mode=design+evidence+samples ACC=37 INV=16 THR=5 DP=26`。

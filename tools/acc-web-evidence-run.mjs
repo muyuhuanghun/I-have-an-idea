@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { generateKeyPairSync, randomUUID, createHash } from "node:crypto";
 import { request as httpRequest } from "node:http";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");

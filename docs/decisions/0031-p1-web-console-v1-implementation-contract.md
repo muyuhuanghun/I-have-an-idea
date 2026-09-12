@@ -123,7 +123,7 @@ Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'
 | --- | --- | --- |
 | C1 | DP-027 入册（registry 26→27 + 验证器同步）+ ADR-0030 accepted + 本合同接受，同一提交 | ✅ 已完成（`0254b11`） |
 | C2 | 实现切片：代码 + 依赖 + `p1-web-console-status-v1` schema 落库 + WEB-THR/INV/ACC 与错误码 registry 翻转 + 验证器扩展，单 clean commit | ✅ 已完成（`6060bbb`；测试与门禁见 `docs/test-plans/p1-console-c2-implementation-report.md`） |
-| C3 | 证据切片：实机浏览器正式 evidence run + ACC 翻转 passed + closeout 绑定行 + 状态文档 reconcile | 未授权 |
+| C3 | 证据切片：实机浏览器正式 evidence run + ACC 翻转 passed + closeout 绑定行 + 状态文档 reconcile | ✅ 已完成（正式运行 `WEB_EVIDENCE_RUN_DONE 6 reports at HEAD 9c160ce`；翻转 `9a2efd3`；DP-027 已关闭；详见 `docs/test-plans/p1-console-c3-evidence-report.md`） |
 
 ## 12. 硬停止（继承 ADR-0030 §11）
 

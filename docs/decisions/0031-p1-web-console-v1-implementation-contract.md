@@ -128,3 +128,11 @@ Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'
 ## 12. 硬停止（继承 ADR-0030 §11）
 
 本合同接受后仍不得：创建 web app/服务代码、安装前端框架或依赖、注册 schema/错误码/registry 项、声称网页控制台已实现。C2 启动必须另有明确授权。
+
+## 13. 插件宿主接线（2026-09-12 增补；§1.4 预留事项的裁决）
+
+1. **服务本体零改动**：Obsidian 插件复用 adapters `./web-console` 模块（打包形态 cjs、`node:*` external → 渲染进程经 CJS require 加载 node:http）；本切片不新增 ACC/INV/THR/错误码——服务本体的安全结论由 DP-027 的 WEB-ACC-44..49 证据继续覆盖。
+2. **生命周期**：设置开关 `consoleEnabled`（**默认关**）；开启时启动服务，关闭或插件卸载时 `close()`。启动失败只降级提示，不阻断插件加载。
+3. **数据源（会话域派生的插件形态）**：storage = 设置中 ObjectStore 目录的密文侧聚合（路径未配置时 unavailable）；head = 恒 `not_checked`（插件不使用 P1 状态协议，如实显示"未检查"，不伪造）；report = 最近一次成功快照的内存摘要（schema_version/verdict/created_at=completed_at/object_count/total_ciphertext_bytes，重启即空）；tasks = 插件触发的每次快照流水线运行——成功记 `complete`（计数取 `visibility_summary` 密文侧值），流水线启动后失败记 `failed` + 归一化 `error_code`（计数恒 0，不作为发布事实），设置校验等未进入流水线的失败不记入。
+4. **UI**：设置页新增"启用本机状态页"开关；启用时快照面板出现"打开状态页"按钮，经 `shell.openExternal` 打开无 token URL（ADR-0030 §3.4.6）。
+5. **证据与边界**：本切片证据 = 单元测试（宿主包装层：启停/数据源/ring 喂养）+ 实机 Obsidian GUI 运行报告；ADR-0030 全部条款（只读、token 纪律、localhost 边界）继续适用，插件不得借本接线暴露任何写操作或协议状态。

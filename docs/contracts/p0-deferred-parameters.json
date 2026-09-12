@@ -207,9 +207,10 @@
       "name": "紧急治理恢复的精确范围和签名建议权限",
       "owner": "OWNER-PRODUCT",
       "phase": "P1-beta/P1-release governance",
-      "status": "deferred",
-      "close_artifact": "governance-recovery ADR + role/approval matrix",
-      "hard_stop": "未关闭前不得赋予管理员绕过正常审核的治理恢复权限"
+      "status": "closed",
+      "close_artifact": "governance-recovery ADR（ADR-0034：治理恢复材料与 Recovery File 分域、恢复六步流程、精确范围四禁令、建议-授权分离）+ 角色-审批矩阵（v1 设计冻结，管理员列可空）+ 验收证据计划 GR-1..10（设计级，随实现合同落库）+ GOV-THR/INV/ACC 候选文本（不翻转正式 registry）+ 四视角两轮自检记录",
+      "hard_stop": "治理恢复的实现仍被阻止：须与 DP-018/025 合并为团队协议实现阶段合同并单独授权；管理员永远不含承认签名权与内容访问权（建议-授权分离是结构性规则，矩阵逐格断言）；恢复不得重写历史登记与审计、不得触碰内容密钥与 Recovery File 体系；治理恢复材料泄露不可远程吊销的诚实边界必须随实现交付",
+      "closure_adr": "docs/decisions/0034-p1-beta-governance-recovery-design.md"
     },
     {
       "id": "DP-020",

@@ -669,6 +669,9 @@ export default class EkdPhase1Plugin extends Plugin {
       new Notice(`P0 snapshot failed: ${error instanceof Error ? error.message : String(error)}`, 10000);
     } finally {
       this.#running = false;
+      // The catch path renders while #running is still true; re-sync so the panel
+      // button does not stay stuck on "Snapshot running…" after a failure.
+      this.#syncSnapshotView();
     }
   }
 

@@ -41,6 +41,7 @@ import {
 import { SnapshotPanelModel } from "./snapshot-panel-model.js";
 import { P0SnapshotView, VIEW_TYPE_EKD_P0_SNAPSHOT } from "./snapshot-view.js";
 import { PluginConsoleHost } from "./console-host.js";
+import { STRINGS } from "./strings.js";
 import {
   createNodeVaultPathValidator,
   requireNewReportTarget,
@@ -240,7 +241,7 @@ interface SnapshotPathSettings {
 
 function requireSnapshotSettings(settings: EkdSettings, nodePath: NodePath): SnapshotPathSettings {
   if (!/^[0-9a-f]{64}$/u.test(settings.domainIdHex)) {
-    throw new Error("Domain ID must be exactly 64 lowercase hexadecimal characters.");
+    throw new Error(STRINGS.faults.domainIdInvalid);
   }
   const paths: SnapshotPathSettings = {
     objectStorePath: settings.objectStorePath,
@@ -251,7 +252,7 @@ function requireSnapshotSettings(settings: EkdSettings, nodePath: NodePath): Sna
   };
   for (const [label, pathValue] of Object.entries(paths)) {
     if (pathValue.length === 0 || !nodePath.isAbsolute(pathValue)) {
-      throw new Error(`${label} must be an explicit absolute path.`);
+      throw new Error(STRINGS.faults.pathMustBeAbsolute(label));
     }
   }
   return paths;
@@ -267,17 +268,15 @@ class Phase1SettingTab extends PluginSettingTab {
 
   display(): void {
     this.containerEl.empty();
-    this.containerEl.createEl("h2", { text: "EKD P0 snapshot creation" });
-    this.containerEl.createEl("p", {
-      text: "Windows desktop only. Set every path explicitly; the ObjectStore directory and every output parent must already exist outside the source Vault. Snapshot creation never writes protocol artifacts into the Vault."
-    });
+    this.containerEl.createEl("h2", { text: STRINGS.settings.snapshotSection });
+    this.containerEl.createEl("p", { text: STRINGS.settings.snapshotIntro });
     const snapshotFields: readonly [StringSettingKey, string, string][] = [
-      ["domainIdHex", "Domain ID", "64 lowercase hexadecimal characters"],
-      ["objectStorePath", "ObjectStore directory", "Absolute path to an existing directory"],
-      ["snapshotLogPath", "Snapshot log", "Absolute path to a new .jsonl file"],
-      ["recoveryFilePath", "Recovery File", "Absolute path to a new .ekdr file"],
-      ["runtimeLimitsPath", "Runtime limits contract", "Absolute path to p0-runtime-limits-v1.json"],
-      ["snapshotReportPath", "Plugin snapshot report", "Absolute path to a new .json report file"]
+      ["domainIdHex", STRINGS.settings.domainId, STRINGS.settings.domainIdHint],
+      ["objectStorePath", STRINGS.settings.objectStore, STRINGS.settings.absoluteDirHint],
+      ["snapshotLogPath", STRINGS.settings.snapshotLog, STRINGS.settings.newJsonlHint],
+      ["recoveryFilePath", STRINGS.settings.recoveryFile, STRINGS.settings.newEkdrHint],
+      ["runtimeLimitsPath", STRINGS.settings.runtimeLimits, STRINGS.settings.runtimeLimitsHint],
+      ["snapshotReportPath", STRINGS.settings.snapshotReport, STRINGS.settings.newJsonHint]
     ];
     for (const [key, name, placeholder] of snapshotFields) {
       new Setting(this.containerEl)
@@ -290,12 +289,10 @@ class Phase1SettingTab extends PluginSettingTab {
           }));
     }
 
-    this.containerEl.createEl("h2", { text: "EKD 本机状态页（只读）" });
-    this.containerEl.createEl("p", {
-      text: "ADR-0030/0031：启用后插件在本机 127.0.0.1 随机端口运行只读状态服务（进程健康、密文侧存储统计、最近快照任务）。服务不经 URL/日志传递凭据，不提供任何写操作，不监听局域网。默认关闭。"
-    });
+    this.containerEl.createEl("h2", { text: STRINGS.settings.consoleSection });
+    this.containerEl.createEl("p", { text: STRINGS.settings.consoleIntro });
     new Setting(this.containerEl)
-      .setName("启用本机状态页")
+      .setName(STRINGS.settings.consoleToggle)
       .addToggle((toggle) => toggle
         .setValue(this.#plugin.settings.consoleEnabled)
         .onChange(async (value) => {
@@ -303,14 +300,12 @@ class Phase1SettingTab extends PluginSettingTab {
           toggle.setValue(this.#plugin.settings.consoleEnabled);
         }));
 
-    this.containerEl.createEl("h2", { text: "EKD Phase 1 Android smoke metadata" });
-    this.containerEl.createEl("p", {
-      text: "These fields identify the physical Android smoke environment. The generated key binds the report to this plugin runtime; it is not a production keystore or hardware attestation."
-    });
+    this.containerEl.createEl("h2", { text: STRINGS.settings.androidSection });
+    this.containerEl.createEl("p", { text: STRINGS.settings.androidIntro });
     const fields: readonly [StringSettingKey, string, string][] = [
-      ["androidDeviceModel", "Device model", "Example: Pixel 8"],
-      ["androidOsVersion", "Android version", "Example: Android 16"],
-      ["androidArchitecture", "Architecture", "Example: arm64-v8a"]
+      ["androidDeviceModel", STRINGS.settings.deviceModel, STRINGS.settings.deviceModelHint],
+      ["androidOsVersion", STRINGS.settings.androidVersion, STRINGS.settings.androidVersionHint],
+      ["androidArchitecture", STRINGS.settings.architecture, STRINGS.settings.architectureHint]
     ];
     for (const [key, name, placeholder] of fields) {
       new Setting(this.containerEl)
@@ -346,7 +341,7 @@ export default class EkdPhase1Plugin extends Plugin {
 
   async updateSetting(key: keyof EkdSettings, value: string): Promise<boolean> {
     if (this.#running) {
-      new Notice("Settings cannot change while an EKD operation is active.");
+      new Notice(STRINGS.notices.settingsLocked);
       return false;
     }
     this.settings = { ...this.settings, [key]: value.trim() };
@@ -360,7 +355,7 @@ export default class EkdPhase1Plugin extends Plugin {
   /** ADR-0031 §13: the read-only localhost console is off by default and toggled here. */
   async setConsoleEnabled(enabled: boolean): Promise<void> {
     if (this.#running) {
-      new Notice("Settings cannot change while an EKD operation is active.");
+      new Notice(STRINGS.notices.settingsLocked);
       return;
     }
     this.settings = { ...this.settings, consoleEnabled: enabled };
@@ -376,14 +371,14 @@ export default class EkdPhase1Plugin extends Plugin {
   async #startConsole(): Promise<void> {
     try {
       const url = await this.#console.start();
-      new Notice(`EKD 状态页已启用：${url}（仅本机 127.0.0.1，只读）`);
+      new Notice(STRINGS.settings.consoleEnabled(url));
     } catch (error) {
       await this.#console.stop();
       this.settings = { ...this.settings, consoleEnabled: false };
       await this.saveData(this.settings);
       if (!this.#consoleBuildNoticeShown) {
         this.#consoleBuildNoticeShown = true;
-        new Notice(`EKD 状态页启动失败：${error instanceof Error ? error.message : String(error)}`);
+        new Notice(STRINGS.settings.consoleStartFailed(error instanceof Error ? error.message : String(error)));
       }
     }
   }
@@ -391,16 +386,18 @@ export default class EkdPhase1Plugin extends Plugin {
   #openConsoleInBrowser(): void {
     const url = this.#console.url;
     if (url === undefined) {
-      new Notice("EKD 状态页未启用；请先在设置中开启。");
+      new Notice(STRINGS.settings.consoleNotEnabled);
       return;
     }
     const nodeRequire = (globalThis as { require?: (id: string) => unknown }).require;
-    if (typeof nodeRequire !== "function") throw new Error("Node module loader unavailable.");
+    if (typeof nodeRequire !== "function") throw new Error(STRINGS.faults.nodeLoaderUnavailable);
     const electron = nodeRequire("electron") as { shell?: { openExternal?: (url: string) => Promise<void> } };
     const openExternal = electron.shell?.openExternal;
-    if (typeof openExternal !== "function") throw new Error("Electron shell.openExternal is unavailable in this runtime.");
+    if (typeof openExternal !== "function") throw new Error(STRINGS.faults.electronOpenExternalUnavailable);
     // The URL carries no credential — the page bootstraps its session same-origin (ADR-0030 §3.4.6).
-    void openExternal.call(electron.shell, url);
+    void openExternal.call(electron.shell, url).catch((error: unknown) => {
+      new Notice(STRINGS.settings.consoleOpenFailed(error instanceof Error ? error.message : String(error)));
+    });
   }
 
   onunload(): void {
@@ -412,7 +409,7 @@ export default class EkdPhase1Plugin extends Plugin {
     this.#reportValidator = createSmokeReportSchemaValidator(JSON.parse(__SMOKE_REPORT_SCHEMA_JSON__) as unknown);
     this.#pluginReportValidator = createSmokeReportSchemaValidator(JSON.parse(__PLUGIN_SNAPSHOT_REPORT_SCHEMA_JSON__) as unknown);
     this.#snapshotStatus = this.addStatusBarItem();
-    this.#snapshotStatus.setText("EKD snapshot: idle");
+    this.#snapshotStatus.setText(STRINGS.statusBar.idle);
     this.addSettingTab(new Phase1SettingTab(this.app, this));
     this.registerView(VIEW_TYPE_EKD_P0_SNAPSHOT, (leaf) => new P0SnapshotView(leaf, {
       onTrigger: () => { void this.runSnapshot(); },
@@ -423,14 +420,14 @@ export default class EkdPhase1Plugin extends Plugin {
         try {
           this.#openConsoleInBrowser();
         } catch (error) {
-          new Notice(`Could not open console: ${error instanceof Error ? error.message : String(error)}`);
+          new Notice(STRINGS.settings.consoleOpenFailed(error instanceof Error ? error.message : String(error)));
         }
       }
     }));
-    this.addRibbonIcon("lock", "EKD P0 snapshot", () => { void this.activateSnapshotView(); });
+    this.addRibbonIcon("lock", STRINGS.view.header, () => { void this.activateSnapshotView(); });
     this.addCommand({
       id: "p0-create-snapshot",
-      name: "Create P0 snapshot",
+      name: STRINGS.commands.createSnapshot,
       callback: () => { void this.activateSnapshotView().then(() => this.runSnapshot()); }
     });
     if (this.settings.consoleEnabled) void this.#startConsole();
@@ -450,9 +447,9 @@ export default class EkdPhase1Plugin extends Plugin {
   async #loadBuildMeta(): Promise<BuildMeta> {
     const pluginRoot = normalizePath(`${this.app.vault.configDir}/plugins/${this.manifest.id}`);
     const value = JSON.parse(await this.app.vault.adapter.read(normalizePath(`${pluginRoot}/build-meta.json`))) as unknown;
-    if (!isBuildMeta(value)) throw new Error("Invalid Phase 1 plugin build metadata.");
+    if (!isBuildMeta(value)) throw new Error(STRINGS.faults.buildMetaInvalid);
     const mainBytes = new Uint8Array(await this.app.vault.adapter.readBinary(normalizePath(`${pluginRoot}/main.js`)));
-    if (sha256Hex(mainBytes) !== value.bundle_sha256) throw new Error("Plugin bundle does not match build metadata.");
+    if (sha256Hex(mainBytes) !== value.bundle_sha256) throw new Error(STRINGS.faults.bundleMismatch);
     return value;
   }
 
@@ -460,16 +457,16 @@ export default class EkdPhase1Plugin extends Plugin {
     let text: string;
     if (progress.phase === "scanning") {
       text = progress.status === "active"
-        ? `EKD snapshot: scanning ${progress.scannedFiles} file(s)`
-        : `EKD snapshot: scanned ${progress.fileCount} file(s), ${progress.totalPlaintextBytes} plaintext byte(s)`;
+        ? STRINGS.statusBar.scanningActive(progress.scannedFiles)
+        : STRINGS.statusBar.scanningDone(progress.fileCount, progress.totalPlaintextBytes);
     } else if (progress.phase === "encrypting") {
       text = progress.status === "active"
-        ? `EKD snapshot: encrypting ${progress.fileOrdinal}/${progress.fileCount}, ${progress.totalPlaintextBytes} plaintext byte(s)`
-        : `EKD snapshot: encrypted ${progress.fileCount} file(s)`;
+        ? STRINGS.statusBar.encryptingActive(progress.fileOrdinal, progress.fileCount, progress.totalPlaintextBytes)
+        : STRINGS.statusBar.encryptingDone(progress.fileCount);
     } else {
       text = progress.status === "verifying"
-        ? "EKD snapshot: verifying Recovery File ownership target"
-        : "EKD snapshot: Recovery File ownership complete";
+        ? STRINGS.statusBar.recoveryVerifying
+        : STRINGS.statusBar.recoveryDone;
     }
     this.#snapshotStatus?.setText(text);
     this.#panelModel.onProgress(progress);
@@ -493,34 +490,35 @@ export default class EkdPhase1Plugin extends Plugin {
 
   #openReportFile(reportPath: string): void {
     const nodeRequire = (globalThis as { require?: (id: string) => unknown }).require;
-    if (typeof nodeRequire !== "function") throw new Error("Node module loader unavailable.");
+    if (typeof nodeRequire !== "function") throw new Error(STRINGS.faults.nodeLoaderUnavailable);
     const electron = nodeRequire("electron") as { shell?: { openPath?: (path: string) => Promise<string> } };
     const openPath = electron.shell?.openPath;
-    if (typeof openPath !== "function") throw new Error("Electron shell.openPath is unavailable in this runtime.");
+    if (typeof openPath !== "function") throw new Error(STRINGS.faults.electronOpenPathUnavailable);
     void openPath.call(electron.shell, reportPath).then((message) => {
-      if (typeof message === "string" && message.length > 0) new Notice(`Could not open report: ${message}`);
+      if (typeof message === "string" && message.length > 0) new Notice(STRINGS.view.openReportFailed(message));
     });
   }
 
   async runSnapshot(): Promise<void> {
     if (this.#running) {
-      new Notice("An EKD operation is already active.");
+      new Notice(STRINGS.notices.operationActive);
       return;
     }
     this.#running = true;
     this.#panelModel.reset();
     this.#syncSnapshotView();
+    let snapshotErrorCode: string | undefined;
     try {
-      this.#snapshotStatus?.setText("EKD snapshot: waiting for settings writes");
+      this.#snapshotStatus?.setText(STRINGS.statusBar.waitingSettings);
       await this.#settingsWrites;
       if (!Platform.isDesktopApp || !Platform.isWin) {
-        throw new Error("P0 snapshot creation is currently scoped to Obsidian on Windows desktop.");
+        throw new Error("P0 快照目前仅限 Windows 桌面端的 Obsidian。");
       }
       // Electron's renderer blocks ESM dynamic import of node: specifiers (CORS on
       // app://obsidian.md); Obsidian desktop exposes the CJS loader instead.
       const nodeRequire = (globalThis as { require?: (id: string) => unknown }).require;
       if (typeof nodeRequire !== "function") {
-        throw new Error("Obsidian desktop did not expose the Node module loader; P0 snapshot cannot load filesystem adapters.");
+        throw new Error(STRINGS.faults.nodeLoaderUnavailable);
       }
       const [nodeFs, nodePath, obsidianAdapter, objectStoreAdapter, snapshotIoAdapter, adapterErrors] = await Promise.all([
         Promise.resolve(nodeRequire("node:fs/promises") as typeof NodeFsPromisesApi),
@@ -533,7 +531,7 @@ export default class EkdPhase1Plugin extends Plugin {
       const configured = requireSnapshotSettings(this.settings, nodePath);
       const fileSystemAdapter = this.app.vault.adapter as unknown as { readonly getBasePath?: () => string };
       if (typeof fileSystemAdapter.getBasePath !== "function") {
-        throw new Error("Obsidian did not expose a desktop Vault filesystem path.");
+        throw new Error(STRINGS.faults.vaultPathUnavailable);
       }
       const vaultRoot = nodePath.resolve(fileSystemAdapter.getBasePath());
       const objectStorePath = nodePath.resolve(configured.objectStorePath);
@@ -558,23 +556,23 @@ export default class EkdPhase1Plugin extends Plugin {
 
       const embeddedLimitsBytes = utf8Bytes(__P0_RUNTIME_LIMITS_JSON__);
       if (sha256Hex(embeddedLimitsBytes) !== PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256) {
-        throw new Error("Embedded runtime-limits bytes do not match the accepted contract hash.");
+        throw new Error(STRINGS.faults.limitsEmbeddedMismatch);
       }
       const embeddedLimits = JSON.parse(__P0_RUNTIME_LIMITS_JSON__) as { readonly schema_version?: unknown };
       if (embeddedLimits.schema_version !== "p0-runtime-limits-v1") {
-        throw new Error("Embedded runtime-limits copy is not p0-runtime-limits-v1.");
+        throw new Error(STRINGS.faults.limitsEmbeddedWrongVersion);
       }
       const diskLimitsBytes = new Uint8Array(await nodeFs.readFile(runtimeLimitsPath));
       const diskLimitsSha256 = sha256Hex(diskLimitsBytes);
       if (diskLimitsSha256 !== PLUGIN_ACCEPTED_RUNTIME_LIMITS_SHA256) {
-        throw new Error(`Configured runtime-limits sha256 ${diskLimitsSha256} does not match the accepted contract.`);
+        throw new Error(STRINGS.faults.limitsHashMismatch(diskLimitsSha256));
       }
       const diskLimits = JSON.parse(new TextDecoder().decode(diskLimitsBytes)) as { readonly schema_version?: unknown };
       if (diskLimits.schema_version !== "p0-runtime-limits-v1") {
-        throw new Error("Configured runtime-limits file is not p0-runtime-limits-v1.");
+        throw new Error(STRINGS.faults.limitsNotContract);
       }
       if (this.#pluginReportValidator === undefined) {
-        throw new Error("Plugin snapshot report validator is unavailable.");
+        throw new Error(STRINGS.faults.reportValidatorUnavailable);
       }
 
       const pathValidator = createNodeVaultPathValidator(
@@ -589,7 +587,7 @@ export default class EkdPhase1Plugin extends Plugin {
         )
       );
       const provider = new WebCryptoAes256Provider();
-      this.#snapshotStatus?.setText("EKD snapshot: starting");
+      this.#snapshotStatus?.setText(STRINGS.statusBar.starting);
       const snapshotStartedAt = new Date().toISOString();
       const snapshotStartMs = Date.now();
       const execution = await runPluginSnapshotV1({
@@ -632,15 +630,17 @@ export default class EkdPhase1Plugin extends Plugin {
       if (execution.snapshot.status !== "complete" || execution.report === undefined) {
         const errorCode = execution.snapshot.errorCode ?? "SNAPSHOT_FAILED";
         // ADR-0031 §13: pipeline failures feed the console task ring (counters stay 0).
+        const normalizedCode = /^[A-Z][A-Z0-9_]*$/.test(errorCode) ? errorCode : "SNAPSHOT_FAILED";
+        snapshotErrorCode = normalizedCode === "SNAPSHOT_FAILED" ? undefined : normalizedCode;
+        // ADR-0031 §13: pipeline failures feed the console task ring (counters stay 0).
         this.#console.recordSnapshotFailure(
-          /^[A-Z][A-Z0-9_]*$/.test(errorCode) ? errorCode : "SNAPSHOT_FAILED",
+          normalizedCode,
           snapshotStartedAt,
           new Date().toISOString(),
           Date.now() - snapshotStartMs
         );
         throw new Error(
-          `Snapshot failed in ${execution.snapshot.failedPhase ?? "unknown phase"} ` +
-          `(${errorCode}); no pass report was exported.`
+          `快照在 ${execution.snapshot.failedPhase ?? "未知阶段"} 失败（${errorCode}）；未导出通过报告。`
         );
       }
       this.#console.recordSnapshotSuccess({
@@ -653,24 +653,22 @@ export default class EkdPhase1Plugin extends Plugin {
       this.#showSnapshotResult(execution.report, snapshotReportPath);
       const summary = execution.report.visibility_summary;
       this.#snapshotStatus?.setText(
-        `EKD snapshot complete: ${execution.report.file_count} file(s), ` +
-        `${execution.report.total_plaintext_bytes} plaintext / ${summary.total_ciphertext_bytes} ciphertext byte(s)`
+        STRINGS.statusBar.complete(execution.report.file_count, execution.report.total_plaintext_bytes, summary.total_ciphertext_bytes)
       );
       new Notice(
-        `P0 snapshot complete: ${summary.object_count} object(s), ${execution.report.file_count} file(s). ` +
-        "The plugin visibility summary is not formal ACC-32/33 evidence.",
+        STRINGS.notices.snapshotComplete(summary.object_count, execution.report.file_count),
         10000
       );
     } catch (error) {
       console.error("EKD P0 snapshot failed", error);
-      this.#snapshotStatus?.setText("EKD snapshot: failed");
-      this.#panelModel.onError(error);
+      this.#snapshotStatus?.setText(STRINGS.statusBar.failed);
+      this.#panelModel.onError(error, STRINGS.errors.hintFor(snapshotErrorCode));
       this.#syncSnapshotView();
-      new Notice(`P0 snapshot failed: ${error instanceof Error ? error.message : String(error)}`, 10000);
+      new Notice(STRINGS.notices.snapshotFailed(error instanceof Error ? error.message : String(error)), 10000);
     } finally {
       this.#running = false;
       // The catch path renders while #running is still true; re-sync so the panel
-      // button does not stay stuck on "Snapshot running…" after a failure.
+      // button does not stay stuck on the stale running state after a failure.
       this.#syncSnapshotView();
     }
   }
@@ -684,18 +682,18 @@ export default class EkdPhase1Plugin extends Plugin {
 
   async runSmoke(selected: CandidateName): Promise<void> {
     if (this.#running) {
-      new Notice("A Phase 1 smoke run is already active.");
+      new Notice(STRINGS.faults.smokeActive);
       return;
     }
     this.#running = true;
     try {
-      if (!Platform.isAndroidApp && !Platform.isWin) throw new Error("Phase 1 plugin smoke is scoped to Windows and Android.");
+      if (!Platform.isAndroidApp && !Platform.isWin) throw new Error(STRINGS.faults.smokePlatformScope);
       if (Platform.isAndroidApp && [
         this.settings.androidDeviceModel,
         this.settings.androidOsVersion,
         this.settings.androidArchitecture
       ].some((value) => value.length === 0)) {
-        throw new Error("Set device model, Android version, and architecture before the Android smoke run.");
+        throw new Error(STRINGS.faults.smokeAndroidFieldsRequired);
       }
       const meta = await this.#loadBuildMeta();
       const vectorSet = embeddedVectors();
@@ -767,11 +765,11 @@ export default class EkdPhase1Plugin extends Plugin {
         normalizePath(`${outputRoot}/${reportRelative}`),
         `${JSON.stringify(report, null, 2)}\n`
       );
-      const mode = meta.source_tree_state === "clean" ? "formal" : "DEV ONLY (dirty source; cannot close DP)";
-      new Notice(`Phase 1 ${selected} smoke: ${report.aggregate.verdict}; ${mode}.`);
+      const mode = meta.source_tree_state === "clean" ? STRINGS.faults.smokeFormal : STRINGS.faults.smokeDirtyDev;
+      new Notice(STRINGS.faults.smokeComplete(selected, report.aggregate.verdict, mode));
     } catch (error) {
       console.error("EKD Phase 1 smoke failed", error);
-      new Notice(`Phase 1 smoke failed: ${error instanceof Error ? error.message : String(error)}`, 10000);
+      new Notice(STRINGS.faults.smokeFailed(error instanceof Error ? error.message : String(error)), 10000);
     } finally {
       this.#running = false;
     }

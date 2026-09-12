@@ -1,9 +1,11 @@
 // ADR-0023 §2: dockable P0 snapshot view. Presentation only — every state transition
 // comes from SnapshotPanelModel (fed by the port-interception progress callback), and
 // the trigger/open-report actions are callbacks wired by the plugin, never protocol logic.
+// 文案经 strings.ts（中文本地化，2026-09-12）。
 import { ItemView, Notice } from "obsidian";
 import type { WorkspaceLeaf } from "obsidian";
 import type { SnapshotPanelRender } from "./snapshot-panel-model.js";
+import { STRINGS } from "./strings.js";
 
 export const VIEW_TYPE_EKD_P0_SNAPSHOT = "ekd-p0-snapshot-view";
 
@@ -30,7 +32,7 @@ export class P0SnapshotView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "EKD P0 snapshot";
+    return STRINGS.view.title;
   }
 
   getIcon(): string {
@@ -58,61 +60,58 @@ export class P0SnapshotView extends ItemView {
     container.addClass("ekd-p0-snapshot-view");
 
     const header = container.createDiv({ cls: "ekd-p0-header" });
-    header.createEl("h4", { text: "EKD P0 snapshot" });
-    header.createEl("p", {
-      cls: "ekd-p0-muted",
-      text: "Creates a P0 snapshot of this Vault through the shared core. The Vault is never written; log, store, Recovery File and report targets come from the plugin settings."
-    });
+    header.createEl("h4", { text: STRINGS.view.header });
+    header.createEl("p", { cls: "ekd-p0-muted", text: STRINGS.view.description });
 
     const runSection = container.createDiv({ cls: "ekd-p0-run" });
     const button = runSection.createEl("button", {
       cls: "mod-cta",
-      text: this.#callbacks.isRunning() ? "Snapshot running…" : "Create snapshot"
+      text: this.#callbacks.isRunning() ? STRINGS.view.snapshotRunning : STRINGS.view.createSnapshot
     });
     button.disabled = this.#callbacks.isRunning();
     button.addEventListener("click", () => {
       if (!this.#callbacks.isRunning()) this.#callbacks.onTrigger();
     });
     if (this.#callbacks.consoleAvailable()) {
-      const consoleButton = runSection.createEl("button", { text: "打开状态页" });
+      const consoleButton = runSection.createEl("button", { text: STRINGS.view.openConsole });
       consoleButton.addEventListener("click", () => this.#callbacks.onOpenConsole());
-      runSection.createEl("p", { cls: "ekd-p0-muted", text: "状态页仅监听本机 127.0.0.1，只读展示进程/存储/任务摘要。" });
+      runSection.createEl("p", { cls: "ekd-p0-muted", text: STRINGS.view.consoleHint });
     }
 
     const progressSection = container.createDiv({ cls: "ekd-p0-progress" });
-    progressSection.createEl("h5", { text: "Progress" });
+    progressSection.createEl("h5", { text: STRINGS.view.progress });
     if (this.#render === undefined || this.#render.progressLines.length === 0) {
-      progressSection.createEl("p", { cls: "ekd-p0-muted", text: "No snapshot run in this session yet." });
+      progressSection.createEl("p", { cls: "ekd-p0-muted", text: STRINGS.view.noRunYet });
     } else {
       const list = progressSection.createEl("ul");
       for (const line of this.#render.progressLines) list.createEl("li", { text: line });
     }
 
     const resultSection = container.createDiv({ cls: "ekd-p0-result" });
-    resultSection.createEl("h5", { text: "Last result" });
+    resultSection.createEl("h5", { text: STRINGS.view.lastResult });
     const render = this.#render;
     if (render === undefined || render.phase === "idle") {
-      resultSection.createEl("p", { cls: "ekd-p0-muted", text: "Idle." });
+      resultSection.createEl("p", { cls: "ekd-p0-muted", text: STRINGS.view.idle });
       return;
     }
     if (render.phase === "failed" && render.errorMessage !== undefined) {
-      resultSection.createEl("p", { cls: "ekd-p0-error", text: `Failed: ${render.errorMessage}` });
+      resultSection.createEl("p", { cls: "ekd-p0-error", text: `${STRINGS.view.failedPrefix}${render.errorMessage}` });
       resultSection.createEl("p", {
         cls: "ekd-p0-muted",
-        text: "Check the plugin settings (domain ID and output paths) and that the targets do not already exist."
+        text: render.errorHint ?? STRINGS.view.failedHint
       });
     }
     if (render.report !== undefined) {
       const report = render.report;
       const card = resultSection.createDiv({ cls: "ekd-p0-summary" });
       const rows: Array<[string, string]> = [
-        ["Run ID", report.run_id],
-        ["Snapshot ID", `${report.snapshot_id_hex.slice(0, 16)}…`],
-        ["Files", String(report.file_count)],
-        ["Plaintext bytes", String(report.total_plaintext_bytes)],
-        ["Ciphertext bytes", String(report.total_ciphertext_bytes)],
-        ["Objects", String(report.visibility_summary.object_count)],
-        ["Completed at", report.completed_at]
+        [STRINGS.view.table.runId, report.run_id],
+        [STRINGS.view.table.snapshotId, `${report.snapshot_id_hex.slice(0, 16)}…`],
+        [STRINGS.view.table.files, String(report.file_count)],
+        [STRINGS.view.table.plaintextBytes, String(report.total_plaintext_bytes)],
+        [STRINGS.view.table.ciphertextBytes, String(report.total_ciphertext_bytes)],
+        [STRINGS.view.table.objects, String(report.visibility_summary.object_count)],
+        [STRINGS.view.table.completedAt, report.completed_at]
       ];
       const table = card.createEl("table");
       for (const [label, value] of rows) {
@@ -122,14 +121,14 @@ export class P0SnapshotView extends ItemView {
       }
       card.createEl("p", {
         cls: "ekd-p0-muted",
-        text: `Visibility summary scope: ${render.visibilityEvidenceScope} (not formal ACC-32/33 evidence).`
+        text: STRINGS.view.visibilityScopeNote(render.visibilityEvidenceScope)
       });
-      const openButton = card.createEl("button", { text: "Open report file" });
+      const openButton = card.createEl("button", { text: STRINGS.view.openReport });
       openButton.addEventListener("click", () => {
         try {
           this.#callbacks.onOpenReport(this.#reportPathForView());
         } catch (error) {
-          new Notice(`Could not open report: ${error instanceof Error ? error.message : String(error)}`);
+          new Notice(STRINGS.view.openReportFailed(error instanceof Error ? error.message : String(error)));
         }
       });
     }

@@ -39,12 +39,12 @@ describe("SnapshotPanelModel (ADR-0023 view state)", () => {
 
     expect(model.render.phase).toBe("running");
     expect(model.render.progressLines).toEqual([
-      "Scanning: 1 file(s)…",
-      "Scan complete: 3 file(s), 104 plaintext byte(s).",
-      "Encrypting: 2/3 — 79 plaintext byte(s) so far.",
-      "Encrypted 3 file(s).",
-      "Recovery File: verifying possession…",
-      "Recovery File: possession verified (exclusive write + byte-exact read-back)."
+      "扫描：1 个文件…",
+      "扫描完成：3 个文件，104 明文字节。",
+      "加密：2/3 — 累计 79 明文字节。",
+      "已加密 3 个文件。",
+      "恢复文件：验证持有中…",
+      "恢复文件：持有权验证完成（独占写入 + 字节一致回读）。"
     ]);
   });
 
@@ -56,7 +56,7 @@ describe("SnapshotPanelModel (ADR-0023 view state)", () => {
     expect(model.render.phase).toBe("complete");
     expect(model.render.report).toBe(report);
     expect(model.render.visibilityEvidenceScope).toBe("plugin-summary-not-formal-acc-32-or-33");
-    expect(model.render.progressLines.at(-1)).toContain("Snapshot complete: 3 file(s)");
+    expect(model.render.progressLines.at(-1)).toContain("快照完成：3 个文件");
 
     model.onProgress({ phase: "scanning", status: "active", scannedFiles: 9 });
     expect(model.render.phase).toBe("complete");
@@ -69,7 +69,7 @@ describe("SnapshotPanelModel (ADR-0023 view state)", () => {
 
     expect(model.render.phase).toBe("failed");
     expect(model.render.errorMessage).toBe("Obsidian desktop did not expose the Node module loader");
-    expect(model.render.progressLines.at(-1)).toContain("Snapshot failed:");
+    expect(model.render.progressLines.at(-1)).toContain("快照失败：");
 
     model.reset();
     expect(model.render.phase).toBe("idle");

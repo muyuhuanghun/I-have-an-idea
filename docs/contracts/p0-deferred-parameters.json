@@ -197,9 +197,10 @@
       "name": "Proposal key 的审核者分发方式",
       "owner": "OWNER-SECURITY",
       "phase": "P1-beta team proposal design",
-      "status": "deferred",
-      "close_artifact": "proposal-key-distribution ADR + revocation tests",
-      "hard_stop": "未关闭前不得实现团队 Proposal E2EE"
+      "status": "closed",
+      "close_artifact": "proposal-key-distribution ADR（ADR-0032：审批签名凭证定位、设备批准链上的公钥签名承认分发、前向失效+历史持久化撤销语义）+ 撤销测试计划 RT-1..8（设计级，随实现合同落库）+ PRO-THR/INV/ACC 候选文本（不翻转正式 registry）+ 四视角两轮自检记录",
+      "hard_stop": "团队 Proposal E2EE 实现仍被阻止：待审内容的密钥分发与撤销后内容前向安全属 DP-025，注册权威扩展/治理恢复属 DP-019，均须另立合同并单独授权；撤销审批凭证不得被表述为撤销内容访问权；实现合同冻结前不得实现注册表、审批验证或任何团队加密",
+      "closure_adr": "docs/decisions/0032-p1-beta-proposal-key-distribution-design.md"
     },
     {
       "id": "DP-019",

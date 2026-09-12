@@ -799,5 +799,5 @@ Phase 1 至 Phase 4-B 已完成各自获授权的合同与实现切片。2026-08
 
 ### 24.3 P1-beta / P1-release（既有 DP 覆盖）
 
-- P1-beta：团队 Proposal key 分发（DP-018）、紧急治理恢复（DP-019）、额度/风险校准（DP-023）、group epoch 与成员变更（DP-025）。
+- P1-beta：团队 Proposal key 分发（DP-018）✅ 已关闭（ADR-0032，2026-09-12，纯设计）；紧急治理恢复（DP-019）、额度/风险校准（DP-023）、group epoch 与成员变更（DP-025）未授权。
 - P1-release：签名更新与供应链边界（DP-020）、删除 SLA（DP-021）、自托管迁移与密文导出（DP-022）。

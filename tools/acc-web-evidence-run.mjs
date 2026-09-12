@@ -312,10 +312,10 @@ async function main() {
     gate_precedes_source_read: boolCheck(
       "gate_precedes_source_read",
       sourceCallsAfterNegatives === 0 &&
-        sourceCallsAfterPositives === 3 &&
+        sourceCallsAfterPositives === 2 &&
         forbiddenBodies.length === 1 &&
         forbiddenBodies[0] === "Forbidden.",
-      `after ${negativeRequests.length} negatives sourceCalls=${sourceCallsAfterNegatives}; the positive cycle touched exactly 3 sources (head, storage, none for bootstrap/page); all 403s share the single body "Forbidden."`
+      `after ${negativeRequests.length} negatives sourceCalls=${sourceCallsAfterNegatives}; the positive /api/status cycle touched exactly the 2 instrumented sources (head, storage; the constant-null report source is unwrapped); all 403s share the single body "Forbidden."`
     )
   }, ["CONSOLE_SESSION_REJECTED"], {}, [
     artifactFile("web-console/browser-observations.json"),

@@ -27,6 +27,7 @@ try {
   process.exit(2);
 }
 const headDirectory = await import("../packages/adapters/dist/head-directory.js");
+const { ConsoleAdapterError } = await import("../packages/adapters/dist/errors.js");
 const { WebCryptoDeviceSignatureProvider } = await import("../packages/crypto/dist/device-signature.js");
 
 const OBSERVATIONS_PATH = join(ARTIFACTS, "web-console", "browser-observations.json");
@@ -469,7 +470,7 @@ async function main() {
   // 6. missing storage source -> unavailable, never 0
   const missingStorage = await webConsole.projectStorageStats(join(RUN_ROOT, "does-not-exist")).then(
     () => ({ ok: false }),
-    (error) => ({ ok: error instanceof adapters.ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE", code: error.code })
+    (error) => ({ ok: error instanceof ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE", code: error.code })
   );
   matrix.push({ scenario: "storage_missing", verdict: "CONSOLE_SOURCE_UNAVAILABLE", expected: "fail-closed", ok: missingStorage.ok === true });
 
@@ -478,7 +479,7 @@ async function main() {
     service: { version: "p1-console-v1", build: GIT_COMMIT },
     headStatus: async () => ({ present: false, sequence: null, created_at: null, verdict: "unknown", checked_at: new Date().toISOString() }),
     storageStats: async () => {
-      throw new adapters.ConsoleAdapterError("CONSOLE_SOURCE_UNAVAILABLE", "storage", "store root vanished");
+      throw new ConsoleAdapterError("CONSOLE_SOURCE_UNAVAILABLE", "storage", "store root vanished");
     },
     reportSummary: async () => null,
     tasks: new webConsole.WebConsoleTaskRing()
@@ -563,7 +564,7 @@ async function main() {
       await probe();
       pathResults.push({ label, rejected: false });
     } catch (error) {
-      pathResults.push({ label, rejected: error instanceof adapters.ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE", code: error.code });
+      pathResults.push({ label, rejected: error instanceof ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE", code: error.code });
     }
   };
   // Junction inside the store root pointing outside the authorized root
@@ -622,7 +623,7 @@ async function main() {
         (settled.total_ciphertext_bytes === expectedPost) &&
         (stats.total_ciphertext_bytes !== PRE_MUTATION_TOTAL || settled.total_ciphertext_bytes === PRE_MUTATION_TOTAL);
     } catch (error) {
-      replacementFailClosed += error instanceof adapters.ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE" ? 1 : 0;
+      replacementFailClosed += error instanceof ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE" ? 1 : 0;
       replacementObservedTruth = replacementObservedTruth && true;
     }
     await mutation;

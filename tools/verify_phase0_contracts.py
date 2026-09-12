@@ -420,7 +420,13 @@ def _s7_closure_commit(closeout_text: str) -> str:
 
 def _p1_alpha_closure_commit(closeout_text: str) -> str:
     match = re.search(r"^P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT: ([0-9a-f]{40})$", closeout_text, flags=re.MULTILINE)
-    require(match is not None, "closeout report lacks a 'P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
+    require(match is not None, "closeout report lacks an 'P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
+    return match.group(1)
+
+
+def _web_closure_commit(closeout_text: str) -> str:
+    match = re.search(r"^WEB_EVIDENCE_CLOSED_AT_COMMIT: ([0-9a-f]{40})$", closeout_text, flags=re.MULTILINE)
+    require(match is not None, "closeout report lacks a 'WEB_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
     return match.group(1)
 
 
@@ -570,10 +576,11 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     closeout_commit = _r1_closure_commit(closeout_text)
     s7_commit: str | None = None
     p1_commit: str | None = None
+    web_commit: str | None = None
     for item in trace["acceptance"]:
         acc_id = item["id"]
         if item.get("status") != "passed":
-            require(item.get("status") == "untested" and item.get("evidence_scope") in {"stage-7", "p1-alpha"},
+            require(item.get("status") == "untested" and item.get("evidence_scope") in {"stage-7", "p1-alpha", "web-console"},
                     f"{acc_id}: registry status {item.get('status')!r} has no evidence to validate")
             continue
         relative = Path(item["evidence_path"])
@@ -600,6 +607,11 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
                 p1_commit = _p1_alpha_closure_commit(closeout_text)
             require(report_commit == p1_commit,
                     f"{acc_id}: evidence commit {report_commit} differs from p1-alpha closeout-declared {p1_commit}")
+        elif item.get("evidence_scope") == "web-console":
+            if web_commit is None:
+                web_commit = _web_closure_commit(closeout_text)
+            require(report_commit == web_commit,
+                    f"{acc_id}: evidence commit {report_commit} differs from web-console closeout-declared {web_commit}")
         else:
             require(report_commit == closeout_commit,
                     f"{acc_id}: evidence commit {report_commit} differs from closeout-declared {closeout_commit}")

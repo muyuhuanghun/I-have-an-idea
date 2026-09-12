@@ -14,6 +14,10 @@ S7_EVIDENCE_CLOSED_AT_COMMIT: cd0999465022cafc6094153db84471abe1119315
 
 P1_ALPHA_EVIDENCE_CLOSED_AT_COMMIT: bbb5a7e0f46b4f1506eb32374bf041b7cd288296
 
+WEB_EVIDENCE_CLOSED_AT_COMMIT: 9c160ce0cff259ac3b21775a3753818538299d2b
+
+> 2026-09-12 第四绑定（DP-027 / ADR-0030-0031 / 切片 C3）：`node tools/acc-web-evidence-run.mjs` → `WEB_EVIDENCE_RUN_DONE 6 reports at HEAD 9c160ce…`（ACC-44..49 全部 `passed`，`evidence_scope: "web-console"`）。运行前提：实机浏览器观察记录 `artifacts/web-console/browser-observations.json`（IAB 真实浏览器：页面渲染、零 cookie/localStorage/sessionStorage/IndexedDB/Service Worker、资源请求仅 4 个白名单端点、opaque-origin 跨源 fetch 被拒）；HTTP 级负例（Host/Site/CORS/方法）、响应字节扫描（§5.2 marker 全零命中）、写探测前后指纹不变、verdict 矩阵逐场景冻结、真实 Junction/symlink/8.3 负例 fail-closed。runner 及其修复序列在 `a28901d`→`3cfd242`→`3c59f8a`→`2a4b96c`→`19ff409`→`9c160ce` 纳管，正式运行在 `9c160ce` 的 clean 树上执行。
+
 ## -1. 2026-09-02 关闭记录（当前权威）
 
 本节取代下方全部历史与撤回章节，成为本报告的当前权威结论。关闭依据：

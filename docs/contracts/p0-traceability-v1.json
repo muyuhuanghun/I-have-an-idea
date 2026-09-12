@@ -392,32 +392,32 @@
     },
     {
       "id": "ACC-44", "title": "Loopback 与 Host/Origin/Fetch-Metadata 负例全部失败关闭", "kind": "security", "threat_ids": ["THR-06"], "invariant_ids": ["INV-19"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-44-web-console-loopback.json", "status": "untested", "evidence_scope": "web-console",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-44-web-console-loopback.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "loopback_bind_only", "host_mismatch_rejected", "fetch_site_negative_rejected", "cors_absent", "rebinding_negative_rejected", "gate_precedes_source_read"], "required_error_code_groups": [["CONSOLE_SESSION_REJECTED"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-45", "title": "响应字节扫描证明白名单外字段不存在", "kind": "security", "threat_ids": ["THR-08"], "invariant_ids": ["INV-21"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-45-web-console-bytescan.json", "status": "untested", "evidence_scope": "web-console",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-45-web-console-bytescan.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "response_byte_scan_clean", "whitelist_only_fields"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-46", "title": "写操作探测后文件系统与协议指纹不变", "kind": "security", "threat_ids": ["THR-09"], "invariant_ids": ["INV-20"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-46-web-console-readonly.json", "status": "untested", "evidence_scope": "web-console",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-46-web-console-readonly.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "write_probe_fingerprint_unchanged", "method_negatives_rejected"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-47", "title": "verdict 矩阵逐场景冻结且 unknown 不假绿", "kind": "security", "threat_ids": ["THR-10"], "invariant_ids": ["INV-22"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-47-web-console-verdicts.json", "status": "untested", "evidence_scope": "web-console",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-47-web-console-verdicts.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "verdict_matrix_frozen", "unknown_not_rendered_green", "source_missing_shows_unavailable"], "required_error_code_groups": [["CONSOLE_SOURCE_UNAVAILABLE"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-48", "title": "会话能力不出现在历史、缓存、存储、Referrer 与日志", "kind": "security", "threat_ids": ["THR-07"], "invariant_ids": ["INV-23"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-48-web-console-token.json", "status": "untested", "evidence_scope": "web-console",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-48-web-console-token.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "token_absent_in_browser_history_cache_storage", "token_absent_in_logs_and_referrer", "bootstrap_delivery_only"], "required_error_code_groups": [["CONSOLE_SESSION_REJECTED"]], "forbidden_side_effects": ["undeclared_persistent_state_used"]}
     },
     {
       "id": "ACC-49", "title": "Windows Junction/symlink/8.3 与读时替换负例失败关闭", "kind": "security", "threat_ids": ["THR-11"], "invariant_ids": ["INV-24"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-49-web-console-paths.json", "status": "untested", "evidence_scope": "web-console",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-49-web-console-paths.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "junction_negative_rejected", "symlink_negative_rejected", "short_path_negative_rejected", "read_time_replacement_rejected"], "required_error_code_groups": [["CONSOLE_SOURCE_UNAVAILABLE"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     }
   ]

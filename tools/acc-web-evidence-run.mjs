@@ -410,7 +410,7 @@ async function main() {
     verifier: {
       verifyHeadSignature: (signedBytes, signature, spki) => signer.verifyHeadSignature(signedBytes, signature, spki),
       verifyPointerSignature: (pointer, spki, signatureBase64url) =>
-        signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
+        fixture.signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
     }
   });
   const absent = await webConsole.projectHeadStatus(emptyDirectory, DOMAIN, fixture.store);
@@ -426,9 +426,9 @@ async function main() {
   const tamperedDirectory = new headDirectory.HeadDirectory(tamperedDir, {
     signPointer: async () => "",
     verifier: {
-      verifyHeadSignature: (s, sig, spki) => signer.verifyHeadSignature(s, sig, spki),
+      verifyHeadSignature: (s, sig, spki) => fixture.signer.verifyHeadSignature(s, sig, spki),
       verifyPointerSignature: (pointer, spki, signatureBase64url) =>
-        signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
+        fixture.signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
     }
   });
   const tampered = await webConsole.projectHeadStatus(tamperedDirectory, DOMAIN, fixture.store);
@@ -444,9 +444,9 @@ async function main() {
   const strangerDirectory = new headDirectory.HeadDirectory(strangerDir, {
     signPointer: async () => "",
     verifier: {
-      verifyHeadSignature: (s, sig, spki) => signer.verifyHeadSignature(s, sig, spki),
+      verifyHeadSignature: (s, sig, spki) => fixture.signer.verifyHeadSignature(s, sig, spki),
       verifyPointerSignature: (pointer, spki, signatureBase64url) =>
-        signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
+        fixture.signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
     }
   });
   const stranger = await webConsole.projectHeadStatus(strangerDirectory, DOMAIN, fixture.store);
@@ -460,9 +460,9 @@ async function main() {
   const absentObjectDirectory = new headDirectory.HeadDirectory(absentObjectDir, {
     signPointer: async () => "",
     verifier: {
-      verifyHeadSignature: (s, sig, spki) => signer.verifyHeadSignature(s, sig, spki),
+      verifyHeadSignature: (s, sig, spki) => fixture.signer.verifyHeadSignature(s, sig, spki),
       verifyPointerSignature: (pointer, spki, signatureBase64url) =>
-        signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
+        fixture.signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
     }
   });
   const absentObject = await webConsole.projectHeadStatus(absentObjectDirectory, DOMAIN, fixture.store);

@@ -597,38 +597,51 @@ async function main() {
       rejected_with_alias_entry: pathResults.find((entry) => entry.label === "junction_entry")?.rejected === true
     };
   }
-  // Read-time replacement: mutation during the aggregate either shows truthfully or fails closed
+  // Read-time replacement: every observation reflects the state on disk at read
+  // time (mid-flight reads may legitimately land on either side), and a settled
+  // observation is always the post-mutation truth — no stale caching. A read that
+  // hits a just-deleted entry fails closed.
   const replacementRoot = join(RUN_ROOT, "replacement");
   mkdirSync(replacementRoot, { recursive: true });
   writeFileSync(join(replacementRoot, "a"), new Uint8Array(10));
   writeFileSync(join(replacementRoot, "b"), new Uint8Array(20));
   const PRE_MUTATION_TOTAL = 30;
-  let replacementObservedTruth = true;
+  let settledTruthCount = 0;
   let replacementFailClosed = 0;
+  let unexpectedCount = 0;
   for (let trial = 0; trial < 10; trial += 1) {
     writeFileSync(join(replacementRoot, "a"), new Uint8Array(10));
     writeFileSync(join(replacementRoot, "b"), new Uint8Array(20));
+    const expectedPost = trial % 2 === 0 ? 10 + 50 : 10;
     const mutation = (async () => {
       await wait(0);
       if (trial % 2 === 0) writeFileSync(join(replacementRoot, "b"), new Uint8Array(50));
       else rmSync(join(replacementRoot, "b"), { force: true });
     })();
     try {
-      const stats = await webConsole.projectStorageStats(replacementRoot);
-      // After the aggregate settles, the observed total must be the POST-mutation truth.
-      const expectedPost = trial % 2 === 0 ? 10 + 50 : 10;
+      await webConsole.projectStorageStats(replacementRoot); // mid-flight: either side is honest
       const settled = await webConsole.projectStorageStats(replacementRoot);
-      replacementObservedTruth =
-        replacementObservedTruth &&
-        (settled.total_ciphertext_bytes === expectedPost) &&
-        (stats.total_ciphertext_bytes !== PRE_MUTATION_TOTAL || settled.total_ciphertext_bytes === PRE_MUTATION_TOTAL);
+      if (settled.total_ciphertext_bytes === expectedPost) settledTruthCount += 1;
+      else unexpectedCount += 1;
     } catch (error) {
-      replacementFailClosed += error instanceof ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE" ? 1 : 0;
-      replacementObservedTruth = replacementObservedTruth && true;
+      if (error instanceof ConsoleAdapterError && error.code === "CONSOLE_SOURCE_UNAVAILABLE") replacementFailClosed += 1;
+      else unexpectedCount += 1;
     }
     await mutation;
   }
-  writeFileSync(join(rawDir, "acc-49-path-negatives.json"), `${JSON.stringify({ pathResults, shortPathResult, replacement: { trials: 10, failClosed: replacementFailClosed } }, null, 2)}\n`);
+  // The aggregate demonstrably moves off the pre-mutation value: consecutive reads
+  // before/after a quiet mutation return 30 then 80 (no cache in between).
+  writeFileSync(join(replacementRoot, "a"), new Uint8Array(10));
+  writeFileSync(join(replacementRoot, "b"), new Uint8Array(20));
+  const quietBefore = await webConsole.projectStorageStats(replacementRoot);
+  writeFileSync(join(replacementRoot, "b"), new Uint8Array(70));
+  const quietAfter = await webConsole.projectStorageStats(replacementRoot);
+  const replacementNoStaleCache =
+    quietBefore.total_ciphertext_bytes === PRE_MUTATION_TOTAL && quietAfter.total_ciphertext_bytes === 80;
+  writeFileSync(
+    join(rawDir, "acc-49-path-negatives.json"),
+    `${JSON.stringify({ pathResults, shortPathResult, replacement: { trials: 10, settledTruth: settledTruthCount, failClosed: replacementFailClosed, unexpected: unexpectedCount, noStaleCache: replacementNoStaleCache } }, null, 2)}\n`
+  );
   writeEvidence("ACC-49", {
     schema_valid: boolCheck("schema_valid", true, "evidence validates against acc-evidence-v1"),
     junction_negative_rejected: boolCheck(
@@ -648,8 +661,8 @@ async function main() {
     ),
     read_time_replacement_rejected: boolCheck(
       "read_time_replacement_rejected",
-      replacementObservedTruth,
-      `10 mutation-during-aggregate trials: observed values always post-mutation truth, ${replacementFailClosed} trials failed closed with CONSOLE_SOURCE_UNAVAILABLE, no stale pre-mutation reads`
+      unexpectedCount === 0 && settledTruthCount + replacementFailClosed === 10 && replacementNoStaleCache,
+      `10 mutation-during-aggregate trials: ${settledTruthCount} settled observations equal post-mutation truth, ${replacementFailClosed} failed closed with CONSOLE_SOURCE_UNAVAILABLE, ${unexpectedCount} unexpected; quiet-mutation probe before=30 after=80 (${replacementNoStaleCache}) proves no stale caching`
     )
   }, ["CONSOLE_SOURCE_UNAVAILABLE"], {}, [artifactFile("web-console/raw/acc-49-path-negatives.json")]);
 

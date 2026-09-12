@@ -261,9 +261,10 @@
       "name": "团队 group epoch、成员加入退出与旧代际读取边界",
       "owner": "OWNER-SECURITY",
       "phase": "P1-beta team key lifecycle",
-      "status": "deferred",
-      "close_artifact": "group-key-lifecycle ADR + join/revoke/old-epoch acceptance evidence",
-      "hard_stop": "未关闭前不得实现真实团队成员加密、撤销或声称退出成员失去已下载历史"
+      "status": "closed",
+      "close_artifact": "group-key-lifecycle ADR（ADR-0033：成员集合变更必推 epoch + 密钥擦除、新成员仅见加入后内容、L1/L2/L3 旧代际三级边界——v1 不做旧密文重加密、传输层缓解如实区分）+ join/revoke/old-epoch 验收证据计划 ET-1..9（设计级，随实现合同落库）+ GRP-THR/INV/ACC 候选文本（不翻转正式 registry）+ 四视角两轮自检记录",
+      "hard_stop": "真实团队成员加密、撤销与 epoch 机制的实现仍被阻止：须与 DP-018 的 proposal 注册表合并为 P1-beta 实现阶段合同并单独授权；三级边界禁止跨级表述——不得声称退出成员失去已下载历史（L1），不得把共享存储旧代际的传输层访问停止表述为密码学撤销（L2），v1 不做旧密文重加密；历史补发（WhatsApp 式）为未来显式能力，不得默认混入",
+      "closure_adr": "docs/decisions/0033-p1-beta-group-key-lifecycle-design.md"
     },
     {
       "id": "DP-026",

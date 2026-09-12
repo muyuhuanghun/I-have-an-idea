@@ -5,11 +5,13 @@
 // evidence is written, and binds every report to the current HEAD commit.
 // Requires `pnpm build` first. Exit 0 when all six sections pass.
 import { execFileSync } from "node:child_process";
+import { Buffer } from "node:buffer";
 import { generateKeyPairSync, randomUUID, createHash } from "node:crypto";
 import { request as httpRequest } from "node:http";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { setTimeout as sleep } from "node:timers/promises";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ARTIFACTS = resolve(REPO_ROOT, "artifacts");
@@ -17,10 +19,9 @@ const RUN_ROOT = join(ARTIFACTS, "web-console", "run");
 const GIT_COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
 const RUN_ID = randomUUID();
 
-let core, adapters, webConsole;
+let core, webConsole;
 try {
   core = await import("../packages/core/dist/index.js");
-  adapters = await import("../packages/adapters/dist/index.js");
   webConsole = await import("../packages/adapters/dist/web-console.js");
 } catch {
   console.error("acc-web-evidence-run: dist is missing; run `pnpm build` first.");
@@ -184,7 +185,7 @@ function fingerprint(dirs) {
   return entries.sort().join("\n");
 }
 
-const wait = (ms) => new Promise((resolveWait) => setTimeout(resolveWait, ms));
+const wait = (ms) => sleep(ms);
 
 async function main() {
   if (!SOURCE_TREE_CLEAN_AT_START) {
@@ -199,7 +200,6 @@ async function main() {
 
   // Shared instrumented sources: count invocations to prove gates run first.
   let sourceCalls = 0;
-  let lastHeadProjection = { present: false, sequence: null, created_at: null, verdict: "not_checked", checked_at: "" };
   const logLines = [];
   const running = await webConsole.startWebConsoleServer({
     service: { version: "p1-console-v1", build: GIT_COMMIT },
@@ -408,7 +408,7 @@ async function main() {
   const emptyDirectory = new headDirectory.HeadDirectory(emptyDir, {
     signPointer: async () => "",
     verifier: {
-      verifyHeadSignature: (signedBytes, signature, spki) => signer.verifyHeadSignature(signedBytes, signature, spki),
+      verifyHeadSignature: (signedBytes, signature, spki) => fixture.signer.verifyHeadSignature(signedBytes, signature, spki),
       verifyPointerSignature: (pointer, spki, signatureBase64url) =>
         fixture.signer.verifyHeadSignature(headDirectory.encodeHeadPointerBytes(pointer), new Uint8Array(Buffer.from(signatureBase64url, "base64url")), spki)
     }

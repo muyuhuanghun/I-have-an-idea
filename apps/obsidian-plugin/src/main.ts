@@ -40,6 +40,7 @@ import {
 } from "./p0-snapshot.js";
 import { SnapshotPanelModel } from "./snapshot-panel-model.js";
 import { P0SnapshotView, VIEW_TYPE_EKD_P0_SNAPSHOT } from "./snapshot-view.js";
+import { PluginConsoleHost } from "./console-host.js";
 import {
   createNodeVaultPathValidator,
   requireNewReportTarget,
@@ -62,6 +63,7 @@ interface EkdSettings {
   readonly androidDeviceModel: string;
   readonly androidOsVersion: string;
   readonly androidArchitecture: string;
+  readonly consoleEnabled: boolean;
   readonly domainIdHex: string;
   readonly objectStorePath: string;
   readonly snapshotLogPath: string;
@@ -81,6 +83,7 @@ const DEFAULT_SETTINGS: EkdSettings = {
   androidDeviceModel: "",
   androidOsVersion: "",
   androidArchitecture: "",
+  consoleEnabled: false,
   domainIdHex: "",
   objectStorePath: "",
   snapshotLogPath: "",
@@ -224,6 +227,9 @@ async function createAndroidDeviceBinding(
 
 type NodePath = typeof NodePathApi;
 
+/** Settings fields that hold strings; `consoleEnabled` is boolean and toggled separately. */
+type StringSettingKey = Exclude<keyof EkdSettings, "consoleEnabled">;
+
 interface SnapshotPathSettings {
   readonly objectStorePath: string;
   readonly snapshotLogPath: string;
@@ -265,7 +271,7 @@ class Phase1SettingTab extends PluginSettingTab {
     this.containerEl.createEl("p", {
       text: "Windows desktop only. Set every path explicitly; the ObjectStore directory and every output parent must already exist outside the source Vault. Snapshot creation never writes protocol artifacts into the Vault."
     });
-    const snapshotFields: readonly [keyof EkdSettings, string, string][] = [
+    const snapshotFields: readonly [StringSettingKey, string, string][] = [
       ["domainIdHex", "Domain ID", "64 lowercase hexadecimal characters"],
       ["objectStorePath", "ObjectStore directory", "Absolute path to an existing directory"],
       ["snapshotLogPath", "Snapshot log", "Absolute path to a new .jsonl file"],
@@ -284,11 +290,24 @@ class Phase1SettingTab extends PluginSettingTab {
           }));
     }
 
+    this.containerEl.createEl("h2", { text: "EKD 本机状态页（只读）" });
+    this.containerEl.createEl("p", {
+      text: "ADR-0030/0031：启用后插件在本机 127.0.0.1 随机端口运行只读状态服务（进程健康、密文侧存储统计、最近快照任务）。服务不经 URL/日志传递凭据，不提供任何写操作，不监听局域网。默认关闭。"
+    });
+    new Setting(this.containerEl)
+      .setName("启用本机状态页")
+      .addToggle((toggle) => toggle
+        .setValue(this.#plugin.settings.consoleEnabled)
+        .onChange(async (value) => {
+          await this.#plugin.setConsoleEnabled(value);
+          toggle.setValue(this.#plugin.settings.consoleEnabled);
+        }));
+
     this.containerEl.createEl("h2", { text: "EKD Phase 1 Android smoke metadata" });
     this.containerEl.createEl("p", {
       text: "These fields identify the physical Android smoke environment. The generated key binds the report to this plugin runtime; it is not a production keystore or hardware attestation."
     });
-    const fields: readonly [keyof EkdSettings, string, string][] = [
+    const fields: readonly [StringSettingKey, string, string][] = [
       ["androidDeviceModel", "Device model", "Example: Pixel 8"],
       ["androidOsVersion", "Android version", "Example: Android 16"],
       ["androidArchitecture", "Architecture", "Example: arm64-v8a"]
@@ -314,6 +333,16 @@ export default class EkdPhase1Plugin extends Plugin {
   #snapshotStatus: HTMLElement | undefined;
   #settingsWrites: Promise<void> = Promise.resolve();
   readonly #panelModel = new SnapshotPanelModel();
+  readonly #console = new PluginConsoleHost({
+    version: "p1-console-v1",
+    build: async () => (await this.#loadBuildMeta()).source_commit,
+    objectStorePath: () => {
+      const value = this.settings.objectStorePath.trim();
+      return value.length === 0 ? undefined : value;
+    },
+    log: (line) => console.log(`[ekd-console] ${line}`)
+  });
+  #consoleBuildNoticeShown = false;
 
   async updateSetting(key: keyof EkdSettings, value: string): Promise<boolean> {
     if (this.#running) {
@@ -328,6 +357,56 @@ export default class EkdPhase1Plugin extends Plugin {
     return true;
   }
 
+  /** ADR-0031 §13: the read-only localhost console is off by default and toggled here. */
+  async setConsoleEnabled(enabled: boolean): Promise<void> {
+    if (this.#running) {
+      new Notice("Settings cannot change while an EKD operation is active.");
+      return;
+    }
+    this.settings = { ...this.settings, consoleEnabled: enabled };
+    await this.saveData(this.settings);
+    if (enabled) {
+      await this.#startConsole();
+    } else {
+      await this.#console.stop();
+    }
+    this.#syncSnapshotView();
+  }
+
+  async #startConsole(): Promise<void> {
+    try {
+      const url = await this.#console.start();
+      new Notice(`EKD 状态页已启用：${url}（仅本机 127.0.0.1，只读）`);
+    } catch (error) {
+      await this.#console.stop();
+      this.settings = { ...this.settings, consoleEnabled: false };
+      await this.saveData(this.settings);
+      if (!this.#consoleBuildNoticeShown) {
+        this.#consoleBuildNoticeShown = true;
+        new Notice(`EKD 状态页启动失败：${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+
+  #openConsoleInBrowser(): void {
+    const url = this.#console.url;
+    if (url === undefined) {
+      new Notice("EKD 状态页未启用；请先在设置中开启。");
+      return;
+    }
+    const nodeRequire = (globalThis as { require?: (id: string) => unknown }).require;
+    if (typeof nodeRequire !== "function") throw new Error("Node module loader unavailable.");
+    const electron = nodeRequire("electron") as { shell?: { openExternal?: (url: string) => Promise<void> } };
+    const openExternal = electron.shell?.openExternal;
+    if (typeof openExternal !== "function") throw new Error("Electron shell.openExternal is unavailable in this runtime.");
+    // The URL carries no credential — the page bootstraps its session same-origin (ADR-0030 §3.4.6).
+    void openExternal.call(electron.shell, url);
+  }
+
+  onunload(): void {
+    void this.#console.stop();
+  }
+
   async onload(): Promise<void> {
     this.settings = { ...DEFAULT_SETTINGS, ...(await this.loadData() as Partial<EkdSettings> | null ?? {}) };
     this.#reportValidator = createSmokeReportSchemaValidator(JSON.parse(__SMOKE_REPORT_SCHEMA_JSON__) as unknown);
@@ -338,7 +417,15 @@ export default class EkdPhase1Plugin extends Plugin {
     this.registerView(VIEW_TYPE_EKD_P0_SNAPSHOT, (leaf) => new P0SnapshotView(leaf, {
       onTrigger: () => { void this.runSnapshot(); },
       onOpenReport: (reportPath) => { this.#openReportFile(reportPath); },
-      isRunning: () => this.#running
+      isRunning: () => this.#running,
+      consoleAvailable: () => this.#console.running,
+      onOpenConsole: () => {
+        try {
+          this.#openConsoleInBrowser();
+        } catch (error) {
+          new Notice(`Could not open console: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
     }));
     this.addRibbonIcon("lock", "EKD P0 snapshot", () => { void this.activateSnapshotView(); });
     this.addCommand({
@@ -346,6 +433,7 @@ export default class EkdPhase1Plugin extends Plugin {
       name: "Create P0 snapshot",
       callback: () => { void this.activateSnapshotView().then(() => this.runSnapshot()); }
     });
+    if (this.settings.consoleEnabled) void this.#startConsole();
     for (const selected of ["webcrypto", "noble"] as const) {
       this.addCommand({
         id: `phase1-smoke-${selected}`,
@@ -502,6 +590,8 @@ export default class EkdPhase1Plugin extends Plugin {
       );
       const provider = new WebCryptoAes256Provider();
       this.#snapshotStatus?.setText("EKD snapshot: starting");
+      const snapshotStartedAt = new Date().toISOString();
+      const snapshotStartMs = Date.now();
       const execution = await runPluginSnapshotV1({
         domainId: hexToBytes(this.settings.domainIdHex),
         runtimeLimits: {
@@ -540,11 +630,26 @@ export default class EkdPhase1Plugin extends Plugin {
       });
 
       if (execution.snapshot.status !== "complete" || execution.report === undefined) {
+        const errorCode = execution.snapshot.errorCode ?? "SNAPSHOT_FAILED";
+        // ADR-0031 §13: pipeline failures feed the console task ring (counters stay 0).
+        this.#console.recordSnapshotFailure(
+          /^[A-Z][A-Z0-9_]*$/.test(errorCode) ? errorCode : "SNAPSHOT_FAILED",
+          snapshotStartedAt,
+          new Date().toISOString(),
+          Date.now() - snapshotStartMs
+        );
         throw new Error(
           `Snapshot failed in ${execution.snapshot.failedPhase ?? "unknown phase"} ` +
-          `(${execution.snapshot.errorCode ?? "unknown error"}); no pass report was exported.`
+          `(${errorCode}); no pass report was exported.`
         );
       }
+      this.#console.recordSnapshotSuccess({
+        schema_version: execution.report.schema_version,
+        verdict: execution.report.verdict,
+        created_at: execution.report.completed_at,
+        object_count: execution.report.visibility_summary.object_count,
+        total_ciphertext_bytes: execution.report.total_ciphertext_bytes
+      }, snapshotStartedAt, Date.now() - snapshotStartMs);
       this.#showSnapshotResult(execution.report, snapshotReportPath);
       const summary = execution.report.visibility_summary;
       this.#snapshotStatus?.setText(

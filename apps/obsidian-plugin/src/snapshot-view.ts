@@ -11,6 +11,9 @@ export interface SnapshotViewCallbacks {
   readonly onTrigger: () => void;
   readonly onOpenReport: (reportPath: string) => void;
   readonly isRunning: () => boolean;
+  /** ADR-0031 §13: present only while the read-only localhost console is enabled and running. */
+  readonly consoleAvailable: () => boolean;
+  readonly onOpenConsole: () => void;
 }
 
 export class P0SnapshotView extends ItemView {
@@ -70,6 +73,11 @@ export class P0SnapshotView extends ItemView {
     button.addEventListener("click", () => {
       if (!this.#callbacks.isRunning()) this.#callbacks.onTrigger();
     });
+    if (this.#callbacks.consoleAvailable()) {
+      const consoleButton = runSection.createEl("button", { text: "打开状态页" });
+      consoleButton.addEventListener("click", () => this.#callbacks.onOpenConsole());
+      runSection.createEl("p", { cls: "ekd-p0-muted", text: "状态页仅监听本机 127.0.0.1，只读展示进程/存储/任务摘要。" });
+    }
 
     const progressSection = container.createDiv({ cls: "ekd-p0-progress" });
     progressSection.createEl("h5", { text: "Progress" });

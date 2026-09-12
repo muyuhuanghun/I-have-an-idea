@@ -50,7 +50,8 @@
     "INCOMPLETE_RESTORE",
     "LOG_WRITE_FAILED",
     "REPORT_SCHEMA_INVALID",
-    "HONEST_CLAIM_VIOLATION", "HEAD_SIGNATURE_INVALID", "HEAD_DEVICE_UNREGISTERED", "HEAD_ROLLBACK_DETECTED", "HEAD_FORK_DETECTED"
+    "HONEST_CLAIM_VIOLATION", "HEAD_SIGNATURE_INVALID", "HEAD_DEVICE_UNREGISTERED", "HEAD_ROLLBACK_DETECTED", "HEAD_FORK_DETECTED",
+    "CONSOLE_SESSION_REJECTED", "CONSOLE_SOURCE_UNAVAILABLE"
   ],
   "threats": [
     {
@@ -97,6 +98,54 @@
       "disposition": "explicitly_out_of_scope",
       "acceptance_ids": ["ACC-37"],
       "oracle": "ACC-37 must prove malware, memory-dump and unaudited supply-chain limits are not claimed as mitigated"
+    },
+    {
+      "id": "THR-06",
+      "title": "恶意网页、DNS rebinding 或跨源请求读取 localhost 状态（WEB-THR-01）",
+      "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#81-威胁候选",
+      "disposition": "deferred_until_web_console_evidence",
+      "acceptance_ids": ["ACC-44"],
+      "oracle": "web console evidence must prove loopback bind only, exact Host matching, Sec-Fetch-Site/Origin negatives and DNS rebinding/CORS negatives all fail closed before any data source is touched"
+    },
+    {
+      "id": "THR-07",
+      "title": "网页会话能力经 URL、日志、缓存、Referrer 或浏览器持久化泄露（WEB-THR-02）",
+      "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#81-威胁候选",
+      "disposition": "deferred_until_web_console_evidence",
+      "acceptance_ids": ["ACC-48"],
+      "oracle": "web console evidence must prove the session capability never appears in browser history, cache, storage, Referrer, service logs or error output"
+    },
+    {
+      "id": "THR-08",
+      "title": "raw DTO、异常或报告投影泄露路径、标识符、密钥或正文（WEB-THR-03）",
+      "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#81-威胁候选",
+      "disposition": "deferred_until_web_console_evidence",
+      "acceptance_ids": ["ACC-45"],
+      "oracle": "web console evidence must prove response bytes contain no ADR-0030 §5.2 field, no paths, no identifiers and no secret material"
+    },
+    {
+      "id": "THR-09",
+      "title": "状态页成为 confused deputy 触发写入（WEB-THR-04）",
+      "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#81-威胁候选",
+      "disposition": "deferred_until_web_console_evidence",
+      "acceptance_ids": ["ACC-46"],
+      "oracle": "web console evidence must prove every method, route and parameter probe leaves filesystem and head/ObjectStore fingerprints unchanged"
+    },
+    {
+      "id": "THR-10",
+      "title": "陈旧、未验证或部分验证状态被显示成绿色（WEB-THR-05）",
+      "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#81-威胁候选",
+      "disposition": "deferred_until_web_console_evidence",
+      "acceptance_ids": ["ACC-47"],
+      "oracle": "web console evidence must prove each tampered, unregistered, rollback, unknown-schema and missing-source scenario yields its frozen verdict and unknown is never rendered as healthy"
+    },
+    {
+      "id": "THR-11",
+      "title": "Windows Junction/symlink/8.3 别名把只读数据源重定向到授权根外（WEB-THR-06）",
+      "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#81-威胁候选",
+      "disposition": "deferred_until_web_console_evidence",
+      "acceptance_ids": ["ACC-49"],
+      "oracle": "web console evidence must prove real Junction, symlink, 8.3 short-path and read-time replacement negatives all fail closed"
     }
   ],
   "invariants": [
@@ -117,7 +166,13 @@
     {"id": "INV-15", "source": "docs/threat-model/P0-security-invariants.md#inv-15", "acceptance_ids": ["ACC-23"]},
     {"id": "INV-16", "source": "docs/threat-model/P0-security-invariants.md#inv-16", "acceptance_ids": ["ACC-24"]},
     {"id": "INV-17", "source": "docs/decisions/0026-p1-alpha-state-protocol-contract-v1.md#2", "acceptance_ids": ["ACC-41"]},
-    {"id": "INV-18", "source": "docs/decisions/0026-p1-alpha-state-protocol-contract-v1.md#2", "acceptance_ids": ["ACC-42", "ACC-43"]}
+    {"id": "INV-18", "source": "docs/decisions/0026-p1-alpha-state-protocol-contract-v1.md#2", "acceptance_ids": ["ACC-42", "ACC-43"]},
+    {"id": "INV-19", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-44"]},
+    {"id": "INV-20", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-46"]},
+    {"id": "INV-21", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-45"]},
+    {"id": "INV-22", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-47"]},
+    {"id": "INV-23", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-48"]},
+    {"id": "INV-24", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-49"]}
   ],
   "acceptance": [
     {
@@ -334,6 +389,36 @@
       "id": "ACC-43", "title": "分叉被检测并拒绝", "kind": "security", "threat_ids": ["THR-03"], "invariant_ids": ["INV-18"],
       "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-43-fork.json", "status": "passed", "evidence_scope": "p1-alpha",
       "oracle": {"required_checks": ["schema_valid", "fork_detected", "fork_evidence_complete", "restore_rejected_on_fork"], "required_error_code_groups": [["HEAD_FORK_DETECTED"]], "forbidden_side_effects": ["partial_success_reported"]}
+    },
+    {
+      "id": "ACC-44", "title": "Loopback 与 Host/Origin/Fetch-Metadata 负例全部失败关闭", "kind": "security", "threat_ids": ["THR-06"], "invariant_ids": ["INV-19"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-44-web-console-loopback.json", "status": "untested", "evidence_scope": "web-console",
+      "oracle": {"required_checks": ["schema_valid", "loopback_bind_only", "host_mismatch_rejected", "fetch_site_negative_rejected", "cors_absent", "rebinding_negative_rejected", "gate_precedes_source_read"], "required_error_code_groups": [["CONSOLE_SESSION_REJECTED"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-45", "title": "响应字节扫描证明白名单外字段不存在", "kind": "security", "threat_ids": ["THR-08"], "invariant_ids": ["INV-21"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-45-web-console-bytescan.json", "status": "untested", "evidence_scope": "web-console",
+      "oracle": {"required_checks": ["schema_valid", "response_byte_scan_clean", "whitelist_only_fields"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-46", "title": "写操作探测后文件系统与协议指纹不变", "kind": "security", "threat_ids": ["THR-09"], "invariant_ids": ["INV-20"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-46-web-console-readonly.json", "status": "untested", "evidence_scope": "web-console",
+      "oracle": {"required_checks": ["schema_valid", "write_probe_fingerprint_unchanged", "method_negatives_rejected"], "required_error_code_groups": [], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-47", "title": "verdict 矩阵逐场景冻结且 unknown 不假绿", "kind": "security", "threat_ids": ["THR-10"], "invariant_ids": ["INV-22"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-47-web-console-verdicts.json", "status": "untested", "evidence_scope": "web-console",
+      "oracle": {"required_checks": ["schema_valid", "verdict_matrix_frozen", "unknown_not_rendered_green", "source_missing_shows_unavailable"], "required_error_code_groups": [["CONSOLE_SOURCE_UNAVAILABLE"]], "forbidden_side_effects": ["partial_success_reported"]}
+    },
+    {
+      "id": "ACC-48", "title": "会话能力不出现在历史、缓存、存储、Referrer 与日志", "kind": "security", "threat_ids": ["THR-07"], "invariant_ids": ["INV-23"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-48-web-console-token.json", "status": "untested", "evidence_scope": "web-console",
+      "oracle": {"required_checks": ["schema_valid", "token_absent_in_browser_history_cache_storage", "token_absent_in_logs_and_referrer", "bootstrap_delivery_only"], "required_error_code_groups": [["CONSOLE_SESSION_REJECTED"]], "forbidden_side_effects": ["undeclared_persistent_state_used"]}
+    },
+    {
+      "id": "ACC-49", "title": "Windows Junction/symlink/8.3 与读时替换负例失败关闭", "kind": "security", "threat_ids": ["THR-11"], "invariant_ids": ["INV-24"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-49-web-console-paths.json", "status": "untested", "evidence_scope": "web-console",
+      "oracle": {"required_checks": ["schema_valid", "junction_negative_rejected", "symlink_negative_rejected", "short_path_negative_rejected", "read_time_replacement_rejected"], "required_error_code_groups": [["CONSOLE_SOURCE_UNAVAILABLE"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     }
   ]
 }

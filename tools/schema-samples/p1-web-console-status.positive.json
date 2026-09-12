@@ -1,0 +1,53 @@
+{
+  "schema": "p1-web-console-status-v1",
+  "service": {
+    "status": "ok",
+    "version": "p1-console-v1",
+    "build": "0123456789abcdef0123456789abcdef01234567",
+    "started_at": "2026-09-12T08:30:00.000Z",
+    "uptime_seconds": 3600
+  },
+  "head": {
+    "present": true,
+    "sequence": 7,
+    "created_at": "2026-09-12T09:15:00.000Z",
+    "verdict": "verified",
+    "checked_at": "2026-09-12T09:20:00.000Z"
+  },
+  "storage": {
+    "object_count": 42,
+    "total_ciphertext_bytes": 661234,
+    "observed_at": "2026-09-12T09:20:00.000Z"
+  },
+  "tasks": {
+    "items": [
+      {
+        "kind": "snapshot",
+        "status": "complete",
+        "started_at": "2026-09-12T09:10:00.000Z",
+        "completed_at": "2026-09-12T09:10:04.500Z",
+        "duration_ms": 4500,
+        "object_count": 42,
+        "total_ciphertext_bytes": 661234,
+        "error_code": null
+      },
+      {
+        "kind": "restore",
+        "status": "failed",
+        "started_at": "2026-09-12T09:05:00.000Z",
+        "completed_at": "2026-09-12T09:05:02.000Z",
+        "duration_ms": 2000,
+        "object_count": 4,
+        "total_ciphertext_bytes": 4000,
+        "error_code": "MISSING_OBJECT"
+      }
+    ]
+  },
+  "report": {
+    "schema_version": "p0-plugin-snapshot-report-v1",
+    "verdict": "complete",
+    "created_at": "2026-09-12T09:10:05.000Z",
+    "object_count": 42,
+    "total_ciphertext_bytes": 661234
+  }
+}

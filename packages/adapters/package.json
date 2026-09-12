@@ -31,6 +31,10 @@
     "./head-directory": {
       "types": "./dist/head-directory.d.ts",
       "import": "./dist/head-directory.js"
+    },
+    "./web-console": {
+      "types": "./dist/web-console.d.ts",
+      "import": "./dist/web-console.js"
     }
   },
   "files": ["dist"],

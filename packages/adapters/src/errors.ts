@@ -63,3 +63,18 @@ export class AdapterNotImplementedError extends Error {
     this.name = "AdapterNotImplementedError";
   }
 }
+
+/** ADR-0030/ADR-0031 (DP-027): stable codes for the read-only localhost web console. */
+export type ConsoleAdapterErrorCode = "CONSOLE_SESSION_REJECTED" | "CONSOLE_SOURCE_UNAVAILABLE";
+
+export class ConsoleAdapterError extends Error {
+  constructor(
+    readonly code: ConsoleAdapterErrorCode,
+    readonly source: string,
+    message: string,
+    options?: ErrorOptions
+  ) {
+    super(message, options);
+    this.name = "ConsoleAdapterError";
+  }
+}

@@ -419,3 +419,51 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 错误判定：分叉未检出、证据不完整或恢复静默继续即失败
 - 证据路径：`artifacts/test-reports/acc-43-fork.json`
 - 状态：passed
+
+**ACC-44：Loopback 与 Host/Origin/Fetch-Metadata 负例全部失败关闭**
+- 来源：DP-027 close_artifact；ADR-0030 §3.1/§3.4；INV-19
+- 测试类型：负面
+- 测试方法：实机浏览器与原始请求验证 127.0.0.1 绑定、精确 Host 匹配、Sec-Fetch-Site/Origin 拒绝矩阵、DNS rebinding/CORS 负例；任何校验失败都必须发生在读取数据源之前
+- 错误判定：非 loopback 可达、Host/Origin/Site 负例被放行、或校验失败后仍触碰数据源即失败
+- 证据路径：`artifacts/test-reports/acc-44-web-console-loopback.json`
+- 状态：untested
+
+**ACC-45：响应字节扫描证明白名单外字段不存在**
+- 来源：DP-027 close_artifact；ADR-0030 §5；INV-21
+- 测试类型：负面
+- 测试方法：对所有响应做字节级扫描，断言 ADR-0030 §5.2 字段（domainId、设备标识、路径、对象键、token、明文计数等）与 file_count/total_plaintext_bytes 均不存在
+- 错误判定：任一响应包含白名单外字段或敏感 marker 即失败
+- 证据路径：`artifacts/test-reports/acc-45-web-console-bytescan.json`
+- 状态：untested
+
+**ACC-46：写操作探测后文件系统与协议指纹不变**
+- 来源：DP-027 close_artifact；ADR-0030 §3.2；INV-20
+- 测试类型：负面
+- 测试方法：对所有方法、路由与参数组合做写操作探测，前后对比 Vault、ObjectStore、head、devices 与 history 指纹；非 GET 一律 405
+- 错误判定：任一请求改变指纹、产生写副作用或返回非冻结语义即失败
+- 证据路径：`artifacts/test-reports/acc-46-web-console-readonly.json`
+- 状态：untested
+
+**ACC-47：verdict 矩阵逐场景冻结且 unknown 不假绿**
+- 来源：DP-027 close_artifact；ADR-0030 §6；INV-22
+- 测试类型：正面 + 负面
+- 测试方法：有效、篡改、未注册、回滚、未知 schema 与缺失数据源逐场景驱动页面与 DTO，断言各自得到冻结的归一化 verdict，unknown/unavailable 永不渲染为正常色
+- 错误判定：任一场景 verdict 与冻结语义不符、或缺失来源显示为绿色/0 即失败
+- 证据路径：`artifacts/test-reports/acc-47-web-console-verdicts.json`
+- 状态：untested
+
+**ACC-48：会话能力不出现在历史、缓存、存储、Referrer 与日志**
+- 来源：DP-027 close_artifact；ADR-0030 §3.3/§3.4；INV-23
+- 测试类型：负面
+- 测试方法：实机浏览器遍历自举与刷新流程，扫描浏览器历史、cache、storage、Referrer、服务日志与错误输出中均无会话 token；token 仅经 /bootstrap JSON 响应体交付
+- 错误判定：token 出现在 URL、HTML、持久化存储、日志或 Referrer 即失败
+- 证据路径：`artifacts/test-reports/acc-48-web-console-token.json`
+- 状态：untested
+
+**ACC-49：Windows Junction/symlink/8.3 与读时替换负例失败关闭**
+- 来源：DP-027 close_artifact；ADR-0030 §7；ADR-0009；INV-24
+- 测试类型：负面
+- 测试方法：以真实 Junction、symlink、8.3 短路径与读取时替换构造数据源负例，断言聚合与 head 读取全部失败关闭并呈现 unavailable，不跟随、不跳过
+- 错误判定：任一别名越界未检出、被跟随或仍返回绿色摘要即失败
+- 证据路径：`artifacts/test-reports/acc-49-web-console-paths.json`
+- 状态：untested

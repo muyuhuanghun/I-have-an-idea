@@ -11,8 +11,16 @@ import {
   NodeSnapshotLogSink,
   NodeVaultSource
 } from "@ekd/adapters";
+import { encodeHeadPointerBytes, HeadDirectory } from "@ekd/adapters/head-directory";
+import {
+  projectHeadStatus,
+  projectStorageStats,
+  startWebConsoleServer,
+  WebConsoleTaskRing
+} from "@ekd/adapters/web-console";
 import { NobleAes256Provider, NOBLE_CANDIDATE } from "@ekd/crypto/noble";
 import { WebCryptoAes256Provider, WEBCRYPTO_CANDIDATE } from "@ekd/crypto/webcrypto";
+import { WebCryptoDeviceSignatureProvider } from "@ekd/crypto";
 import {
   createSmokeReport,
   runSmokeVectors,
@@ -47,6 +55,9 @@ const HELP = [
   "  snapshot --vault DIR --store DIR --log FILE --recovery FILE --domain-id 64HEX --runtime-limits FILE",
   "  restore --recovery FILE --store DIR --target DIR",
   "  __restore-worker --recovery FILE --store DIR --target DIR        (internal)",
+  "",
+  "P1 read-only console (DP-027, ADR-0030/0031):",
+  "  console --store DIR --head-dir DIR --domain-id 64HEX",
   "",
   "P0 rules: every path is explicit; the Vault is never written; log/recovery/store",
   "stay outside the Vault and each other; the store root, log parent and recovery",
@@ -437,6 +448,88 @@ async function restoreCommand(args: readonly string[]): Promise<number> {
   return child.status === 0 ? 0 : 1;
 }
 
+// ---------------------------------------------------------------------------
+// P1 read-only console (DP-027, ADR-0030 §7.0 / ADR-0031 §1.4): the server and
+// DTO live in the adapters web-console subentry; the CLI only parses explicit
+// arguments, enforces the ADR-0021 path discipline and wires the session-domain
+// sources. The process runs no tasks, so its task ring stays empty by design.
+// ---------------------------------------------------------------------------
+
+interface ConsoleCliOptions {
+  readonly store: string;
+  readonly headDir: string;
+  readonly domainIdHex: string;
+}
+
+function consoleOptions(args: readonly string[]): ConsoleCliOptions {
+  const store = option(args, "--store");
+  const headDir = option(args, "--head-dir");
+  const missing = [["--store", store], ["--head-dir", headDir]]
+    .filter((entry) => entry[1] === undefined)
+    .map((entry) => entry[0]);
+  if (missing.length > 0) throw new Error(`console requires ${missing.join(", ")}.`);
+  return {
+    store: resolve(store as string),
+    headDir: resolve(headDir as string),
+    domainIdHex: requireHex64(option(args, "--domain-id"), "--domain-id")
+  };
+}
+
+async function consoleCommand(args: readonly string[]): Promise<number> {
+  const options = consoleOptions(args);
+  requireDisjoint("--store", options.store, "--head-dir", options.headDir);
+  await requirePhysicalDisjoint("--store", options.store, "--head-dir", options.headDir);
+
+  const meta = await loadBuildMeta();
+  const objectStore = new DirectoryObjectStoreV1(options.store);
+  // Verify-only host: the PKCS8 slot is never used because the console never signs
+  // (signPointer below refuses), and verification imports public keys from SPKI.
+  const signer = new WebCryptoDeviceSignatureProvider(new Uint8Array(0));
+  const directory = new HeadDirectory(options.headDir, {
+    signPointer: async () => {
+      throw new Error("The console is read-only and cannot sign head pointers.");
+    },
+    verifier: {
+      verifyHeadSignature: (signedBytes, signature, spkiBytes) => signer.verifyHeadSignature(signedBytes, signature, spkiBytes),
+      verifyPointerSignature: (pointer, spkiBytes, signatureBase64url) =>
+        signer.verifyHeadSignature(
+          encodeHeadPointerBytes(pointer),
+          new Uint8Array(Buffer.from(signatureBase64url, "base64url")),
+          spkiBytes
+        )
+    }
+  });
+  const domainId = hexToBytes(options.domainIdHex);
+  const tasks = new WebConsoleTaskRing();
+  const running = await startWebConsoleServer({
+    service: { version: "p1-console-v1", build: meta.source_commit },
+    headStatus: () => projectHeadStatus(directory, domainId, objectStore),
+    storageStats: () => projectStorageStats(objectStore.rootPath),
+    reportSummary: async () => null,
+    tasks,
+    log: (line) => process.stderr.write(`[console] ${line}\n`)
+  });
+  // The token is never printed or persisted; the page obtains it via the
+  // same-origin bootstrap fetch (ADR-0030 §3.4).
+  console.log(JSON.stringify({
+    url: `http://127.0.0.1:${running.port}/`,
+    build: meta.source_commit,
+    started_at: new Date().toISOString(),
+    note: "只读状态页；会话凭据不落盘、不打印。"
+  }));
+  await new Promise<void>((resolveStopped) => {
+    const stop = (): void => {
+      void running.close().then(
+        () => resolveStopped(),
+        () => resolveStopped()
+      );
+    };
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+  });
+  return 0;
+}
+
 export async function run(args: readonly string[]): Promise<number> {
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     console.log(HELP);
@@ -447,6 +540,7 @@ export async function run(args: readonly string[]): Promise<number> {
   if (args[0] === "snapshot") return snapshotCommand(args.slice(1));
   if (args[0] === "restore") return restoreCommand(args.slice(1));
   if (args[0] === "__restore-worker") return restoreWorkerCommand(args.slice(1));
+  if (args[0] === "console") return consoleCommand(args.slice(1));
   throw new Error(`Unknown command: ${args[0]}`);
 }
 

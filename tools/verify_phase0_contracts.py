@@ -393,7 +393,7 @@ def validate_deferred(registry: dict[str, Any]) -> None:
     assert_unique(owner_ids, "owner IDs")
     parameters = registry.get("parameters", [])
     ids = [item.get("id") for item in parameters]
-    require(ids == expected_ids("DP", 26, width=3), f"deferred IDs must be contiguous DP-001..DP-026; got {ids}")
+    require(ids == expected_ids("DP", 27, width=3), f"deferred IDs must be contiguous DP-001..DP-027; got {ids}")
     for item in parameters:
         for field in ("name", "owner", "phase", "status", "close_artifact", "hard_stop"):
             require(isinstance(item.get(field), str) and item[field].strip(), f"{item.get('id')}: missing {field}")
@@ -735,7 +735,7 @@ def main() -> int:
     mode_parts = ["design-only"] if args.evidence_root is None else ["design+evidence"]
     if args.validate_samples:
         mode_parts.append("samples")
-    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV={len(trace['invariants'])} THR=5 DP=26")
+    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV={len(trace['invariants'])} THR=5 DP=27")
     if args.evidence_root is None:
         statuses = [item.get("status") for item in trace["acceptance"]]
         if all(status == "passed" for status in statuses):

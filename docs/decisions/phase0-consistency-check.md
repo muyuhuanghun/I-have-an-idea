@@ -262,7 +262,7 @@ Phase 1 启动仍需开发者单独授权，且授权前必须确认：
 | smoke schema | draft 2020-12 schema、14 required vectors、缺项 invalid、三环境 aggregate | 真校验（含 enum/pattern/format/contains/uniqueItems） | 正式两候选六单元矩阵已完成，两个 aggregate 均为 `cross_env_pass`；ADR-0013 已选择 Web Crypto |
 | fixture schema | tiny/small/large profile、generator/hash/entry/coverage required | 真校验（含 allOf if/then profile 边界） | Tiny fixture/generator 已 formal 并由 ADR-0014 关闭 DP-006/009；small/large 不存在 |
 | performance schema | 512 MiB、100 ms、7.5× bytes、128 MiB RSS growth 的数值 oracle | 真校验（含 bounded_memory_comparison 的 oneOf 与 allOf 触发条件） | baseline/report 不存在 |
-| 延期参数 | DP-001..026 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 绑定 ADR-0020，DP-014 绑定 ADR-0025，DP-016 绑定 ADR-0028（2026-09-05 关闭）；其余 DP 属 P1+ 范围 |
+| 延期参数 | DP-001..027 均有 owner/phase/status/close artifact/hard stop | 静态检查通过 | DP-001..005 绑定 ADR-0013，DP-006/009 绑定 ADR-0014；DP-007/008/010/011/012 绑定 ADR-0020，DP-014 绑定 ADR-0025，DP-016 绑定 ADR-0028（2026-09-05 关闭）；DP-017 绑定 ADR-0029（2026-09-12 关闭）；DP-027 绑定 ADR-0030/0031（2026-09-12 入册）；其余 DP 属 P1+ 范围 |
 | Schema 强制门禁 | `validate_evidence` 校验 ACC 外层并递归校验 perf/visibility/roundtrip artifact 与 raw hash；`--validate-samples` 用 11 对正/负样本反身校验 11 份 schema | design+samples PASS | 11 份正样本通过、11 份负样本被拒 |
 
 ## 13. 当前机器门禁
@@ -402,6 +402,8 @@ README、执行计划、协议、ADR、验收矩阵和本文统一使用以下�
 
 - P1-alpha 状态协议的合同、实现和正式证据均已完成，ACC-41/42/43 已为 `passed`，DP-015 按 ADR-0027 关闭；这不是生产安全或跨设备并发写一致性声明。
 - DP-017 的账号生命周期设计合同已按 ADR-0029 接受并关闭：Passkey 优先、一次性恢复码兜底，且账号恢复不等于域密钥恢复。INV-19、THR-06、THR-07 仍只是候选设计输入，本轮没有新增或翻转正式 registry 项，也没有授权真实账号或服务端实现。
-- 简单网页控制台仍未立项；本阶段收尾后需另行确认范围、身份边界和是否起草独立合同。
+- 网页控制台（DP-027）已立项：第一版为本机 `127.0.0.1` 只读状态页。范围由开发者确认（2026-09-11），身份/密钥/localhost 边界按 ADR-0030 接受（2026-09-12，六项裁决：同源自举 fetch、DTO 不投影 `file_count`/`total_plaintext_bytes`、任务内存 ring buffer 20 条重启清空、数据源会话域派生零新配置、DTO 无 overall 字段、三切片推进），实现合同 ADR-0031 草案就绪。DP-027 已入册（registry 26→27，验证器两处计数同步）；WEB-THR/INV/ACC 候选仍留 ADR-0030 §8/§9 与 ADR-0031 §9，随 C2 实现 commit 落库。C2 实现与 C3 正式证据未授权；不得创建 web app 或本地 web 服务。
 
 本轮修复前基线为 `583a3a1`。本轮设计合同、验证器升级和状态文档已通过三个语义清晰的 commit `c59d865` / `6856c47` / `fcbc873` 提交并推送到 `origin/main`；在 `fcbc873` 提交并推送完成时，`main...origin/main` 为 `0 0`、工作树 clean。门禁结果为 `PHASE0_CONTRACT_CHECK_PASS (design-only)` 与 `PHASE0_CONTRACT_CHECK_PASS (design-only+samples)`。2026-09-02 的 R1 关闭轮（验证器 closure 规则、registry/矩阵/DP 同步、ADR-0020 与状态文档对账）见 ADR-0020 与收尾报告 §-1；证据门结果为 `PHASE0_CONTRACT_CHECK_PASS mode=design+evidence+samples ACC=37 INV=16 THR=5 DP=26`。
+
+DP-027 / ADR-0030 轮（2026-09-12，C1 授权提交）：开发者确认网页控制台第一版范围（2026-09-11）并以六项裁决接受 ADR-0030（同源自举 fetch / DTO 不投影敏感元数据 / 任务内存 ring buffer 20 条 / 数据源会话域派生零新配置 / DTO 无 overall / 三切片 C1-C2-C3）；ADR-0031 实现合同 v1 已随 C1 授权接受（含 /app.css 路由、report/storage 不可用语义、C2 宿主接线范围 = CLI `console` 子命令的冻结修订）。DP-027 正式入册 `p0-deferred-parameters.json`（26→27），`tools/verify_phase0_contracts.py` 两处期望计数同步，README / 执行计划 §24.2、§24.4 / 本文档同轮对账。门禁结果 `PHASE0_CONTRACT_CHECK_PASS mode=design-only ACC=43 INV=18 THR=5 DP=27` 与 `PHASE0_CONTRACT_CHECK_PASS mode=design-only+samples ACC=43 INV=18 THR=5 DP=27`，`tools.test_verify_restore` + `tools.test_verify_phase0_contracts` 12 项通过。WEB-THR/INV/ACC 候选未进正式 registry（随 C2）；本轮无 ACC/INV/THR 状态变化，无错误码新增；C2 实现、C3 正式证据未授权。

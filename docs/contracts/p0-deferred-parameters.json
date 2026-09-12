@@ -272,6 +272,15 @@
       "status": "deferred",
       "close_artifact": "mobile-keystore ADR + device-loss/migration/backup evidence",
       "hard_stop": "未关闭前 Android 仅限兼容性 smoke，不得保存正式域密钥或承诺设备级静态保护"
+    },
+    {
+      "id": "DP-027",
+      "name": "本机只读网页控制台（localhost 状态页）",
+      "owner": "OWNER-PRODUCT",
+      "phase": "P1-alpha local operations visibility",
+      "status": "deferred",
+      "close_artifact": "网页控制台范围记录 + ADR-0030 身份/密钥/localhost 边界（已接受 2026-09-12）+ ADR-0031 实现合同 v1 + WEB-* threat/invariant/ACC delta 落库（随 C2）+ 实现与正式证据（C2/C3）",
+      "hard_stop": "C2 实现切片另获授权前不得创建 web app、本地 web 服务、前端依赖或任何写操作；浏览器不得接触 domain key、设备私钥、Recovery File、账号恢复码、原始路径或 E2EE 授权能力；第一版 127.0.0.1 只读状态页不得被描述为远程管理、生产监控或可信设备"
     }
   ]
 }

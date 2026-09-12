@@ -4,10 +4,10 @@
 >
 > 文档版本：Product Definition v0.3
 >
-> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），Stage 7 已完成：DP-014 按 ADR-0025 关闭（localhost HTTP ObjectStore 经 `5ad2aba` 实现，ACC-38/39/40 正式证据绑定 `cd09994`），registry 40/40 ACC `passed`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过独立复审，代码与状态文档已由 `18c9b77`/`66354bd` 推送并远端核对一致；当时真实 Obsidian UI 运行证据尚未形成，后由 Phase 6-A 补齐。Phase 6-0 裁决（ADR-0022，开发者三点确认）已将执行计划 §17 压力/破坏性矩阵以 R1 证据关闭，Phase 6-A 真实 Obsidian GUI 运行证据已完成（`b53865e`：修复渲染进程 ESM import CORS 缺陷后重跑 complete，机器报告核验通过，详见 `docs/test-plans/phase6a-gui-report.md`）。插件富前端 UI 已由 Phase 5-C 交付（ADR-0023 + `9678978`：停靠面板三段式，GUI 验证通过；中文本地化与登录等推迟到后期）。P0 执行计划（§0-§23）全部阶段已执行完毕；P1-alpha 状态协议已完整交付（ADR-0026 合同 + 实现 + ACC-41/42/43 正式证据绑定 `bbb5a7e`，DP-015 按 ADR-0027 关闭；INV-17/18 全量验证）；网页端未立项（§24.2 规划条目，普通网页登录仍不是可信设备）。本关闭不声明生产安全，不豁免后续独立审计。
-> P1 设计状态：DP-016 已按 ADR-0028 关闭；DP-017 设计已按 ADR-0029 接受并关闭，冻结 Passkey 优先、一次性恢复码兜底以及“账号恢复不等于域密钥恢复”。真实账号与服务端实现仍需另立 P1-release 合同；简单网页控制台仍未立项，DP-017 收尾后先确认其范围与身份边界。
+> 当前状态：Phase 1 至 Phase 4-B 的已纳管合同与实现仍保留。2026-08-31 复审撤回了旧 R1 证据与 Phase 5 接线后，P0-R1 已于 2026-09-02 在 clean commit `9443cb1` 上重新关闭（ADR-0020）：修复后的 runner 重新生成 12 份 perf report（`PERF_RUNS_PASS`，`evidence_binding` + raw artifacts）与 37 份 acc-evidence（37/37 required check 通过），ACC-37 经开发者精确 token 裁决 ACCEPT；`--validate-samples` 与嵌套 `--evidence-root artifacts` 门均 PASS。`p0-traceability-v1.json` 与验收矩阵 37 个 ACC 已同步为 `passed`；DP-007/008/010/011/012 已关闭（绑定 ADR-0020），Stage 7 已完成：DP-014 按 ADR-0025 关闭（localhost HTTP ObjectStore 经 `5ad2aba` 实现，ACC-38/39/40 正式证据绑定 `cd09994`），registry 40/40 ACC `passed`。Phase 5-0 接线合同已冻结（ADR-0021）。Phase 5-A 的 Windows 8.3/Junction 真实路径身份修复已在独立复审 PASS 后由 `eb9a2db` 纳管，状态对账由 `10666cd` 纳管并推送。Phase 5-B 插件快照薄接线已通过独立复审，代码与状态文档已由 `18c9b77`/`66354bd` 推送并远端核对一致；当时真实 Obsidian UI 运行证据尚未形成，后由 Phase 6-A 补齐。Phase 6-0 裁决（ADR-0022，开发者三点确认）已将执行计划 §17 压力/破坏性矩阵以 R1 证据关闭，Phase 6-A 真实 Obsidian GUI 运行证据已完成（`b53865e`：修复渲染进程 ESM import CORS 缺陷后重跑 complete，机器报告核验通过，详见 `docs/test-plans/phase6a-gui-report.md`）。插件富前端 UI 已由 Phase 5-C 交付（ADR-0023 + `9678978`：停靠面板三段式，GUI 验证通过；中文本地化与登录等推迟到后期）。P0 执行计划（§0-§23）全部阶段已执行完毕；P1-alpha 状态协议已完整交付（ADR-0026 合同 + 实现 + ACC-41/42/43 正式证据绑定 `bbb5a7e`，DP-015 按 ADR-0027 关闭；INV-17/18 全量验证）；网页端已立项为 DP-027：第一版本机 `127.0.0.1` 只读状态页（范围与身份/密钥/localhost 边界已按 ADR-0030 于 2026-09-12 六项裁决接受；普通网页会话仍不是可信设备，C2 实现另获授权）。本关闭不声明生产安全，不豁免后续独立审计。
+> P1 设计状态：DP-016 已按 ADR-0028 关闭；DP-017 设计已按 ADR-0029 接受并关闭，冻结 Passkey 优先、一次性恢复码兜底以及“账号恢复不等于域密钥恢复”。真实账号与服务端实现仍需另立 P1-release 合同；网页控制台（DP-027）范围已确认、边界 ADR-0030 与实现合同 ADR-0031 已接受并随 C1 提交纳管，实现与证据（C2/C3）各自单独授权。
 >
-> 最后更新：2026-09-08
+> 最后更新：2026-09-12
 
 ## 1. 项目一句话定义
 
@@ -885,7 +885,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 9. P0 运行时零 AI；
 10. P0 的代表性规模为 10,000 文件、1 GiB ±5%；当前 peak RSS 上限为 512 MiB，只能按 DP-011 调整一次；
 11. Recovery File v1 是含 32 字节 recovery root 的 167 字节 bearer file；object ID 固定 16 原始字节/22 字符 base64url store key；Manifest AAD 所需 snapshot ID 先由恢复文件提供；
-12. 37 ACC / 16 INV / 5 THR 和 26 个延期项以 `docs/contracts/` 的机器 registry 为准。
+12. 37 ACC / 16 INV / 5 THR 和 27 个延期项以 `docs/contracts/` 的机器 registry 为准。
 
 ### 27.2 历史：审查基线 b8f15fc 仍需关闭的门槛（已被当前合同取代）
 
@@ -907,7 +907,7 @@ P0 的先行验收场景是“本地加密快照与新进程恢复”：在 Wind
 1. ADR-0011 和 wire registry 已消除两条循环依赖，冻结 recovery/object/Manifest canonical bytes、HKDF 标签和 16 字节 object ID；
 2. ADR-0012 和 5 份 JSON Schema 已冻结 smoke/fixture/performance/ACC evidence 的 required 与缺项失败规则；
 3. traceability registry 已闭合 37 ACC、16 INV、5 THR 的稳定 ID、双向链接、机器 oracle 和 evidence path；
-4. deferred registry 已逐项绑定 26 个参数的 owner、阶段、状态、关闭产物和硬停止；DP-001..005 已由 ADR-0013 关闭；
+4. deferred registry 已逐项绑定 27 个参数的 owner、阶段、状态、关闭产物和硬停止；DP-001..005 已由 ADR-0013 关闭；
 5. `python tools/verify_phase0_contracts.py` 是 design-only 静态门禁；它通过不升级任何 ACC；附加 `--validate-samples` 模式用 11 对正/负样本反身校验当前 11 份 schema；`--evidence-root` 模式除校验 `acc-evidence-v1` 外，还递归校验 perf、storage-visibility、roundtrip artifact schema 与 perf raw artifact hash，缺字段、未知字段、非法值或嵌套 hash 不一致都立即被拒；
 6. Phase 1 workspace、候选 KAT、三环境 smoke harness 与最小插件已按单独授权完成；clean-source 正式矩阵中 Web Crypto 和 Noble 均取得 `cross_env_pass`，ADR-0013 已选择 Web Crypto 并关闭 DP-001..005；Phase 2 Tiny fixture generator/fixture 已纳管，其余 ACC 已于 2026-09-02 随 P0-R1 关闭统一升级为 `passed`（ADR-0020）。
 

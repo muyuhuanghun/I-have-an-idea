@@ -1,0 +1,20 @@
+{
+  "schema_version": "group-state-v1",
+  "domain_id_sha256": "30a09f0af3fd3f8e024d8842fee8fe1d6daf341684cf98c8d864fc586322fa8a",
+  "epoch": 3,
+  "members": [
+    {
+      "device_id": "01010101010101010101010101010101",
+      "member_content_dh_spki_base64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8jx9OJLbOPlZClB7XeMycBMjDIcQJNfPXOxzcChhrUX8wHcOGUbNtRBCk2VWXGmFhH8sRCY5Kwq1pLmNzQ",
+      "joined_epoch": 1
+    },
+    {
+      "device_id": "02020202020202020202020202020202",
+      "member_content_dh_spki_base64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXm6E5pOuAABGK8GGmBKJDcTSzxkdbBgLkGPjzMEEz4wjm1ZCLQdBc6h2JXMLXBvEjGFRoGAUMo2eIfDOix1mX2rQ",
+      "joined_epoch": 2
+    }
+  ],
+  "removed": [],
+  "recovery_anchor_spki_base64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQmFkZWdlcm9ubGlvdXNwbGFjZWhvbGRlcjMzNDU2Nzg5MGFiY2RlZjAxMg",
+  "signature_base64url": "MEUCIQD7d1Up3bP4bOXbFMPk8TZlHxJMPkkPVpWPTcJQq9YEigIgYB0i1qk9XUQmSEcvDOLe5nNCINAsdbPUfOCGOEG6oM"
+}

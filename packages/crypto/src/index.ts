@@ -10,3 +10,4 @@ export type {
   CryptoProvider
 } from "@ekd/core";
 export { WebCryptoDeviceSignatureProvider } from "./device-signature.js";
+export { WebCryptoKeyAgreementProvider } from "./key-agreement.js";

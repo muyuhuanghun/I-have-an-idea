@@ -18,7 +18,7 @@
   ],
   "properties": {
     "schema_version": {"const": "acc-evidence-v1"},
-    "acc_id": {"type": "string", "pattern": "^ACC-(0[1-9]|[12][0-9]|3[0-9]|4[0-9])$"},
+    "acc_id": {"type": "string", "pattern": "^ACC-(0[1-9]|[12][0-9]|3[0-9]|4[0-9]|5[0-8])$"},
     "run_id": {"type": "string", "format": "uuid"},
     "timestamp_utc": {"type": "string", "format": "date-time"},
     "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},

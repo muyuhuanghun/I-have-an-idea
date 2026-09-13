@@ -323,6 +323,9 @@ def validate_schema_files() -> None:
         "storage-visibility-scan-v1.schema.json",
         "s7-http-session-v1.schema.json",
         "p1-web-console-status-v1.schema.json",
+        "proposal-reviewers-v1.schema.json",
+        "group-state-v1.schema.json",
+        "group-epoch-keys-v1.schema.json",
     }
     actual = {path.name for path in SCHEMAS.glob("*.schema.json")}
     require(expected <= actual, f"missing JSON Schema files: {sorted(expected - actual)}")
@@ -439,7 +442,7 @@ def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> No
     require(all(status == "passed" for status in statuses if status != "untested"),
             "passed and untested ACC entries may only coexist while the untested ones await their scope's evidence")
     untested = [item for item in items if item.get("status") == "untested"]
-    allowed_scopes = {"stage-7", "p1-alpha", "web-console"}
+    allowed_scopes = {"stage-7", "p1-alpha", "web-console", "p1-beta"}
     for item in untested:
         require(item.get("evidence_scope") in allowed_scopes,
                 f"{item.get('id')}: untested ACC without a recognized evidence_scope is not allowed while other ACCs are passed")
@@ -459,9 +462,9 @@ def validate_traceability(trace: dict[str, Any]) -> None:
     threat_ids = [item.get("id") for item in threats]
     invariant_ids = [item.get("id") for item in invariants]
     acceptance_ids = [item.get("id") for item in acceptance]
-    require(threat_ids == expected_ids("THR", 11), f"THR registry must be THR-01..THR-11; got {threat_ids}")
-    require(invariant_ids == expected_ids("INV", 24), f"INV registry must be INV-01..INV-24; got {invariant_ids}")
-    require(acceptance_ids == expected_ids("ACC", 49), f"ACC registry must be ACC-01..ACC-49; got {acceptance_ids}")
+    require(threat_ids == expected_ids("THR", 16), f"THR registry must be THR-01..THR-16; got {threat_ids}")
+    require(invariant_ids == expected_ids("INV", 31), f"INV registry must be INV-01..INV-31; got {invariant_ids}")
+    require(acceptance_ids == expected_ids("ACC", 58), f"ACC registry must be ACC-01..ACC-58; got {acceptance_ids}")
 
     evidence_paths = [item.get("evidence_path") for item in acceptance]
     assert_unique(evidence_paths, "ACC evidence paths")
@@ -580,7 +583,7 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     for item in trace["acceptance"]:
         acc_id = item["id"]
         if item.get("status") != "passed":
-            require(item.get("status") == "untested" and item.get("evidence_scope") in {"stage-7", "p1-alpha", "web-console"},
+            require(item.get("status") == "untested" and item.get("evidence_scope") in {"stage-7", "p1-alpha", "web-console", "p1-beta"},
                     f"{acc_id}: registry status {item.get('status')!r} has no evidence to validate")
             continue
         relative = Path(item["evidence_path"])
@@ -653,6 +656,9 @@ def validate_schema_samples() -> None:
         ("storage-visibility-scan-v1.schema.json", "storage-visibility-scan"),
         ("s7-http-session-v1.schema.json", "s7-http-session"),
         ("p1-web-console-status-v1.schema.json", "p1-web-console-status"),
+        ("proposal-reviewers-v1.schema.json", "proposal-reviewers"),
+        ("group-state-v1.schema.json", "group-state"),
+        ("group-epoch-keys-v1.schema.json", "group-epoch-keys"),
     ]
     for schema_name, base in pairs:
         schema = _load_schema(schema_name)
@@ -749,7 +755,7 @@ def main() -> int:
     mode_parts = ["design-only"] if args.evidence_root is None else ["design+evidence"]
     if args.validate_samples:
         mode_parts.append("samples")
-    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV={len(trace['invariants'])} THR=11 DP=27")
+    print(f"PHASE0_CONTRACT_CHECK_PASS mode={'+'.join(mode_parts)} ACC={len(trace['acceptance'])} INV={len(trace['invariants'])} THR=16 DP=27")
     if args.evidence_root is None:
         statuses = [item.get("status") for item in trace["acceptance"]]
         if all(status == "passed" for status in statuses):

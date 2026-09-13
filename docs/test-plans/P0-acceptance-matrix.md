@@ -467,3 +467,75 @@ P0-R1 关闭报告必须区分上述五种状态。所有 P0-R1 范围内且必�
 - 错误判定：任一别名越界未检出、被跟随或仍返回绿色摘要即失败
 - 证据路径：`artifacts/test-reports/acc-49-web-console-paths.json`
 - 状态：passed
+
+**ACC-50：团队登记物篡改/回滚与未注册/撤销审批负例全拒绝**
+- 来源：DP-018/025 close_artifact；ADR-0032 §4/§5；ADR-0033 §3；INV-25/26
+- 测试类型：负面
+- 测试方法：篡改 proposal-reviewers/group-state 文件签名、用旧序号文件回滚、以未注册与已撤销审核者密钥签发审批，全部必须失败关闭
+- 错误判定：任一负例被接受、回滚生效或产生部分验收即失败
+- 证据路径：`artifacts/test-reports/acc-50-team-registries.json`
+- 状态：untested
+
+**ACC-51：验收持久化与审批/设备撤销独立**
+- 来源：DP-018 close_artifact；ADR-0032 §5.3；INV-25
+- 测试类型：正面 + 负面
+- 测试方法：验收记录持久化审批签名与注册表状态哈希；撤销后新审批被拒而历史记录对照历史状态仍可验证；审核者撤销不改设备登记
+- 错误判定：历史记录被重写、撤销联动改设备登记或状态哈希缺失即失败
+- 证据路径：`artifacts/test-reports/acc-51-team-persistence.json`
+- 状态：untested
+
+**ACC-52：自注册无路径且恢复材料与内容密钥分域**
+- 来源：DP-019 close_artifact；ADR-0034 §4/§9；INV-27
+- 测试类型：负面
+- 测试方法：非权威签名登记被拒；恢复材料与全部登记产物做字节级扫描，不含内容密钥/Recovery File 材料/私钥
+- 错误判定：任一产物含跨域材料或自注册生效即失败
+- 证据路径：`artifacts/test-reports/acc-52-team-domains.json`
+- 状态：untested
+
+**ACC-53：新成员仅从加入 epoch 起可读且变更必推 epoch**
+- 来源：DP-025 close_artifact；ADR-0033 §3/§4；INV-28/29
+- 测试类型：正面 + 负面
+- 测试方法：成员加入推 epoch 并仅获加入 epoch 的封装密钥；对旧 epoch 的解封请求失败关闭；无成员变更不推代际
+- 错误判定：新成员可读加入前内容或无变更推进即失败
+- 证据路径：`artifacts/test-reports/acc-53-team-join.json`
+- 状态：untested
+
+**ACC-54：移除后前向失效且密钥擦除可验证**
+- 来源：DP-025 close_artifact；ADR-0033 §5；INV-28/30
+- 测试类型：负面
+- 测试方法：移除推 epoch；新分布无被移除设备条目（可验证擦除核心）；其解封请求失败关闭
+- 错误判定：被移除设备出现在新分布、解封成功或部分成功被报告即失败
+- 证据路径：`artifacts/test-reports/acc-54-team-remove.json`
+- 状态：untested
+
+**ACC-55：三级旧代际边界如实且 L2 缓解不越级表述**
+- 来源：DP-025 close_artifact；ADR-0033 §5；INV-30
+- 测试类型：正面
+- 测试方法：断言已下载历史保留为文档化行为；适用部署形态存在传输层门控；面向用户的字符串与文档无"密码学撤销已持密钥/旧密文"类越级声明
+- 错误判定：任一越级表述或门控缺失即失败
+- 证据路径：`artifacts/test-reports/acc-55-team-boundaries.json`
+- 状态：untested
+
+**ACC-56：治理恢复承认仅经锚材料且建议不产生登记效力**
+- 来源：DP-019 close_artifact；ADR-0034 §4/§6；INV-31
+- 测试类型：负面
+- 测试方法：恢复承认必须由锚材料签名并可验证；错误/损坏材料被拒；无材料的建议请求零登记效力
+- 错误判定：建议产生承认、错误材料被接受即失败
+- 证据路径：`artifacts/test-reports/acc-56-team-recovery.json`
+- 状态：untested
+
+**ACC-57：恢复后 epoch 序号延续且旧权威失效**
+- 来源：DP-019 close_artifact；ADR-0034 §4；ADR-0033 §7；INV-31
+- 测试类型：正面 + 负面
+- 测试方法：恢复后 epoch 序号延续不重置；新权威签名后续更新；旧权威签名的更新被拒绝
+- 错误判定：序号重置、旧权威仍有效或新权威无法更新即失败
+- 证据路径：`artifacts/test-reports/acc-57-team-recovery-epoch.json`
+- 状态：untested
+
+**ACC-58：恢复不重写历史且分域字节扫描干净**
+- 来源：DP-019 close_artifact；ADR-0034 §4/§9；INV-27/31
+- 测试类型：负面
+- 测试方法：被取代设备标记 superseded 不删除；审计行只追加且篡改可检出；恢复流程产物不含内容密钥/Recovery File 材料
+- 错误判定：历史被重写、审计被改或分域混材料即失败
+- 证据路径：`artifacts/test-reports/acc-58-team-recovery-domains.json`
+- 状态：untested

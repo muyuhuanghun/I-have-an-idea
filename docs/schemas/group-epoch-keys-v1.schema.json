@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/group-epoch-keys-v1.schema.json",
+  "title": "P1-beta group epoch key distribution v1",
+  "description": "ADR-0035 §2.3: the per-epoch pairwise CEK distribution. Only wrapped keys transit (ECIES: ephemeral ECDH P-256, AES-256-GCM with AAD binding domain/epoch/device); one wrapping per active member device; the removed device's entry disappears from the epoch after its removal.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "domain_id_sha256", "epoch", "wrapped", "signature_base64url"],
+  "properties": {
+    "schema_version": {"const": "group-epoch-keys-v1"},
+    "domain_id_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "epoch": {"type": "integer", "minimum": 1},
+    "wrapped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["device_id", "ephemeral_dh_spki_base64url", "nonce_b64", "wrapped_cek_b64"],
+        "properties": {
+          "device_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+          "ephemeral_dh_spki_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+          "nonce_b64": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+          "wrapped_cek_b64": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+        }
+      }
+    },
+    "signature_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+  }
+}

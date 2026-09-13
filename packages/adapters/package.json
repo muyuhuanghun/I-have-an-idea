@@ -35,6 +35,10 @@
     "./web-console": {
       "types": "./dist/web-console.d.ts",
       "import": "./dist/web-console.js"
+    },
+    "./team-registry": {
+      "types": "./dist/team-registry.d.ts",
+      "import": "./dist/team-registry.js"
     }
   },
   "files": ["dist"],

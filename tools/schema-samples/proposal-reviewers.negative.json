@@ -1,0 +1,22 @@
+{
+  "schema_version": "proposal-reviewers-v1",
+  "domain_id_sha256": "30a09f0af3fd3f8e024d8842fee8fe1d6daf341684cf98c8d864fc586322fa8a",
+  "sequence": 3,
+  "reviewers": [
+    {
+      "reviewer_id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "proposal_public_key_spki_base64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE2Xm6E5pOuAABGK8GGmBKJDcTSzxkdbBgLkGPjzMEEz4wjm1ZCLQdBc6h2JXMLXBvEjGFRoGAUMo2eIfDOix1mQ",
+      "device_id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "registered_at": "2026-09-12T11:00:00.000Z"
+    }
+  ],
+  "revoked": [
+    {
+      "reviewer_id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "revoked_at": "2026-09-12T12:00:00.000Z"
+    }
+  ],
+  "signature_base64url": "MEUCIQD7d1Up3bP4bOXbFMPk8TZlHxJMPkkPVpWPTcJQq9YEigIgYB0i1qk9XUQmSEcvDOLe5nNCINAsdbPUfOCGOEG6oM",
+  "file_count": 3,
+  "reviewer_private_key_pkcs8_base64url": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQ"
+}

@@ -51,7 +51,10 @@
     "LOG_WRITE_FAILED",
     "REPORT_SCHEMA_INVALID",
     "HONEST_CLAIM_VIOLATION", "HEAD_SIGNATURE_INVALID", "HEAD_DEVICE_UNREGISTERED", "HEAD_ROLLBACK_DETECTED", "HEAD_FORK_DETECTED",
-    "CONSOLE_SESSION_REJECTED", "CONSOLE_SOURCE_UNAVAILABLE"
+    "CONSOLE_SESSION_REJECTED", "CONSOLE_SOURCE_UNAVAILABLE",
+    "PRO_REGISTRY_SIGNATURE_INVALID", "PRO_REGISTRY_ROLLBACK", "PRO_REVIEWER_UNREGISTERED", "PRO_REVIEWER_REVOKED", "PRO_APPROVAL_SIGNATURE_INVALID",
+    "GRP_EPOCH_ROLLBACK", "GRP_MEMBER_NOT_ACTIVE", "GRP_NOT_A_MEMBER", "GRP_WRAP_DECRYPT_FAILED", "GRP_STATE_SIGNATURE_INVALID",
+    "GOV_MATERIAL_INVALID", "GOV_MATERIAL_DOMAIN_MISMATCH", "GOV_RECOVERY_ANCHOR_INVALID"
   ],
   "threats": [
     {
@@ -146,6 +149,46 @@
       "disposition": "deferred_until_web_console_evidence",
       "acceptance_ids": ["ACC-49"],
       "oracle": "web console evidence must prove real Junction, symlink, 8.3 short-path and read-time replacement negatives all fail closed"
+    },
+    {
+      "id": "THR-12",
+      "title": "团队登记物被篡改或回滚（PRO-THR-01/GRP-THR-01）",
+      "source": "docs/decisions/0032-p1-beta-proposal-key-distribution-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配",
+      "disposition": "deferred_until_p1_beta_team_evidence",
+      "acceptance_ids": ["ACC-50", "ACC-52"],
+      "oracle": "team protocol evidence must prove tampered or rolled-back proposal-reviewers/group-state files are rejected fail-closed via signature and monotonic sequence checks"
+    },
+    {
+      "id": "THR-13",
+      "title": "未注册/已撤销身份的审批被接受（PRO-THR-02）",
+      "source": "docs/decisions/0032-p1-beta-proposal-key-distribution-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配",
+      "disposition": "deferred_until_p1_beta_team_evidence",
+      "acceptance_ids": ["ACC-50", "ACC-51"],
+      "oracle": "team protocol evidence must prove approvals from unregistered or revoked reviewer keys are rejected with normalized codes and no partial acceptance"
+    },
+    {
+      "id": "THR-14",
+      "title": "被移除成员仍能获取新 epoch 内容密钥（GRP-THR-02）",
+      "source": "docs/decisions/0033-p1-beta-group-key-lifecycle-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配",
+      "disposition": "deferred_until_p1_beta_team_evidence",
+      "acceptance_ids": ["ACC-53", "ACC-54"],
+      "oracle": "team protocol evidence must prove the removed device's wrapping disappears from the new epoch distribution and unwrap attempts fail closed"
+    },
+    {
+      "id": "THR-15",
+      "title": "三级旧代际边界被越级表述：L2 网络缓解被说成密码学撤销（GRP-THR-04）",
+      "source": "docs/decisions/0033-p1-beta-group-key-lifecycle-design.md#5-裁决三旧代际读取边界三级诚实声明v1-不做旧密文重加密",
+      "disposition": "deferred_until_p1_beta_team_evidence",
+      "acceptance_ids": ["ACC-55"],
+      "oracle": "team protocol evidence must prove the shipped user-facing strings and docs distinguish L1/L2/L3 and never claim cryptographic revocation of already-held keys or old ciphertext"
+    },
+    {
+      "id": "THR-16",
+      "title": "治理恢复被实现为越权：建议冒充授权、恢复触碰内容或重写历史（GOV-THR-02/03/04/05）",
+      "source": "docs/decisions/0034-p1-beta-governance-recovery-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配",
+      "disposition": "deferred_until_p1_beta_team_evidence",
+      "acceptance_ids": ["ACC-56", "ACC-57", "ACC-58"],
+      "oracle": "team protocol evidence must prove recovery admits only via the anchor material, grants no approval/content rights, keeps epoch sequence monotonic and leaves historical registries and audit records unmodified"
     }
   ],
   "invariants": [
@@ -172,7 +215,14 @@
     {"id": "INV-21", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-45"]},
     {"id": "INV-22", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-47"]},
     {"id": "INV-23", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-48"]},
-    {"id": "INV-24", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-49"]}
+    {"id": "INV-24", "source": "docs/decisions/0030-p1-local-web-console-identity-key-boundary-v1.md#82-不变式候选", "acceptance_ids": ["ACC-49"]},
+    {"id": "INV-25", "source": "docs/decisions/0032-p1-beta-proposal-key-distribution-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配", "acceptance_ids": ["ACC-50", "ACC-51"]},
+    {"id": "INV-26", "source": "docs/decisions/0032-p1-beta-proposal-key-distribution-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配", "acceptance_ids": ["ACC-50"]},
+    {"id": "INV-27", "source": "docs/decisions/0034-p1-beta-governance-recovery-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配", "acceptance_ids": ["ACC-52", "ACC-58"]},
+    {"id": "INV-28", "source": "docs/decisions/0033-p1-beta-group-key-lifecycle-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配", "acceptance_ids": ["ACC-53", "ACC-54"]},
+    {"id": "INV-29", "source": "docs/decisions/0033-p1-beta-group-key-lifecycle-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配", "acceptance_ids": ["ACC-53"]},
+    {"id": "INV-30", "source": "docs/decisions/0033-p1-beta-group-key-lifecycle-design.md#8-候选-registry-delta设计候选随实现合同落库编号届时按尾号连续分配", "acceptance_ids": ["ACC-54", "ACC-55"]},
+    {"id": "INV-31", "source": "docs/decisions/0034-p1-beta-governance-recovery-design.md#6-角色-审批矩阵v1-设计冻结实现合同按表落库", "acceptance_ids": ["ACC-56", "ACC-57", "ACC-58"]}
   ],
   "acceptance": [
     {
@@ -419,6 +469,51 @@
       "id": "ACC-49", "title": "Windows Junction/symlink/8.3 与读时替换负例失败关闭", "kind": "security", "threat_ids": ["THR-11"], "invariant_ids": ["INV-24"],
       "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-49-web-console-paths.json", "status": "passed", "evidence_scope": "web-console",
       "oracle": {"required_checks": ["schema_valid", "junction_negative_rejected", "symlink_negative_rejected", "short_path_negative_rejected", "read_time_replacement_rejected"], "required_error_code_groups": [["CONSOLE_SOURCE_UNAVAILABLE"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-50", "title": "团队登记物篡改/回滚与未注册/撤销审批负例全拒绝", "kind": "security", "threat_ids": ["THR-12", "THR-13"], "invariant_ids": ["INV-25", "INV-26"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-50-team-registries.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "registry_tamper_rejected", "registry_rollback_rejected", "unregistered_reviewer_rejected", "revoked_reviewer_rejected"], "required_error_code_groups": [["PRO_REGISTRY_SIGNATURE_INVALID", "PRO_REGISTRY_ROLLBACK"], ["PRO_REVIEWER_UNREGISTERED", "PRO_REVIEWER_REVOKED"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-51", "title": "验收持久化与审批/设备撤销独立", "kind": "security", "threat_ids": ["THR-13"], "invariant_ids": ["INV-25"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-51-team-persistence.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "acceptance_persisted_with_registry_state_hash", "historical_approval_verifiable_against_historical_state", "reviewer_revocation_independent_of_devices"], "required_error_code_groups": [["PRO_REVIEWER_REVOKED"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-52", "title": "自注册无路径且恢复材料与内容密钥分域", "kind": "security", "threat_ids": ["THR-12"], "invariant_ids": ["INV-27"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-52-team-domains.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "self_registration_rejected", "recovery_material_content_scan_clean", "registry_artifact_private_key_scan_clean"], "required_error_code_groups": [["PRO_REGISTRY_SIGNATURE_INVALID", "GOV_MATERIAL_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-53", "title": "新成员仅从加入 epoch 起可读且变更必推 epoch", "kind": "security", "threat_ids": ["THR-14"], "invariant_ids": ["INV-28", "INV-29"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-53-team-join.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "join_advances_epoch", "no_wrapping_before_join_epoch", "current_epoch_unwrap_succeeds", "no_change_no_advance"], "required_error_code_groups": [["GRP_MEMBER_NOT_ACTIVE"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-54", "title": "移除后前向失效且密钥擦除可验证", "kind": "security", "threat_ids": ["THR-14"], "invariant_ids": ["INV-28", "INV-30"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-54-team-remove.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "removal_advances_epoch", "removed_device_absent_from_new_distribution", "removed_device_unwrap_rejected", "erasure_verifiable"], "required_error_code_groups": [["GRP_MEMBER_NOT_ACTIVE"]], "forbidden_side_effects": ["partial_success_reported"]}
+    },
+    {
+      "id": "ACC-55", "title": "三级旧代际边界如实且 L2 缓解不越级表述", "kind": "security", "threat_ids": ["THR-15"], "invariant_ids": ["INV-30"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-55-team-boundaries.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "downloaded_history_documented_retained", "transport_gating_present_where_applicable", "no_crypto_revocation_claims_in_user_strings"], "required_error_code_groups": [], "forbidden_side_effects": ["undeclared_persistent_state_used"]}
+    },
+    {
+      "id": "ACC-56", "title": "治理恢复承认仅经锚材料且建议不产生登记效力", "kind": "security", "threat_ids": ["THR-16"], "invariant_ids": ["INV-31"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-56-team-recovery.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "recovery_admission_anchor_signed", "wrong_material_rejected", "advisory_without_authority_no_effect"], "required_error_code_groups": [["GOV_MATERIAL_INVALID", "GOV_RECOVERY_ANCHOR_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-57", "title": "恢复后 epoch 序号延续且旧权威失效", "kind": "security", "threat_ids": ["THR-16"], "invariant_ids": ["INV-31"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-57-team-recovery-epoch.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "epoch_sequence_continues", "new_authority_signs_updates", "old_authority_signature_rejected"], "required_error_code_groups": [["GRP_STATE_SIGNATURE_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
+    },
+    {
+      "id": "ACC-58", "title": "恢复不重写历史且分域字节扫描干净", "kind": "security", "threat_ids": ["THR-16"], "invariant_ids": ["INV-27", "INV-31"],
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-58-team-recovery-domains.json", "status": "untested", "evidence_scope": "p1-beta",
+      "oracle": {"required_checks": ["schema_valid", "superseded_marked_not_deleted", "audit_lines_append_only", "recovery_products_content_key_scan_clean"], "required_error_code_groups": [["GOV_MATERIAL_DOMAIN_MISMATCH", "GOV_MATERIAL_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     }
   ]
 }

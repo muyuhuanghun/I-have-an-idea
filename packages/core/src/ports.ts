@@ -122,3 +122,29 @@ export interface DeviceSignaturePort {
   readonly signHead: (signedBytes: Bytes) => Promise<Bytes>;
   readonly verifyHeadSignature: (signedBytes: Bytes, signature: Bytes, publicKeySpki: Bytes) => Promise<boolean>;
 }
+
+/**
+ * ADR-0035 §3 (P1-beta team protocol): pairwise epoch-CEK wrapping boundary. ECDH
+ * P-256 + HKDF-SHA-256 (salt = domain id, info = "ekd-group-epoch-cek-v1") +
+ * AES-256-GCM; the AAD must bind domain id, epoch and member device id. Private
+ * content-DH keys never leave the member device; only wrapped CEKs transit.
+ */
+export interface KeyAgreementPort {
+  readonly generateContentDhPair: () => Promise<{ readonly private_pkcs8: Bytes; readonly spki: Bytes }>;
+  readonly wrapCek: (input: {
+    readonly domainId: Bytes;
+    readonly epoch: number;
+    readonly deviceId: string;
+    readonly recipientSpki: Bytes;
+    readonly cek: Bytes;
+  }) => Promise<{ readonly ephemeral_spki: Bytes; readonly nonce: Bytes; readonly wrapped_cek: Bytes }>;
+  readonly unwrapCek: (input: {
+    readonly domainId: Bytes;
+    readonly epoch: number;
+    readonly deviceId: string;
+    readonly own_private_pkcs8: Bytes;
+    readonly ephemeral_spki: Bytes;
+    readonly nonce: Bytes;
+    readonly wrapped_cek: Bytes;
+  }) => Promise<Bytes>;
+}

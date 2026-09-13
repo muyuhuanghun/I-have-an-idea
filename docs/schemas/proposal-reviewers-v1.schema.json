@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/proposal-reviewers-v1.schema.json",
+  "title": "P1-beta proposal reviewers registry v1",
+  "description": "ADR-0032/ADR-0035 §2.1: the signed registry of proposal reviewers. Canonical JSON in the frozen field order is what the authority ECDSA signature covers; the signature field is the frozen trailing field. Revocation is a tombstone append; the sequence is monotonic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "domain_id_sha256", "sequence", "reviewers", "revoked", "signature_base64url"],
+  "properties": {
+    "schema_version": {"const": "proposal-reviewers-v1"},
+    "domain_id_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reviewer_id", "proposal_public_key_spki_base64url", "device_id", "registered_at"],
+        "properties": {
+          "reviewer_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "proposal_public_key_spki_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+          "device_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+          "registered_at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3}Z)?$"}
+        }
+      }
+    },
+    "revoked": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reviewer_id", "revoked_at"],
+        "properties": {
+          "reviewer_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "revoked_at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3}Z)?$"}
+        }
+      }
+    },
+    "signature_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+  }
+}

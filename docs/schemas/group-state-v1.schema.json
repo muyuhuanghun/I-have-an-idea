@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ekd.invalid/schemas/group-state-v1.schema.json",
+  "title": "P1-beta group state registry v1",
+  "description": "ADR-0033/ADR-0035 §2.2: the signed epoch registry — membership facts only, never key material. The epoch is monotonic; removals are append-only tombstones; the recovery anchor public key is the alternative authority root (ADR-0034).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "domain_id_sha256", "epoch", "members", "removed", "recovery_anchor_spki_base64url", "signature_base64url"],
+  "properties": {
+    "schema_version": {"const": "group-state-v1"},
+    "domain_id_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "epoch": {"type": "integer", "minimum": 1},
+    "members": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["device_id", "member_content_dh_spki_base64url", "joined_epoch"],
+        "properties": {
+          "device_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+          "member_content_dh_spki_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+          "joined_epoch": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "removed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["device_id", "removed_epoch"],
+        "properties": {
+          "device_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+          "removed_epoch": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "recovery_anchor_spki_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+    "signature_base64url": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}
+  }
+}

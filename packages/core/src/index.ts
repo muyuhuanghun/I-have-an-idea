@@ -55,7 +55,47 @@ export {
 export { createSnapshotV1 } from "./snapshot.js";
 export { restoreSnapshotV1 } from "./restore.js";
 export type { Core } from "./core.js";
-export type { DeviceSignaturePort } from "./ports.js";
+export type { DeviceSignaturePort, KeyAgreementPort } from "./ports.js";
+export {
+  TeamProtocolError,
+  admitReviewer,
+  base64UrlToBytes,
+  bytesToBase64Url,
+  canonicalTeamJson,
+  deviceIdBytes,
+  emptyProposalReviewerRegistry,
+  encodeEpochKeysBytes,
+  encodeGroupStateBytes,
+  encodeProposalApprovalBytes,
+  encodeProposalReviewersBytes,
+  encodeRecoveryAdmissionBytes,
+  epochWrapAad,
+  initialGroupState,
+  joinMember,
+  parseEpochKeysBytes,
+  parseGroupStateBytes,
+  parseProposalReviewersBytes,
+  removeMember,
+  revokeReviewer,
+  sha256Bytes,
+  signProposalApproval,
+  verifyProposalApproval,
+  verifyRecoveryAdmission,
+  type EpochKeyDistributionV1,
+  type EpochKeyWrappingV1,
+  type GroupMemberV1,
+  type GroupRemovedV1,
+  type GroupStateV1,
+  type ProposalApprovalV1,
+  type ProposalReviewerEntryV1,
+  type ProposalReviewerRegistryV1,
+  type ProposalReviewerRevokedV1,
+  type RecoveryAdmissionV1,
+  type TeamErrorCode,
+  type UnsignedGroupStateV1,
+  type UnsignedProposalApprovalV1,
+  type UnsignedProposalReviewerRegistryV1
+} from "./team.js";
 export type {
   ManifestCodecErrorCode,
   ObjectCodecErrorCode,

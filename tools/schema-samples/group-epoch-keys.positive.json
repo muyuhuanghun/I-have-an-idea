@@ -1,0 +1,20 @@
+{
+  "schema_version": "group-epoch-keys-v1",
+  "domain_id_sha256": "30a09f0af3fd3f8e024d8842fee8fe1d6daf341684cf98c8d864fc586322fa8a",
+  "epoch": 2,
+  "wrapped": [
+    {
+      "device_id": "01010101010101010101010101010101",
+      "ephemeral_dh_spki_base64url": "MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDEgAE8jx9OJLbOPlZClB7XeMycBMjDIcQJNfP",
+      "nonce_b64": "MDEyMzQ1Njc4OWFi",
+      "wrapped_cek_b64": "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5YWJjZGVm"
+    },
+    {
+      "device_id": "02020202020202020202020202020202",
+      "ephemeral_dh_spki_base64url": "MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDEgAEXm6E5pOuAABGK8GGmBKJDcTSzxkdbBg",
+      "nonce_b64": "OWFiY2RlZjAxMjM0",
+      "wrapped_cek_b64": "YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5"
+    }
+  ],
+  "signature_base64url": "MEUCIQD7d1Up3bP4bOXbFMPk8TZlHxJMPkkPVpWPTcJQq9YEigIgYB0i1qk9XUQmSEcvDOLe5nNCINAsdbPUfOCGOEG6oM"
+}

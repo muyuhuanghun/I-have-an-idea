@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
+import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
+import { mkdirSync, rmSync } from "node:fs";
 import { lstat, mkdir, readFile, readdir, realpath, rmdir, writeFile } from "node:fs/promises";
 import { arch, platform, release } from "node:os";
-import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createSnapshotV1, restoreSnapshotV1, type CryptoProvider } from "@ekd/core";
 import {
@@ -18,9 +20,15 @@ import {
   startWebConsoleServer,
   WebConsoleTaskRing
 } from "@ekd/adapters/web-console";
+import {
+  generateGovernanceMaterial,
+  GroupStateRegistryFile,
+  performRecovery,
+  ProposalReviewersRegistryFile
+} from "@ekd/adapters/team-registry";
 import { NobleAes256Provider, NOBLE_CANDIDATE } from "@ekd/crypto/noble";
 import { WebCryptoAes256Provider, WEBCRYPTO_CANDIDATE } from "@ekd/crypto/webcrypto";
-import { WebCryptoDeviceSignatureProvider } from "@ekd/crypto";
+import { WebCryptoDeviceSignatureProvider, WebCryptoKeyAgreementProvider } from "@ekd/crypto";
 import {
   createSmokeReport,
   runSmokeVectors,
@@ -58,6 +66,9 @@ const HELP = [
   "",
   "P1 read-only console (DP-027, ADR-0030/0031):",
   "  console --store DIR --head-dir DIR --domain-id 64HEX",
+  "",
+  "P1-beta team protocol self-test (DP-018/025/019, ADR-0035):",
+  "  team-smoke                                        (sandbox lifecycle self-test)",
   "",
   "P0 rules: every path is explicit; the Vault is never written; log/recovery/store",
   "stay outside the Vault and each other; the store root, log parent and recovery",
@@ -449,6 +460,127 @@ async function restoreCommand(args: readonly string[]): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
+// P1-beta team smoke (DP-018/025/019, ADR-0035 §6.2): a self-contained sandbox that
+// exercises the full lifecycle — registries, epoch joins/removals with pairwise CEK
+// wrapping, approvals, and governance recovery with authority handover. Creates its
+// own throwaway sandbox; touches nothing on disk beyond it.
+// ---------------------------------------------------------------------------
+
+async function teamSmokeCommand(): Promise<number> {
+  const sandboxRoot = join(await mkdtempW(), "ekd-team-smoke");
+  mkdirSync(sandboxRoot, { recursive: true });
+  const steps: string[] = [];
+  const step = (name: string, ok: boolean): void => {
+    steps.push(`${ok ? "ok" : "FAIL"} ${name}`);
+    if (!ok) throw new Error(`team smoke step failed: ${name}`);
+  };
+  try {
+    const keyAgreement = new WebCryptoKeyAgreementProvider();
+    const makeSigner = (): { signer: WebCryptoDeviceSignatureProvider; spki: string; deviceId: string } => {
+      const pair = generateKeyPairSync("ec", { namedCurve: "P-256" });
+      return {
+        signer: new WebCryptoDeviceSignatureProvider(new Uint8Array(pair.privateKey.export({ format: "der", type: "pkcs8" }))),
+        spki: Buffer.from(pair.publicKey.export({ format: "der", type: "spki" })).toString("base64url"),
+        deviceId: randomBytes(16).toString("hex")
+      };
+    };
+    const owner = makeSigner();
+    const domainId = randomBytes(32);
+    const domainIdSha = createHash("sha256").update(domainId).digest("hex");
+
+    const { material, anchor_spki } = await generateGovernanceMaterial(domainId);
+    const group = new GroupStateRegistryFile(join(sandboxRoot, "group-state.json"), domainId, {
+      verifier: owner.signer, authoritySpki: base64SpkiOf(owner), signer: owner.signer, keyAgreement
+    });
+    const reviewers = new ProposalReviewersRegistryFile(join(sandboxRoot, "proposal-reviewers.json"), domainIdSha, {
+      verifier: owner.signer, authoritySpki: base64SpkiOf(owner), signer: owner.signer
+    });
+    await group.initialize(owner.deviceId, owner.spki, Buffer.from(anchor_spki).toString("base64url"));
+    step("initialize group + recovery anchor", true);
+
+    const reviewerPair = generateKeyPairSync("ec", { namedCurve: "P-256" });
+    const reviewer = new WebCryptoDeviceSignatureProvider(new Uint8Array(reviewerPair.privateKey.export({ format: "der", type: "pkcs8" })));
+    const reviewerSpki = Buffer.from(reviewerPair.publicKey.export({ format: "der", type: "spki" })).toString("base64url");
+    await reviewers.admit({
+      reviewer_id: randomBytes(32).toString("hex"),
+      proposal_public_key_spki_base64url: reviewerSpki,
+      device_id: owner.deviceId,
+      registered_at: new Date().toISOString()
+    });
+    step("admit reviewer (owner-signed registry)", true);
+
+    const member = makeSigner();
+    const memberDh = await keyAgreement.generateContentDhPair();
+    const joined = await group.joinMember(member.deviceId, Buffer.from(memberDh.spki).toString("base64url"));
+    step(`join member advances epoch to ${joined.state.epoch}`, joined.state.epoch === 2);
+
+    const memberCek = await group.unwrapEpochCek(member.deviceId, memberDh.private_pkcs8, joined.state.epoch);
+    step("member unwraps current epoch CEK", memberCek.length === 32);
+    let oldEpochRejected = false;
+    try {
+      await group.unwrapEpochCek(member.deviceId, memberDh.private_pkcs8, 1);
+    } catch {
+      oldEpochRejected = true;
+    }
+    step("no wrapping for the joining member in earlier epochs", oldEpochRejected);
+
+    const approvalBytes = utf8Bytes(JSON.stringify({
+      proposal_ref: "smoke-proposal-1",
+      content_sha256: createHash("sha256").update("team content").digest("hex"),
+      registry_state_sha256: domainIdSha
+    }));
+    const approvalSignature = await reviewer.signHead(approvalBytes);
+    step("reviewer signs approval (ADR-0032 credential)", approvalSignature.length === 64);
+
+    const removed = await group.removeMember(member.deviceId);
+    const distribution = await group.loadEpochKeys(removed.state.epoch);
+    step("removed member absent from new epoch distribution", distribution?.wrapped.some((entry) => entry.device_id === member.deviceId) === false);
+
+    const successor = makeSigner();
+    const successorDh = await keyAgreement.generateContentDhPair();
+    const recovery = await performRecovery({
+      material,
+      domainId,
+      newOwnerDeviceId: successor.deviceId,
+      newOwnerContentDhSpkiBase64url: Buffer.from(successorDh.spki).toString("base64url"),
+      supersededDeviceIds: [owner.deviceId],
+      groupState: group,
+      newOwnerSigner: successor.signer,
+      newOwnerAuthoritySpki: base64SpkiOf(successor),
+      anchorVerifier: owner.signer
+    });
+    step(`recovery admits successor, epoch continues at ${recovery.state.epoch}`, recovery.state.epoch >= removed.state.epoch);
+
+    // ADR-0034 §4.1: post-recovery loads verify against the NEW authority key.
+    const successorGroup = new GroupStateRegistryFile(join(sandboxRoot, "group-state.json"), domainId, {
+      verifier: successor.signer, authoritySpki: base64SpkiOf(successor), signer: successor.signer, keyAgreement
+    });
+        const nextMemberDh = await keyAgreement.generateContentDhPair();
+    const next = await successorGroup.joinMember(makeSigner().deviceId, Buffer.from(nextMemberDh.spki).toString("base64url"));
+    step("new authority signs post-recovery epoch advance", next.state.epoch === recovery.state.epoch + 1);
+
+    rmSync(sandboxRoot, { recursive: true, force: true });
+    console.log(JSON.stringify({ verdict: "pass", steps }));
+    return 0;
+  } catch (error) {
+    rmSync(sandboxRoot, { recursive: true, force: true });
+    console.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
+    console.log(JSON.stringify({ verdict: "fail", steps, error: error instanceof Error ? error.message : String(error) }));
+    return 1;
+  }
+}
+
+function base64SpkiOf(device: { spki: string }): Uint8Array {
+  return new Uint8Array(Buffer.from(device.spki, "base64url"));
+}
+
+async function mkdtempW(): Promise<string> {
+  const { mkdtemp } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  return mkdtemp(join(tmpdir(), "ekd-cli-"));
+}
+
+// ---------------------------------------------------------------------------
 // P1 read-only console (DP-027, ADR-0030 §7.0 / ADR-0031 §1.4): the server and
 // DTO live in the adapters web-console subentry; the CLI only parses explicit
 // arguments, enforces the ADR-0021 path discipline and wires the session-domain
@@ -541,6 +673,7 @@ export async function run(args: readonly string[]): Promise<number> {
   if (args[0] === "restore") return restoreCommand(args.slice(1));
   if (args[0] === "__restore-worker") return restoreWorkerCommand(args.slice(1));
   if (args[0] === "console") return consoleCommand(args.slice(1));
+  if (args[0] === "team-smoke") return teamSmokeCommand();
   throw new Error(`Unknown command: ${args[0]}`);
 }
 

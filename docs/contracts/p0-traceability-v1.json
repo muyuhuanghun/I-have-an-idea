@@ -472,47 +472,47 @@
     },
     {
       "id": "ACC-50", "title": "团队登记物篡改/回滚与未注册/撤销审批负例全拒绝", "kind": "security", "threat_ids": ["THR-12", "THR-13"], "invariant_ids": ["INV-25", "INV-26"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-50-team-registries.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-50-team-registries.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "registry_tamper_rejected", "registry_rollback_rejected", "unregistered_reviewer_rejected", "revoked_reviewer_rejected"], "required_error_code_groups": [["PRO_REGISTRY_SIGNATURE_INVALID", "PRO_REGISTRY_ROLLBACK"], ["PRO_REVIEWER_UNREGISTERED", "PRO_REVIEWER_REVOKED"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-51", "title": "验收持久化与审批/设备撤销独立", "kind": "security", "threat_ids": ["THR-13"], "invariant_ids": ["INV-25"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-51-team-persistence.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-51-team-persistence.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "acceptance_persisted_with_registry_state_hash", "historical_approval_verifiable_against_historical_state", "reviewer_revocation_independent_of_devices"], "required_error_code_groups": [["PRO_REVIEWER_REVOKED"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-52", "title": "自注册无路径且恢复材料与内容密钥分域", "kind": "security", "threat_ids": ["THR-12"], "invariant_ids": ["INV-27"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-52-team-domains.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-52-team-domains.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "self_registration_rejected", "recovery_material_content_scan_clean", "registry_artifact_private_key_scan_clean"], "required_error_code_groups": [["PRO_REGISTRY_SIGNATURE_INVALID", "GOV_MATERIAL_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-53", "title": "新成员仅从加入 epoch 起可读且变更必推 epoch", "kind": "security", "threat_ids": ["THR-14"], "invariant_ids": ["INV-28", "INV-29"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-53-team-join.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-53-team-join.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "join_advances_epoch", "no_wrapping_before_join_epoch", "current_epoch_unwrap_succeeds", "no_change_no_advance"], "required_error_code_groups": [["GRP_MEMBER_NOT_ACTIVE"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-54", "title": "移除后前向失效且密钥擦除可验证", "kind": "security", "threat_ids": ["THR-14"], "invariant_ids": ["INV-28", "INV-30"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-54-team-remove.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-54-team-remove.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "removal_advances_epoch", "removed_device_absent_from_new_distribution", "removed_device_unwrap_rejected", "erasure_verifiable"], "required_error_code_groups": [["GRP_MEMBER_NOT_ACTIVE"]], "forbidden_side_effects": ["partial_success_reported"]}
     },
     {
       "id": "ACC-55", "title": "三级旧代际边界如实且 L2 缓解不越级表述", "kind": "security", "threat_ids": ["THR-15"], "invariant_ids": ["INV-30"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-55-team-boundaries.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-55-team-boundaries.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "downloaded_history_documented_retained", "transport_gating_present_where_applicable", "no_crypto_revocation_claims_in_user_strings"], "required_error_code_groups": [], "forbidden_side_effects": ["undeclared_persistent_state_used"]}
     },
     {
       "id": "ACC-56", "title": "治理恢复承认仅经锚材料且建议不产生登记效力", "kind": "security", "threat_ids": ["THR-16"], "invariant_ids": ["INV-31"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-56-team-recovery.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-56-team-recovery.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "recovery_admission_anchor_signed", "wrong_material_rejected", "advisory_without_authority_no_effect"], "required_error_code_groups": [["GOV_MATERIAL_INVALID", "GOV_RECOVERY_ANCHOR_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-57", "title": "恢复后 epoch 序号延续且旧权威失效", "kind": "security", "threat_ids": ["THR-16"], "invariant_ids": ["INV-31"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-57-team-recovery-epoch.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-57-team-recovery-epoch.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "epoch_sequence_continues", "new_authority_signs_updates", "old_authority_signature_rejected"], "required_error_code_groups": [["GRP_STATE_SIGNATURE_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     },
     {
       "id": "ACC-58", "title": "恢复不重写历史且分域字节扫描干净", "kind": "security", "threat_ids": ["THR-16"], "invariant_ids": ["INV-27", "INV-31"],
-      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-58-team-recovery-domains.json", "status": "untested", "evidence_scope": "p1-beta",
+      "nonsecurity_reason": null, "evidence_path": "artifacts/test-reports/acc-58-team-recovery-domains.json", "status": "passed", "evidence_scope": "p1-beta",
       "oracle": {"required_checks": ["schema_valid", "superseded_marked_not_deleted", "audit_lines_append_only", "recovery_products_content_key_scan_clean"], "required_error_code_groups": [["GOV_MATERIAL_DOMAIN_MISMATCH", "GOV_MATERIAL_INVALID"]], "forbidden_side_effects": ["source_vault_modified", "write_outside_target"]}
     }
   ]

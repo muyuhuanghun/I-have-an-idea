@@ -433,6 +433,12 @@ def _web_closure_commit(closeout_text: str) -> str:
     return match.group(1)
 
 
+def _p1_beta_team_closure_commit(closeout_text: str) -> str:
+    match = re.search(r"^P1_BETA_TEAM_EVIDENCE_CLOSED_AT_COMMIT: ([0-9a-f]{40})$", closeout_text, flags=re.MULTILINE)
+    require(match is not None, "closeout report lacks a 'P1_BETA_TEAM_EVIDENCE_CLOSED_AT_COMMIT: <sha256>' line")
+    return match.group(1)
+
+
 def _require_acc_statuses(items: list[dict[str, Any]], closeout_text: str) -> None:
     allowed_statuses = {"passed", "failed", "untested", "known-limitation", "out-of-scope"}
     statuses = [item.get("status") for item in items]
@@ -580,6 +586,7 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
     s7_commit: str | None = None
     p1_commit: str | None = None
     web_commit: str | None = None
+    team_commit: str | None = None
     for item in trace["acceptance"]:
         acc_id = item["id"]
         if item.get("status") != "passed":
@@ -615,6 +622,11 @@ def validate_evidence(trace: dict[str, Any], evidence_root: Path) -> None:
                 web_commit = _web_closure_commit(closeout_text)
             require(report_commit == web_commit,
                     f"{acc_id}: evidence commit {report_commit} differs from web-console closeout-declared {web_commit}")
+        elif item.get("evidence_scope") == "p1-beta":
+            if team_commit is None:
+                team_commit = _p1_beta_team_closure_commit(closeout_text)
+            require(report_commit == team_commit,
+                    f"{acc_id}: evidence commit {report_commit} differs from p1-beta team closeout-declared {team_commit}")
         else:
             require(report_commit == closeout_commit,
                     f"{acc_id}: evidence commit {report_commit} differs from closeout-declared {closeout_commit}")

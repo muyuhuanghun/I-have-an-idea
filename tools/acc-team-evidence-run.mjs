@@ -153,10 +153,12 @@ async function main() {
   const tamperedRaw = goodRaw.replace(/"signature_base64url":"./u, '"signature_base64url":"A');
   writeFileSync(reviewers.filePath, tamperedRaw);
   let tamperRejected = false;
+  let tamperCode = "";
   try {
     await reviewers.load();
   } catch (error) {
     tamperRejected = error instanceof core.TeamProtocolError && error.code === "PRO_REGISTRY_SIGNATURE_INVALID";
+    tamperCode = error instanceof core.TeamProtocolError ? error.code : "";
   }
   writeFileSync(reviewers.filePath, goodRaw);
   await reviewers.load();
@@ -172,10 +174,12 @@ async function main() {
   const staleSig = Buffer.from(await owner.signer.signHead(staleBytes)).toString("base64url");
   writeFileSync(reviewers.filePath, `${Buffer.from(staleBytes).toString("utf8").slice(0, -1)},"signature_base64url":"${staleSig}"}`);
   let rollbackRejected = false;
+  let rollbackCode = "";
   try {
     await reviewers.load();
   } catch (error) {
     rollbackRejected = error instanceof core.TeamProtocolError && error.code === "PRO_REGISTRY_ROLLBACK";
+    rollbackCode = error instanceof core.TeamProtocolError ? error.code : "";
   }
   writeFileSync(reviewers.filePath, goodRaw);
   await reviewers.load();
@@ -212,7 +216,7 @@ async function main() {
     historicalVerifiable = true;
   } catch {}
 
-  const acc50Raw = { tamperRejected, rollbackRejected, unregisteredRejected, revokedRejected, historicalVerifiable };
+  const acc50Raw = { tamperRejected, tamperCode, rollbackRejected, rollbackCode, unregisteredRejected, revokedRejected, historicalVerifiable };
   dumpRaw("acc-50-team-registries.json", acc50Raw);
   writeEvidence("ACC-50", {
     schema_valid: boolCheck("schema_valid", true, "evidence validates against acc-evidence-v1"),
@@ -220,7 +224,7 @@ async function main() {
     registry_rollback_rejected: boolCheck("registry_rollback_rejected", rollbackRejected, "stale sequence-1 file rejected with PRO_REGISTRY_ROLLBACK via journal high-water"),
     unregistered_reviewer_rejected: boolCheck("unregistered_reviewer_rejected", unregisteredRejected, "approval from a stranger key rejected with PRO_REVIEWER_UNREGISTERED"),
     revoked_reviewer_rejected: boolCheck("revoked_reviewer_rejected", revokedRejected, "approval from a revoked key rejected with PRO_REVIEWER_REVOKED")
-  }, ["PRO_REVIEWER_UNREGISTERED", "PRO_REVIEWER_REVOKED"], {}, [dumpRaw("acc-50-team-registries.json", acc50Raw)]);
+  }, ["PRO_REVIEWER_UNREGISTERED", "PRO_REVIEWER_REVOKED", "PRO_REGISTRY_SIGNATURE_INVALID", "PRO_REGISTRY_ROLLBACK"], {}, [dumpRaw("acc-50-team-registries.json", acc50Raw)]);
 
   // ---------------- ACC-51: acceptance persistence + revocation independence ----------------
   const persistenceHashPresent = typeof approval.registry_state_sha256 === "string" && /^[A-Za-z0-9_-]{43}$/.test(approval.registry_state_sha256);

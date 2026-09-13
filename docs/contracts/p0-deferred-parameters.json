@@ -217,27 +217,30 @@
       "name": "签名更新、可验证构建和供应链边界",
       "owner": "OWNER-SECURITY",
       "phase": "生产发布前",
-      "status": "deferred",
-      "close_artifact": "supply-chain threat model + reproducible-build/signing evidence",
-      "hard_stop": "未关闭前 THR-05 供应链攻击保持 out-of-scope，禁止声称已缓解"
+      "status": "closed",
+      "close_artifact": "supply-chain 设计 ADR（ADR-0036：离线发布密钥签名清单 + 确定性工具链双次构建 + 供应链边界两分法）+ 验收证据计划 SB-1..6（设计级，随发布工程切片落库）+ REL-THR/INV/ACC 候选文本 + 四视角两轮自检记录",
+      "hard_stop": "签名更新/可验证构建的实现与 SB-1..6 正式证据随发布工程切片另授权；THR-05 改判限定为'更新链已缓解'——开发端供应链（开发机入侵、上游依赖深层恶意、用户安装通道）的残留风险必须如实声明，不得声称全面缓解",
+      "closure_adr": "docs/decisions/0036-p1-release-supply-chain-design.md"
     },
     {
       "id": "DP-021",
       "name": "主存储与备份物理删除 SLA",
       "owner": "OWNER-PRODUCT",
       "phase": "P1-release deletion design",
-      "status": "deferred",
-      "close_artifact": "deletion SLA/ADR + provider evidence",
-      "hard_stop": "未关闭前不得承诺物理删除时限"
+      "status": "closed",
+      "close_artifact": "deletion SLA 设计 ADR（ADR-0037：密码学擦除为承诺根基 + 精确 SLA 表——主存储即时/自托管副本窗≤7天/云托管留白 + 显式确认与审计）+ 验收证据计划 DS-1..5（设计级）+ DEL-THR/INV/ACC 候选文本 + 四视角两轮自检记录",
+      "hard_stop": "删除 SLA 的实现与 DS-1..5 正式证据随发布工程切片另授权；对外承诺只限 ADR-0037 §4 表所列精确内容——不得承诺物理扇区擦除（purge 级）、不得承诺第三方备份删除、不得对云托管形态承诺 SLA；安全声明锚定'密文不可解'而非'字节不存在'",
+      "closure_adr": "docs/decisions/0037-p1-release-deletion-sla-design.md"
     },
     {
       "id": "DP-022",
       "name": "自托管迁移与密文导出格式",
       "owner": "OWNER-PRODUCT",
       "phase": "P1-release portability",
-      "status": "deferred",
-      "close_artifact": "versioned export format ADR + roundtrip migration evidence",
-      "hard_stop": "未关闭前不得承诺无损自托管迁移"
+      "status": "closed",
+      "close_artifact": "versioned export format 设计 ADR（ADR-0038：ekd-domain-export-v1 目录捆绑 + manifest 哈希闭环 + 密文自包含原则——迁移器零明文接触 + v1→v1 往返承诺）+ 验收证据计划 MG-1..7（设计级）+ MIG-THR/INV/ACC 候选文本 + 四视角两轮自检记录",
+      "hard_stop": "迁移工具实现与 MG-1..7 正式证据随发布工程切片另授权；无损承诺精确为密文侧字节级往返——不承诺成员本地明文/密钥迁移、不承诺迁移窗口增量、跨版本兼容 v1 只承诺 v1→v1；迁移器必须保持零解密路径（MIG-INV-01）",
+      "closure_adr": "docs/decisions/0038-p1-release-migration-export-design.md"
     },
     {
       "id": "DP-023",

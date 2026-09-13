@@ -119,6 +119,26 @@ export const STRINGS = {
     createSnapshot: "创建 P0 快照",
     smoke: (candidate: string) => `运行 Phase 1 冒烟：${candidate}`
   },
+  team: {
+    viewTitle: "EKD 团队",
+    unconfigured: "团队域未配置：请在设置中填写团队域状态目录与本设备 ID。",
+    errorPrefix: "团队面板错误：",
+    epochInfo: (epoch: number, members: number) => `当前 epoch ${epoch} · 成员 ${members} 人`,
+    submitTitle: "提交提案",
+    titlePlaceholder: "提案标题",
+    contentPlaceholder: "提案内容",
+    submitting: "提交中…",
+    submitButton: "提交提案",
+    listTitle: "提案列表",
+    noProposals: "暂无提案。",
+    proposalMeta: (at: string, approvals: number) => `${at} · 已获 ${approvals} 项审批`,
+    approveButton: "审批通过",
+    acceptedLabel: "已获所需审批",
+    refresh: "刷新",
+    approvedNotice: "审批已签名并写入提案。",
+    submittedNotice: "提案已加密提交。",
+    refreshNotice: "团队状态已刷新。"
+  },
   faults: {
     domainIdInvalid: "域 ID 必须是恰好 64 位小写十六进制字符。",
     pathMustBeAbsolute: (label: string) => `${label} 必须是显式的绝对路径。`,

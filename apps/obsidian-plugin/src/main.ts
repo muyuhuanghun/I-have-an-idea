@@ -41,7 +41,11 @@ import {
 import { SnapshotPanelModel } from "./snapshot-panel-model.js";
 import { P0SnapshotView, VIEW_TYPE_EKD_P0_SNAPSHOT } from "./snapshot-view.js";
 import { PluginConsoleHost } from "./console-host.js";
+import { TeamHost } from "./team-host.js";
+import { TeamPanelModel } from "./team-panel-model.js";
+import { TeamView, VIEW_TYPE_EKD_TEAM } from "./team-view.js";
 import { STRINGS } from "./strings.js";
+import { WebCryptoKeyAgreementProvider } from "@ekd/crypto";
 import {
   createNodeVaultPathValidator,
   requireNewReportTarget,
@@ -71,6 +75,11 @@ interface EkdSettings {
   readonly recoveryFilePath: string;
   readonly runtimeLimitsPath: string;
   readonly snapshotReportPath: string;
+  readonly teamStateDir: string;
+  readonly teamDeviceId: string;
+  readonly teamAuthoritySpkiBase64url: string;
+  readonly teamReviewerPrivateKeyPkcs8Base64url: string;
+  readonly teamReviewerId: string;
 }
 
 interface StoredDeviceKey {
@@ -85,6 +94,11 @@ const DEFAULT_SETTINGS: EkdSettings = {
   androidOsVersion: "",
   androidArchitecture: "",
   consoleEnabled: false,
+  teamStateDir: "",
+  teamDeviceId: "",
+  teamAuthoritySpkiBase64url: "",
+  teamReviewerPrivateKeyPkcs8Base64url: "",
+  teamReviewerId: "",
   domainIdHex: "",
   objectStorePath: "",
   snapshotLogPath: "",
@@ -328,6 +342,8 @@ export default class EkdPhase1Plugin extends Plugin {
   #snapshotStatus: HTMLElement | undefined;
   #settingsWrites: Promise<void> = Promise.resolve();
   readonly #panelModel = new SnapshotPanelModel();
+  readonly #teamModel = new TeamPanelModel();
+  #teamHost: TeamHost | undefined;
   readonly #console = new PluginConsoleHost({
     version: "p1-console-v1",
     build: async () => (await this.#loadBuildMeta()).source_commit,
@@ -425,6 +441,14 @@ export default class EkdPhase1Plugin extends Plugin {
       }
     }));
     this.addRibbonIcon("lock", STRINGS.view.header, () => { void this.activateSnapshotView(); });
+    this.registerView(VIEW_TYPE_EKD_TEAM, (leaf) => new TeamView(leaf, {
+      refresh: () => { void this.teamRefresh(); },
+      submit: (title, content) => { void this.teamSubmit(title, content); },
+      approve: (proposalId) => { void this.teamApprove(proposalId); },
+      isBusy: () => this.#teamBusy,
+      isReviewer: () => this.#teamIsReviewer
+    }));
+    this.addRibbonIcon("users", STRINGS.team.viewTitle, () => { void this.activateTeamView(); });
     this.addCommand({
       id: "p0-create-snapshot",
       name: STRINGS.commands.createSnapshot,
@@ -497,6 +521,105 @@ export default class EkdPhase1Plugin extends Plugin {
     void openPath.call(electron.shell, reportPath).then((message) => {
       if (typeof message === "string" && message.length > 0) new Notice(STRINGS.view.openReportFailed(message));
     });
+  }
+
+  #teamBusy = false;
+  #teamIsReviewer = false;
+
+  async activateTeamView(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_EKD_TEAM);
+    const leaf = existing[0] ?? this.app.workspace.getRightLeaf(false);
+    if (leaf === null) return;
+    if (existing.length === 0) await leaf.setViewState({ type: VIEW_TYPE_EKD_TEAM, active: true });
+    this.app.workspace.revealLeaf(leaf);
+  }
+
+  #syncTeamView(): void {
+    const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_EKD_TEAM)[0];
+    if (leaf !== undefined) (leaf.view as TeamView).updateFromModel(this.#teamModel.render);
+  }
+
+  #teamDeps(): ConstructorParameters<typeof TeamHost>[0] | undefined {
+    if (this.settings.teamStateDir.trim().length === 0 || !/^[0-9a-f]{32}$/u.test(this.settings.teamDeviceId)) return undefined;
+    const keyAgreement = new WebCryptoKeyAgreementProvider();
+    const reviewerKey = this.settings.teamReviewerPrivateKeyPkcs8Base64url.trim();
+    const reviewerId = this.settings.teamReviewerId.trim();
+    return {
+      domainIdSha256: sha256Hex(new TextEncoder().encode(this.settings.domainIdHex.trim() || "team-domain")),
+      teamStateDir: this.settings.teamStateDir.trim(),
+      teamDeviceId: this.settings.teamDeviceId,
+      authoritySpkiBase64url: this.settings.teamAuthoritySpkiBase64url.trim(),
+      keyAgreement,
+      aead: new WebCryptoAes256Provider(),
+      reviewerPrivateKeyPkcs8Base64url: reviewerKey.length > 0 ? reviewerKey : undefined,
+      reviewerId: reviewerId.length > 0 ? reviewerId : undefined
+    };
+  }
+
+  async teamRefresh(): Promise<void> {
+    if (this.settings.teamStateDir.trim().length === 0 || !/^[0-9a-f]{32}$/u.test(this.settings.teamDeviceId)) {
+      this.#teamModel.setUnconfigured();
+      this.#syncTeamView();
+      return;
+    }
+    this.#teamModel.setBusy();
+    this.#syncTeamView();
+    try {
+      const deps = this.#teamDeps();
+      if (deps === undefined) {
+        this.#teamModel.setUnconfigured();
+        this.#syncTeamView();
+        return;
+      }
+      this.#teamHost = new TeamHost(deps);
+      const snapshot = await this.#teamHost.refresh();
+      this.#teamIsReviewer = snapshot.isReviewer;
+      this.#teamModel.setReady({
+        epoch: snapshot.epoch,
+        memberCount: snapshot.memberCount,
+        proposals: snapshot.proposals.map((entry) => ({
+          proposalId: entry.proposal_id,
+          title: entry.title,
+          authorDeviceId: entry.author_device_id,
+          createdAt: entry.created_at,
+          approvals: entry.approvals.length,
+          accepted: entry.approvals.length > 0
+        })),
+        isReviewer: snapshot.isReviewer
+      });
+    } catch (error) {
+      this.#teamModel.setError(error instanceof Error ? error.message : String(error));
+    }
+    this.#syncTeamView();
+  }
+
+  async teamSubmit(title: string, content: string): Promise<void> {
+    if (this.#teamBusy) return;
+    this.#teamBusy = true;
+    this.#syncTeamView();
+    try {
+      if (this.#teamHost === undefined) throw new Error("团队域未初始化。");
+      const summary = await this.#teamHost.submit({ title, content });
+      new Notice(STRINGS.team.submittedNotice);
+      await this.teamRefresh();
+      void summary;
+    } catch (error) {
+      new Notice(`${STRINGS.team.errorPrefix}${error instanceof Error ? error.message : String(error)}`, 10000);
+    } finally {
+      this.#teamBusy = false;
+      this.#syncTeamView();
+    }
+  }
+
+  async teamApprove(proposalId: string): Promise<void> {
+    try {
+      if (this.#teamHost === undefined) throw new Error("团队域未初始化。");
+      await this.#teamHost.approve(proposalId);
+      new Notice(STRINGS.team.approvedNotice);
+      await this.teamRefresh();
+    } catch (error) {
+      new Notice(`${STRINGS.team.errorPrefix}${error instanceof Error ? error.message : String(error)}`, 10000);
+    }
   }
 
   async runSnapshot(): Promise<void> {

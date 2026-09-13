@@ -6,7 +6,7 @@
 import { execFileSync } from "node:child_process";
 import { Buffer } from "node:buffer";
 import { generateKeyPairSync, randomBytes, randomUUID, createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,11 +16,10 @@ const RUN_ROOT = join(ARTIFACTS, "team", "run");
 const GIT_COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim();
 const RUN_ID = randomUUID();
 
-let core, adapters;
+let core;
 try {
   core = await import("../packages/core/dist/index.js");
-  adapters = await import("../packages/adapters/dist/index.js");
-} catch {
+} catch { /* expected rejection */
   console.error("acc-team-evidence-run: dist is missing; run `pnpm build` first.");
   process.exit(2);
 }
@@ -109,9 +108,6 @@ function spkiBytes(device) {
   return new Uint8Array(Buffer.from(device.spkiBase64url, "base64url"));
 }
 
-function readFileIfPresent(path) {
-  return existsSync(path) ? readFileSync(path) : null;
-}
 
 async function main() {
   if (!SOURCE_TREE_CLEAN_AT_START) {
@@ -214,7 +210,7 @@ async function main() {
   try {
     await core.verifyProposalApproval(approval, registry, owner.signer);
     historicalVerifiable = true;
-  } catch {}
+  } catch { /* expected rejection */}
 
   const acc50Raw = { tamperRejected, tamperCode, rollbackRejected, rollbackCode, unregisteredRejected, revokedRejected, historicalVerifiable };
   dumpRaw("acc-50-team-registries.json", acc50Raw);
@@ -232,7 +228,7 @@ async function main() {
   try {
     await core.verifyProposalApproval(approval, registry, owner.signer);
     historicalAgainstOwnState = true;
-  } catch {}
+  } catch { /* expected rejection */}
   const groupBytesBefore = readFileSync(group.statePath);
   await reviewers.admit({
     reviewer_id: "e".repeat(64),

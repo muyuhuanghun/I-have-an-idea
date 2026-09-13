@@ -39,6 +39,10 @@
     "./team-registry": {
       "types": "./dist/team-registry.d.ts",
       "import": "./dist/team-registry.js"
+    },
+    "./proposal-store": {
+      "types": "./dist/proposal-store.d.ts",
+      "import": "./dist/proposal-store.js"
     }
   },
   "files": ["dist"],
